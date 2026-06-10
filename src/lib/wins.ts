@@ -2,6 +2,10 @@
 // are all marked (blanks don't count, like the blanks of a 90-ball cartón);
 // bingo is every situation cell on the card. No columns, no diagonals.
 // Any mark kind counts: suffering a misfortune or causing it both fill the box.
+//
+// Rows are the CANONICAL landscape rows (3 rows x 4 cols). Portrait screens
+// render the card transposed, so there a completed línea lights up vertically
+// — same cells, same win, independent of how the grid is displayed.
 import { COLS, ROWS, type MarkKind } from './card';
 
 type Cells = (string | null)[];

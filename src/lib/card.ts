@@ -2,6 +2,11 @@
 // a 3x4 grid where each row holds 2 situations and 2 blanks, like the
 // number/blank mix of a 90-ball cartón. Blanks are dead cells.
 //
+// ROWS/COLS describe the CANONICAL landscape layout (3 rows x 4 cols) and
+// drive generation and win detection. Portrait screens render the transposed
+// grid (3 cols x 4 rows) with CSS only — see BingoCard.astro — so a línea is
+// always the same logical row, shown vertically when the card is "rotated".
+//
 // The chosen situation ids are stored alongside the marks so a saved card
 // keeps rendering correctly even if situations.json changes later.
 import situationsData from '../data/situations.json';

@@ -80,9 +80,15 @@ that confirms the bingo was sung within the one-month window — per the server 
 - **Honorifics**: one certificate design for everyone; the title depends on behavior —
   «Resignado Sufridor» (0 caused, gets thanked for exemplary conduct), «Granujilla»
   (some caused, less than half) or «Sinvergüenza» (half or more caused).
-- **Groups** (`/g/<id>`): create a group, share the link, members join with their own
-  card. Only the FIRST completion wins (atomic claim server-side); later bingos still get
-  their diploma. Completed cards can't join.
+- **Groups** (`/g/<id>`): create a group with a **unique name**, choose who can join
+  (anyone with the link, or only with a **password**) and whether the board is **public**
+  (standings + aliases visible to anyone) or **members-only**. Joining always requires an
+  **alias**. Only the FIRST completion wins (atomic claim server-side); later bingos still
+  get their diploma, and completed cards can't join. The group page has share buttons
+  (WhatsApp · X · copy/native) whose text spells out the join policy and board visibility.
+  Passwords are stored salted-hashed (`groupId:password`, SHA-256), never plaintext;
+  members-only standings are fetched client-side and only returned for a card that proves
+  membership with its owner secret.
 - **Expiry**: a card must be completed within one calendar month of its creation. Expired
   incomplete cards are frozen under a "CADUCADO" stamp and must be regenerated. Enforced
   client-side for the UI and server-side (server clock) for verification.
@@ -121,14 +127,18 @@ won't be verifiable. Astro's built-in CSRF check (`checkOrigin`) protects the en
 from cross-site form posts.
 
 Columns added over time: `secret` (owner token), `cells`/`marks` (for the live `/c/<id>`
-view), `email`/`newsletter` (optional recovery + opt-in). See `migrations/`.
+view), `email`/`newsletter` (optional recovery + opt-in), `alias` (group display name).
+The `groups` table carries `name` (unique), `join_policy` (`open`/`password`),
+`password_hash` and `public_board`. See `migrations/`.
 
 ## Newsletter & privacy
 
 - **Newsletter sign-ups** are stored in this site's own D1 `newsletter` table
   (`email`, `source`, `consented_at`) — *not* pushed to Brevo. `source` is the origin
   hostname so the list can later be consolidated across Gabriel's sites. The opt-in is an
-  explicit, unticked checkbox (GDPR consent); the timestamp is recorded.
+  explicit, unticked checkbox (GDPR consent); the timestamp is recorded. **No confirmation
+  email is sent** — the form is the confirmation. Once a visitor opts in, a local flag
+  (`evbingo.newsletter`) stops the checkbox being offered again on that device.
 - **GDPR**: no analytics or advertising cookies; game state is localStorage only (strictly
   necessary, no banner needed). Email is collected only with consent, with a disclaimer at
   the point of collection and a full policy at `/privacidad`. Update the contact address and
@@ -187,5 +197,4 @@ adapter's `SESSION` KV) are auto-provisioned by wrangler on deploy.
 
 ## Out of scope for now
 
-Accounts/passwords, final certificate design, photo upload/collage, analytics, public
-gallery, and bingo groups with a single winner (planned next phase — needs email sending).
+Accounts, final certificate design, photo upload/collage, analytics, and a public gallery.

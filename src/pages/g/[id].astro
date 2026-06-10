@@ -1,8 +1,10 @@
 ---
 // Bingo group page: /g/<groupId>. Public standings; only ONE member wins —
-// the first to complete their card. Joining requires the visitor's own card
-// (its owner secret never leaves their browser; the join call sends it
-// same-origin only).
+// the first to complete their card. Joining requires an alias and the
+// visitor's own card (its owner secret never leaves their browser; the join
+// call sends it same-origin only). Password-protected groups also ask for the
+// password, and private groups only reveal the standings to members (fetched
+// client-side with the membership secret).
 export const prerender = false;
 
 import { env } from 'cloudflare:workers';
@@ -14,10 +16,13 @@ interface GroupRow {
   name: string;
   created_at: string;
   winner_card_id: string | null;
+  join_policy: string;
+  public_board: number;
 }
 
 interface MemberRow {
   id: string;
+  alias: string | null;
   nick: string | null;
   marks: string | null;
   completed_at: string | null;
@@ -30,18 +35,27 @@ let group: GroupRow | null = null;
 let members: MemberRow[] = [];
 if (ID_PATTERN.test(id)) {
   group = await env.DB.prepare(
-    'SELECT id, name, created_at, winner_card_id FROM groups WHERE id = ?1',
+    'SELECT id, name, created_at, winner_card_id, join_policy, public_board FROM groups WHERE id = ?1',
   )
     .bind(id)
     .first<GroupRow>();
-  if (group) {
+  // Only public boards expose their standings server-side. Private ones are
+  // fetched client-side once the visitor proves membership.
+  if (group && group.public_board) {
     const rows = await env.DB.prepare(
-      'SELECT id, nick, marks, completed_at FROM cards WHERE group_id = ?1',
+      'SELECT id, alias, nick, marks, completed_at FROM cards WHERE group_id = ?1',
     )
       .bind(id)
       .all<MemberRow>();
     members = rows.results ?? [];
   }
+}
+
+const isPublic = group?.public_board === 1;
+const isPasswordProtected = group?.join_policy === 'password';
+
+function nameOf(member: MemberRow): string {
+  return member.alias ?? member.nick ?? `Cartón nº ${member.id}`;
 }
 
 function markedOf(member: MemberRow): number {
@@ -84,76 +98,141 @@ Astro.response.headers.set('cache-control', 'no-store');
             {group.name}
           </h1>
 
-          {winner ? (
-            <p class="mt-4 rounded-xl border-2 border-amber-300/60 bg-amber-300/10 px-4 py-3 text-center text-sm/relaxed text-paper-50 sm:text-base/relaxed">
-              ¡BINGO! Cantado por
-              <strong>{winner.nick ?? `el cartón nº ${winner.id}`}</strong> el{' '}
-              {longDate.format(new Date(winner.completed_at!))}. El resto: a seguir sufriendo,
-              pero ya sin premio.
-            </p>
+          {isPublic ? (
+            <>
+              {winner ? (
+                <p class="mt-4 rounded-xl border-2 border-amber-300/60 bg-amber-300/10 px-4 py-3 text-center text-sm/relaxed text-paper-50 sm:text-base/relaxed">
+                  ¡BINGO! Cantado por <strong>{nameOf(winner)}</strong> el{' '}
+                  {longDate.format(new Date(winner.completed_at!))}. El resto: a seguir sufriendo,
+                  pero ya sin premio.
+                </p>
+              ) : (
+                <p class="mt-4 text-center text-sm/relaxed text-paper-300/85 sm:text-base/relaxed">
+                  Aún sin ganador. El primero que complete su cartón se lo lleva. Los demás se
+                  llevan las desgracias, que también es algo.
+                </p>
+              )}
+
+              <section class="mt-5 overflow-hidden rounded-2xl border-4 border-ink-900 bg-paper-50 text-ink-900 shadow-[0_18px_40px_-12px_rgb(0_0_0/0.55)]">
+                <header class="flex items-baseline justify-between gap-3 border-b-4 border-ink-900 bg-dauber-600 px-3.5 py-2 text-paper-50">
+                  <p class="text-lg font-black uppercase tracking-[0.35em] sm:text-xl">Sala</p>
+                  <p class="shrink-0 font-mono text-[0.625rem] tracking-wider uppercase sm:text-xs">
+                    Grupo nº {group.id}
+                  </p>
+                </header>
+
+                {standings.length === 0 ? (
+                  <p class="px-4 py-6 text-center text-sm text-ink-900/70 sm:text-base">
+                    Todavía no hay cartones en la sala. Sé quien reparta las desgracias.
+                  </p>
+                ) : (
+                  <ul class="divide-y divide-ink-900/15">
+                    {standings.map((member) => (
+                      <li
+                        class="flex items-center justify-between gap-3 px-4 py-2.5 text-sm sm:text-base"
+                        data-member-card={member.id}
+                      >
+                        <span class="min-w-0 truncate">
+                          {member.id === winnerId && <span aria-hidden="true">🏆 </span>}
+                          <strong>{nameOf(member)}</strong>
+                          <span class="member-you hidden text-ink-900/55"> (tú)</span>
+                        </span>
+                        <span class="flex shrink-0 items-center gap-2">
+                          <a
+                            href={`/c/${member.id}`}
+                            class="text-[0.6875rem] underline decoration-ink-900/30 underline-offset-2 sm:text-xs"
+                          >
+                            ver
+                          </a>
+                          <span class="font-mono font-bold">
+                            {member.completed_at ? 'BINGO' : `${markedOf(member)}/${SITUATION_COUNT}`}
+                          </span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            </>
           ) : (
-            <p class="mt-4 text-center text-sm/relaxed text-paper-300/85 sm:text-base/relaxed">
-              Aún sin ganador. El primero que complete su cartón se lo lleva. Los demás se
-              llevan las desgracias, que también es algo.
-            </p>
+            <section
+              id="private-board"
+              class="mt-5 overflow-hidden rounded-2xl border-4 border-ink-900 bg-paper-50 text-ink-900 shadow-[0_18px_40px_-12px_rgb(0_0_0/0.55)]"
+            >
+              <header class="flex items-baseline justify-between gap-3 border-b-4 border-ink-900 bg-dauber-600 px-3.5 py-2 text-paper-50">
+                <p class="text-lg font-black uppercase tracking-[0.35em] sm:text-xl">Sala</p>
+                <p class="shrink-0 font-mono text-[0.625rem] tracking-wider uppercase sm:text-xs">
+                  Grupo nº {group.id}
+                </p>
+              </header>
+              <p
+                id="private-notice"
+                class="px-4 py-6 text-center text-sm text-ink-900/70 sm:text-base"
+              >
+                El estado de este grupo es privado. Únete con tu cartón para ver a los demás.
+              </p>
+            </section>
           )}
 
-          <section class="mt-5 overflow-hidden rounded-2xl border-4 border-ink-900 bg-paper-50 text-ink-900 shadow-[0_18px_40px_-12px_rgb(0_0_0/0.55)]">
-            <header class="flex items-baseline justify-between gap-3 border-b-4 border-ink-900 bg-dauber-600 px-3.5 py-2 text-paper-50">
-              <p class="text-lg font-black uppercase tracking-[0.35em] sm:text-xl">Sala</p>
-              <p class="shrink-0 font-mono text-[0.625rem] tracking-wider uppercase sm:text-xs">
-                Grupo nº {group.id}
-              </p>
-            </header>
-
-            {standings.length === 0 ? (
-              <p class="px-4 py-6 text-center text-sm text-ink-900/70 sm:text-base">
-                Todavía no hay cartones en la sala. Sé quien reparta las desgracias.
-              </p>
-            ) : (
-              <ul class="divide-y divide-ink-900/15">
-                {standings.map((member) => (
-                  <li
-                    class="flex items-center justify-between gap-3 px-4 py-2.5 text-sm sm:text-base"
-                    data-member-card={member.id}
-                  >
-                    <span class="min-w-0 truncate">
-                      {member.id === winnerId && <span aria-hidden="true">🏆 </span>}
-                      <strong>{member.nick ?? `Cartón nº ${member.id}`}</strong>
-                      <span class="member-you hidden text-ink-900/55"> (tú)</span>
-                    </span>
-                    <span class="flex shrink-0 items-center gap-2">
-                      <a
-                        href={`/c/${member.id}`}
-                        class="text-[0.6875rem] underline decoration-ink-900/30 underline-offset-2 sm:text-xs"
-                      >
-                        ver
-                      </a>
-                      <span class="font-mono font-bold">
-                        {member.completed_at ? 'BINGO' : `${markedOf(member)}/${SITUATION_COUNT}`}
-                      </span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
+          <form id="join-form" class="mt-5 flex flex-col gap-2">
+            <input
+              id="join-alias"
+              type="text"
+              required
+              maxlength="32"
+              placeholder="Tu alias en el grupo"
+              autocomplete="nickname"
+              class="w-full rounded-lg border-2 border-paper-50/25 bg-felt-950/60 px-3 py-2 text-sm text-paper-50 outline-none placeholder:text-paper-300/40 focus:border-amber-300 sm:text-base"
+            />
+            {isPasswordProtected && (
+              <input
+                id="join-password"
+                type="text"
+                maxlength="64"
+                placeholder="Contraseña del grupo"
+                autocomplete="off"
+                class="w-full rounded-lg border-2 border-paper-50/25 bg-felt-950/60 px-3 py-2 text-sm text-paper-50 outline-none placeholder:text-paper-300/40 focus:border-amber-300 sm:text-base"
+              />
             )}
-          </section>
+            <button
+              id="join-group"
+              type="submit"
+              class="w-full rounded-xl bg-amber-300 px-4 py-3 text-sm font-black uppercase tracking-widest text-felt-950 shadow-[0_6px_0_rgb(0_0_0/0.3)] transition-all active:translate-y-0.5 active:shadow-none sm:text-base"
+              data-group-id={group.id}
+              data-policy={group.join_policy}
+              data-public={isPublic ? '1' : '0'}
+              data-group-name={group.name}
+            >
+              Unirme con mi cartón
+            </button>
+          </form>
 
-          <button
-            id="join-group"
-            type="button"
-            class="mt-5 w-full rounded-xl bg-amber-300 px-4 py-3 text-sm font-black uppercase tracking-widest text-felt-950 shadow-[0_6px_0_rgb(0_0_0/0.3)] transition-all active:translate-y-0.5 active:shadow-none sm:text-base"
-            data-group-id={group.id}
-          >
-            Unirme con mi cartón
-          </button>
-          <button
-            id="share-group"
-            type="button"
-            class="mt-2.5 w-full rounded-xl border-2 border-paper-50/30 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-paper-50 transition-colors hover:bg-paper-50/10 sm:text-sm"
-          >
-            Compartir el grupo
-          </button>
+          <p class="mt-5 text-center text-[0.625rem] font-bold uppercase tracking-wide text-paper-300/60 sm:text-xs">
+            Recluta sufridores
+          </p>
+          <div class="mt-1.5 grid grid-cols-3 gap-2">
+            <button
+              id="share-whatsapp"
+              type="button"
+              class="rounded-lg border-2 border-paper-50/30 px-2 py-2.5 text-[0.6875rem] font-black uppercase tracking-wide text-paper-50 transition-colors hover:bg-paper-50/10 sm:text-xs"
+            >
+              WhatsApp
+            </button>
+            <button
+              id="share-x"
+              type="button"
+              class="rounded-lg border-2 border-paper-50/30 px-2 py-2.5 text-[0.6875rem] font-black uppercase tracking-wide text-paper-50 transition-colors hover:bg-paper-50/10 sm:text-xs"
+            >
+              X
+            </button>
+            <button
+              id="share-copy"
+              type="button"
+              class="rounded-lg border-2 border-paper-50/30 px-2 py-2.5 text-[0.6875rem] font-black uppercase tracking-wide text-paper-50 transition-colors hover:bg-paper-50/10 sm:text-xs"
+            >
+              Copiar
+            </button>
+          </div>
           <p
             id="join-hint"
             class="mt-2 min-h-4 text-center text-[0.6875rem]/snug text-amber-200/90 sm:text-xs/snug"
@@ -192,57 +271,178 @@ Astro.response.headers.set('cache-control', 'no-store');
 
 <script>
   // Join + share wiring. The visitor's card (and its secret) live in their
-  // localStorage; joining sends them same-origin to the join endpoint.
-  import { joinGroup } from '../../lib/api';
-  import { loadCurrentCard } from '../../lib/storage';
+  // localStorage; joining sends them same-origin to the join endpoint with a
+  // mandatory alias (and the password for protected groups). Private groups
+  // reveal their standings only to members, fetched here with that secret.
+  import { fetchGroupStandings, joinGroup, type GroupStandings } from '../../lib/api';
+  import { SITUATION_COUNT } from '../../lib/card';
+  import { loadAlias, loadCurrentCard, saveAlias } from '../../lib/storage';
 
+  const joinForm = document.querySelector<HTMLFormElement>('#join-form');
   const joinButton = document.querySelector<HTMLButtonElement>('#join-group');
-  const shareButton = document.querySelector<HTMLButtonElement>('#share-group');
+  const aliasInput = document.querySelector<HTMLInputElement>('#join-alias');
+  const passwordInput = document.querySelector<HTMLInputElement>('#join-password');
+  const whatsappButton = document.querySelector<HTMLButtonElement>('#share-whatsapp');
+  const xButton = document.querySelector<HTMLButtonElement>('#share-x');
+  const copyButton = document.querySelector<HTMLButtonElement>('#share-copy');
   const hint = document.querySelector<HTMLParagraphElement>('#join-hint');
+  const privateBoard = document.querySelector<HTMLElement>('#private-board');
+  const privateNotice = document.querySelector<HTMLParagraphElement>('#private-notice');
 
   const card = loadCurrentCard();
+  const groupId = joinButton?.dataset.groupId ?? '';
+  const policy = joinButton?.dataset.policy ?? 'open';
+  const isPublic = joinButton?.dataset.public === '1';
+  const groupName = joinButton?.dataset.groupName ?? '';
 
-  // Mark the visitor's own card in the standings.
+  if (aliasInput) aliasInput.value = loadAlias();
+
+  function setHint(message: string): void {
+    if (hint) hint.textContent = message;
+  }
+
+  // Mark the visitor's own card in the (public, server-rendered) standings.
   if (card) {
     document
       .querySelector(`[data-member-card="${card.id}"] .member-you`)
       ?.classList.remove('hidden');
   }
 
-  joinButton?.addEventListener('click', async () => {
-    if (!hint) return;
+  // --- Private board: reveal the standings to members only ----------------
+
+  function markedOf(marks: string | null): number {
+    if (!marks) return 0;
+    return [...marks].filter((digit) => digit !== '0').length;
+  }
+
+  function escapeHtml(value: string): string {
+    return value.replace(
+      /[&<>"]/g,
+      (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[char] ?? char,
+    );
+  }
+
+  function renderPrivateBoard(data: GroupStandings): void {
+    if (!privateBoard) return;
+    const winnerId = data.winnerCardId;
+    const sorted = [...data.members].sort((a, b) => {
+      if (a.id === winnerId) return -1;
+      if (b.id === winnerId) return 1;
+      return markedOf(b.marks) - markedOf(a.marks);
+    });
+
+    const rows = sorted
+      .map((member) => {
+        const you = card && member.id === card.id;
+        const name = escapeHtml(member.alias ?? `Cartón nº ${member.id}`);
+        const trophy = member.id === winnerId ? '🏆 ' : '';
+        const score = member.completedAt
+          ? 'BINGO'
+          : `${markedOf(member.marks)}/${SITUATION_COUNT}`;
+        return `<li class="flex items-center justify-between gap-3 px-4 py-2.5 text-sm sm:text-base">
+          <span class="min-w-0 truncate">${trophy}<strong>${name}</strong>${you ? '<span class="text-ink-900/55"> (tú)</span>' : ''}</span>
+          <span class="flex shrink-0 items-center gap-2">
+            <a href="/c/${member.id}" class="text-[0.6875rem] underline decoration-ink-900/30 underline-offset-2 sm:text-xs">ver</a>
+            <span class="font-mono font-bold">${score}</span>
+          </span>
+        </li>`;
+      })
+      .join('');
+
+    privateNotice?.remove();
+    const list = document.createElement('ul');
+    list.className = 'divide-y divide-ink-900/15';
+    list.innerHTML =
+      rows ||
+      '<li class="px-4 py-6 text-center text-sm text-ink-900/70 sm:text-base">Todavía no hay cartones en la sala.</li>';
+    privateBoard.append(list);
+  }
+
+  async function loadPrivateBoard(): Promise<void> {
+    if (isPublic || !privateBoard || !card?.secret) return;
+    const data = await fetchGroupStandings(groupId, card.id, card.secret);
+    if (data) renderPrivateBoard(data);
+  }
+  void loadPrivateBoard();
+
+  // --- Join ---------------------------------------------------------------
+
+  joinForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const alias = aliasInput?.value.trim() ?? '';
     if (!card || !card.secret) {
-      hint.textContent = 'No tienes un cartón registrado. Ve a la página principal y vuelve.';
+      setHint('No tienes un cartón registrado. Ve a la página principal y vuelve.');
       return;
     }
     if (card.completedAt) {
-      hint.textContent = 'Tu cartón ya está completo: entrar ahora sería hacer trampas.';
+      setHint('Tu cartón ya está completo: entrar ahora sería hacer trampas.');
       return;
     }
-    hint.textContent = 'Entrando…';
-    const ok = await joinGroup(joinButton.dataset.groupId ?? '', card.id, card.secret);
-    if (ok) {
-      location.reload();
-    } else {
-      hint.textContent = 'No se pudo entrar. Inténtalo de nuevo.';
+    if (!alias) {
+      setHint('Necesitas un alias para entrar en el grupo.');
+      return;
     }
+    const password = passwordInput?.value ?? '';
+    if (policy === 'password' && !password) {
+      setHint('Este grupo pide contraseña.');
+      return;
+    }
+
+    setHint('Entrando…');
+    saveAlias(alias);
+    const result = await joinGroup(groupId, card.id, card.secret, alias, password);
+    if (result.ok) {
+      location.reload();
+      return;
+    }
+    setHint(
+      result.error === 'bad_password'
+        ? 'Contraseña incorrecta.'
+        : result.error === 'cannot_join'
+          ? 'No se pudo entrar: revisa que el cartón siga en juego.'
+          : 'No se pudo entrar. Inténtalo de nuevo.',
+    );
   });
 
-  shareButton?.addEventListener('click', async () => {
-    const url = location.href;
+  // --- Share --------------------------------------------------------------
+
+  function shareText(): string {
+    const joinLine =
+      policy === 'password'
+        ? 'Hace falta la contraseña para entrar (te la paso aparte).'
+        : 'Cualquiera con el enlace puede unirse.';
+    const visLine = isPublic
+      ? 'El estado y los alias de los participantes son públicos.'
+      : 'El estado solo lo ven los participantes.';
+    return `Únete a mi grupo de bingo «${groupName}» en El Bingo del Cargador. ${joinLine} ${visLine} ${location.href}`;
+  }
+
+  whatsappButton?.addEventListener('click', () => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(shareText())}`, '_blank', 'noopener');
+  });
+
+  xButton?.addEventListener('click', () => {
+    window.open(
+      `https://x.com/intent/post?text=${encodeURIComponent(shareText())}`,
+      '_blank',
+      'noopener',
+    );
+  });
+
+  copyButton?.addEventListener('click', async () => {
     if (navigator.share) {
       try {
-        await navigator.share({ title: 'Grupo de bingo del cargador', url });
+        await navigator.share({ title: `Grupo de bingo «${groupName}»`, text: shareText() });
         return;
       } catch {
         // Sheet dismissed: fall through to the clipboard.
       }
     }
     try {
-      await navigator.clipboard.writeText(url);
-      if (hint) hint.textContent = 'Enlace copiado. Recluta sufridores.';
+      await navigator.clipboard.writeText(shareText());
+      setHint('Texto copiado. Reparte el enlace.');
     } catch {
-      if (hint) hint.textContent = url;
+      setHint(location.href);
     }
   });
 </script>

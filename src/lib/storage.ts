@@ -78,3 +78,27 @@ export function loadMarkMode(): MarkMode {
   const raw = read(MARK_MODE_KEY);
   return raw === 'sin' || raw === 'ev' ? raw : 'mix';
 }
+
+// Newsletter opt-in is a one-shot: once the player has subscribed (no
+// confirmation email — the form is the confirmation) we record it locally so
+// we never pester them with the checkbox again.
+const NEWSLETTER_KEY = `${PREFIX}.newsletter`;
+
+export function markNewsletterSubscribed(): void {
+  write(NEWSLETTER_KEY, '1');
+}
+
+export function isNewsletterSubscribed(): boolean {
+  return read(NEWSLETTER_KEY) === '1';
+}
+
+// Last alias used in a bingo group, so the join/create forms can prefill it.
+const ALIAS_KEY = `${PREFIX}.alias`;
+
+export function saveAlias(alias: string): void {
+  write(ALIAS_KEY, alias);
+}
+
+export function loadAlias(): string {
+  return read(ALIAS_KEY) ?? '';
+}

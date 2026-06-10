@@ -8,7 +8,9 @@ import CertificateModal from '../components/CertificateModal.astro';
   title="El Bingo del Cargador — Juego de bingo online sobre desgracias del cargador EV en España"
   description="Juega gratis al bingo del cargador eléctrico. Marca las desgracias típicas de la recarga pública en España, canta línea y bingo, y consigue tu diploma verificable."
 >
-  <main class="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pt-7 pb-6 sm:max-w-lg sm:pt-12">
+  <main
+    class="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pt-7 pb-6 sm:max-w-lg sm:pt-12 lg:max-w-5xl lg:px-8 lg:pt-10"
+  >
     <header class="text-center">
       <p class="text-[0.625rem] font-bold uppercase tracking-[0.4em] text-amber-300/80 sm:text-xs">
         Gran sorteo nacional de la recarga
@@ -23,6 +25,10 @@ import CertificateModal from '../components/CertificateModal.astro';
       </p>
     </header>
 
+    <!-- Wide screens (Tesla, laptop): two columns — the cartón on the left,
+         the paperwork (save, groups, ads) on the right. One column on mobile. -->
+    <div class="lg:mt-2 lg:grid lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-start lg:gap-x-10">
+    <div class="lg:min-w-0">
     <section
       class="mt-5 flex items-center justify-between gap-3 rounded-xl border border-paper-50/15 bg-felt-950/40 px-4 py-2.5 text-sm sm:text-base"
       aria-live="polite"
@@ -58,6 +64,9 @@ import CertificateModal from '../components/CertificateModal.astro';
     <div class="mt-3" id="card-container">
       <BingoCard />
     </div>
+    <p class="mt-1.5 text-center text-[0.625rem]/snug text-paper-300/55 sm:text-[0.6875rem]/snug landscape:hidden">
+      En vertical, el cartón va girado: las líneas corren de arriba abajo.
+    </p>
 
     <button
       id="show-cert"
@@ -83,16 +92,17 @@ import CertificateModal from '../components/CertificateModal.astro';
       </p>
     </noscript>
 
-    <div class="mt-auto pt-8">
       <button
         id="new-card"
         type="button"
-        class="w-full rounded-xl border-2 border-paper-50/30 px-4 py-3 text-sm font-black uppercase tracking-widest transition-colors hover:bg-paper-50/10 active:bg-paper-50/15 sm:text-base"
+        class="mt-8 w-full rounded-xl border-2 border-paper-50/30 px-4 py-3 text-sm font-black uppercase tracking-widest transition-colors hover:bg-paper-50/10 active:bg-paper-50/15 sm:text-base lg:mt-4"
       >
         Regenerar cartón
       </button>
+    </div>
 
-      <details class="mt-4 rounded-xl border border-paper-50/15 bg-felt-950/40 px-4 py-3">
+    <aside class="lg:min-w-0">
+      <details class="mt-4 rounded-xl border border-paper-50/15 bg-felt-950/40 px-4 py-3 lg:mt-5">
         <summary
           class="cursor-pointer list-none text-xs font-bold uppercase tracking-widest text-paper-300/80 sm:text-sm"
         >
@@ -179,21 +189,59 @@ import CertificateModal from '../components/CertificateModal.astro';
             Crea un grupo, comparte el enlace y que cada cual juegue su cartón. Solo el primero
             en completar canta bingo. Los demás, a aplaudir.
           </p>
-          <form id="group-form" class="mt-2 flex gap-2">
+          <form id="group-form" class="mt-2 flex flex-col gap-2">
             <input
               id="group-name"
               type="text"
               required
               maxlength="40"
-              placeholder="Nombre del grupo"
-              class="min-w-0 flex-1 rounded-lg border-2 border-paper-50/25 bg-felt-950/60 px-3 py-2 text-sm text-paper-50 outline-none placeholder:text-paper-300/40 focus:border-amber-300 sm:text-base"
+              placeholder="Nombre del grupo (único)"
+              autocomplete="off"
+              class="w-full rounded-lg border-2 border-paper-50/25 bg-felt-950/60 px-3 py-2 text-sm text-paper-50 outline-none placeholder:text-paper-300/40 focus:border-amber-300 sm:text-base"
             />
+            <input
+              id="group-alias"
+              type="text"
+              required
+              maxlength="32"
+              placeholder="Tu alias en el grupo"
+              autocomplete="nickname"
+              class="w-full rounded-lg border-2 border-paper-50/25 bg-felt-950/60 px-3 py-2 text-sm text-paper-50 outline-none placeholder:text-paper-300/40 focus:border-amber-300 sm:text-base"
+            />
+
+            <fieldset class="mt-1">
+              <legend class="text-[0.625rem] font-bold uppercase tracking-wide text-paper-300/60 sm:text-[0.6875rem]">
+                ¿Quién puede unirse?
+              </legend>
+              <label class="mt-1 flex items-center gap-2 text-[0.6875rem]/snug text-paper-300/80 sm:text-xs/snug">
+                <input type="radio" name="group-join" value="open" class="shrink-0" checked />
+                <span>Cualquiera con el enlace</span>
+              </label>
+              <label class="mt-1 flex items-center gap-2 text-[0.6875rem]/snug text-paper-300/80 sm:text-xs/snug">
+                <input type="radio" name="group-join" value="password" class="shrink-0" />
+                <span>Solo con contraseña</span>
+              </label>
+            </fieldset>
+            <input
+              id="group-password"
+              type="text"
+              maxlength="64"
+              placeholder="Contraseña del grupo"
+              autocomplete="off"
+              class="hidden w-full rounded-lg border-2 border-paper-50/25 bg-felt-950/60 px-3 py-2 text-sm text-paper-50 outline-none placeholder:text-paper-300/40 focus:border-amber-300 sm:text-base"
+            />
+
+            <label class="mt-1 flex items-start gap-2 text-[0.6875rem]/snug text-paper-300/80 sm:text-xs/snug">
+              <input id="group-public" type="checkbox" class="mt-0.5 shrink-0" checked />
+              <span>Tablero público: cualquiera ve el estado y los alias. Si lo desmarcas, solo lo ven los participantes.</span>
+            </label>
+
             <button
               id="group-submit"
               type="submit"
-              class="shrink-0 rounded-lg bg-amber-300 px-4 py-2 text-xs font-black uppercase tracking-widest text-felt-950 transition-colors active:bg-amber-400 sm:text-sm"
+              class="mt-1 rounded-lg bg-amber-300 px-4 py-2 text-xs font-black uppercase tracking-widest text-felt-950 transition-colors active:bg-amber-400 sm:text-sm"
             >
-              Crear
+              Crear grupo
             </button>
           </form>
           <p
@@ -233,14 +281,16 @@ import CertificateModal from '../components/CertificateModal.astro';
           ¿Pensando en comprar un Tesla?
         </span>
       </a>
+    </aside>
+    </div>
 
-      <footer class="pt-6 text-center text-[0.6875rem]/relaxed text-paper-300/55 sm:text-sm/relaxed">
+    <footer class="mt-auto pt-8 text-center text-[0.6875rem]/relaxed text-paper-300/55 sm:text-sm/relaxed">
         <p>
           Situaciones 100&nbsp;% genéricas: aquí no se señala a nadie. Cada cual sabrá si se da
           por aludido.
         </p>
         <p class="mt-2 text-[0.625rem] sm:text-xs">
-          <strong>Sobre este bingo:</strong> Un juego online gratuito de bingo cartón con 40 desgracias reales del cargador público eléctrico en España. Reglas tradicionales: línea por fila, bingo cuando completas los seis. Diplomas verificables con enlace público.
+          <strong>Sobre este bingo:</strong> Un juego online gratuito de bingo cartón con 40 desgracias reales del cargador público eléctrico en España. Reglas tradicionales adaptadas: tres líneas de dos desgracias y bingo al completar las seis. Diplomas verificables con enlace público.
         </p>
         <p class="mt-1.5 font-semibold">bingo.gruxon.com · Hecho con resignación · 2026</p>
         <p class="mt-2">
@@ -264,8 +314,7 @@ import CertificateModal from '../components/CertificateModal.astro';
             class="underline decoration-paper-300/40 underline-offset-2 transition-colors hover:text-paper-50"
           >Privacidad</a>
         </p>
-      </footer>
-    </div>
+    </footer>
   </main>
 
   <!-- "¡Línea!" toast -->
@@ -308,6 +357,7 @@ import CertificateModal from '../components/CertificateModal.astro';
     createGroup,
     discardCard,
     fetchOwnedCard,
+    joinGroup,
     linkEmail,
     registerCard,
     reportCompletion,
@@ -317,9 +367,13 @@ import CertificateModal from '../components/CertificateModal.astro';
   } from '../lib/api';
   import { echarConfetti } from '../lib/confetti';
   import {
+    isNewsletterSubscribed,
+    loadAlias,
     loadCurrentCard,
     loadMarkMode,
     loadNick,
+    markNewsletterSubscribed,
+    saveAlias,
     saveCard,
     saveMarkMode,
     saveNick,
@@ -367,11 +421,15 @@ import CertificateModal from '../components/CertificateModal.astro';
   const emailForm = $<HTMLFormElement>('#email-form');
   const emailInput = $<HTMLInputElement>('#email-input');
   const newsletterCheck = $<HTMLInputElement>('#newsletter-check');
+  const newsletterLabel = newsletterCheck.closest('label');
   const recoverForm = $<HTMLFormElement>('#recover-form');
   const recoverInput = $<HTMLInputElement>('#recover-input');
   const emailHint = $<HTMLParagraphElement>('#email-hint');
   const groupForm = $<HTMLFormElement>('#group-form');
   const groupNameInput = $<HTMLInputElement>('#group-name');
+  const groupAliasInput = $<HTMLInputElement>('#group-alias');
+  const groupPasswordInput = $<HTMLInputElement>('#group-password');
+  const groupPublicCheck = $<HTMLInputElement>('#group-public');
   const groupHint = $<HTMLParagraphElement>('#group-hint');
 
   const shortDate = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' });
@@ -649,12 +707,19 @@ import CertificateModal from '../components/CertificateModal.astro';
       return;
     }
     emailHint.textContent = 'Vinculando…';
-    const ok = await linkEmail(card.id, card.secret, email, newsletterCheck.checked);
+    const wantsNewsletter = newsletterCheck.checked;
+    const ok = await linkEmail(card.id, card.secret, email, wantsNewsletter);
     emailHint.textContent = ok
-      ? newsletterCheck.checked
+      ? wantsNewsletter
         ? 'Cartón guardado y apuntado a la newsletter. Gracias.'
         : 'Cartón guardado. Recupéralo cuando quieras desde aquí.'
       : 'No se pudo guardar. Inténtalo más tarde.';
+    // No confirmation email: the form is the confirmation. Record the opt-in
+    // locally so we don't keep offering the newsletter on this device.
+    if (ok && wantsNewsletter) {
+      markNewsletterSubscribed();
+      newsletterLabel?.classList.add('hidden');
+    }
   });
 
   // Ask the server to email the player their card links.
@@ -673,16 +738,55 @@ import CertificateModal from '../components/CertificateModal.astro';
     button.addEventListener('click', () => setMarkMode(key as MarkMode));
   }
 
-  // Create a bingo group and jump to its page to share/join.
+  // Show the password field only when the group is password-protected.
+  function syncGroupPasswordVisibility(): void {
+    const policy = (groupForm.elements.namedItem('group-join') as RadioNodeList).value;
+    const password = policy === 'password';
+    groupPasswordInput.classList.toggle('hidden', !password);
+    groupPasswordInput.required = password;
+  }
+  groupForm.addEventListener('change', (event) => {
+    if ((event.target as HTMLElement).getAttribute('name') === 'group-join') {
+      syncGroupPasswordVisibility();
+    }
+  });
+  groupAliasInput.value = loadAlias();
+  syncGroupPasswordVisibility();
+
+  // Create a bingo group, auto-join the current card and jump to its page.
   groupForm.addEventListener('submit', async (event) => {
     event.preventDefault();
-    groupHint.textContent = 'Creando…';
-    const group = await createGroup(groupNameInput.value.trim());
-    if (!group) {
-      groupHint.textContent = 'No se pudo crear el grupo. Inténtalo más tarde.';
+    const name = groupNameInput.value.trim();
+    const alias = groupAliasInput.value.trim();
+    if (!name || !alias) return;
+    const policy = (groupForm.elements.namedItem('group-join') as RadioNodeList).value;
+    const joinPolicy = policy === 'password' ? 'password' : 'open';
+    const password = groupPasswordInput.value;
+    if (joinPolicy === 'password' && !password) {
+      groupHint.textContent = 'Pon una contraseña para el grupo.';
       return;
     }
-    location.href = `/g/${group.id}`;
+
+    groupHint.textContent = 'Creando…';
+    const result = await createGroup(name, {
+      joinPolicy,
+      password,
+      publicBoard: groupPublicCheck.checked,
+    });
+    if (!result.ok) {
+      groupHint.textContent =
+        result.error === 'name_taken'
+          ? 'Ese nombre ya está cogido. Prueba con otro.'
+          : 'No se pudo crear el grupo. Inténtalo más tarde.';
+      return;
+    }
+
+    saveAlias(alias);
+    // Auto-join the creator's card so they land already in the standings.
+    if (card.secret && card.completedAt === null) {
+      await joinGroup(result.id, card.id, card.secret, alias, password);
+    }
+    location.href = `/g/${result.id}`;
   });
 
   showCertButton.addEventListener('click', openCertificate);
@@ -790,6 +894,9 @@ import CertificateModal from '../components/CertificateModal.astro';
 
   downloadButton.addEventListener('click', () => downloadCertificate(certCanvas, certificateData()));
   closeButton.addEventListener('click', () => dialog.close());
+
+  // Already subscribed on this device: don't offer the newsletter again.
+  if (isNewsletterSubscribed()) newsletterLabel?.classList.add('hidden');
 
   setMarkMode(markMode);
   renderGrid();

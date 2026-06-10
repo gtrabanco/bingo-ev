@@ -1,6 +1,11 @@
 ---
 // Static frame of the cartón. Cells are injected client-side because every
 // visitor gets a different random card; see the page script in index.astro.
+//
+// The grid behaves like a rotated physical card: the canonical layout is
+// landscape (3 rows x 4 cols, línea = row) and portrait screens render the
+// transpose (3 cols x 4 rows) by filling the same DOM order column-first
+// (grid-flow-col), so líneas run vertically there. Win logic never changes.
 ---
 
 <article
@@ -16,7 +21,11 @@
     </p>
   </header>
 
-  <div id="bingo-grid" class="grid auto-rows-fr grid-cols-4 gap-px bg-ink-900"></div>
+  <div
+    id="bingo-grid"
+    class="grid grid-flow-col grid-cols-3 grid-rows-4 gap-px bg-ink-900 landscape:grid-flow-row landscape:grid-cols-4 landscape:grid-rows-3"
+  >
+  </div>
 
   <footer
     class="flex items-center justify-between gap-2 border-t-4 border-ink-900 bg-paper-100 px-3.5 py-1.5 text-[0.5625rem] font-semibold uppercase tracking-[0.14em] text-ink-900/60 sm:text-[0.6875rem]"

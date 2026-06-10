@@ -96,17 +96,87 @@ export function requestRecovery(email: string): Promise<Response | null> {
     .catch(() => null);
 }
 
-// Creates a bingo group; returns its id for the /g/<id> page.
-export function createGroup(name: string): Promise<{ id: string } | null> {
-  return request<{ id: string }>('/api/groups', jsonInit({ name }));
+export interface GroupSettings {
+  joinPolicy: 'open' | 'password';
+  password: string;
+  publicBoard: boolean;
 }
 
-// Joins the caller's card to a group. True on success (the endpoint answers
-// 204, which request() maps to null, so this needs the raw fetch).
-export function joinGroup(groupId: string, cardId: string, secret: string): Promise<boolean> {
-  return fetch(`/api/groups/${groupId}/join`, jsonInit({ cardId, secret }))
-    .then((response) => response.ok || response.status === 204)
-    .catch(() => false);
+export type GroupResult =
+  | { ok: true; id: string }
+  | { ok: false; error: string };
+
+// Creates a bingo group. On success returns its id for the /g/<id> page; on a
+// name clash (or other rejection) returns the error code so the UI can react.
+export async function createGroup(name: string, settings: GroupSettings): Promise<GroupResult> {
+  try {
+    const response = await fetch(
+      '/api/groups',
+      jsonInit({
+        name,
+        joinPolicy: settings.joinPolicy,
+        password: settings.password,
+        publicBoard: settings.publicBoard,
+      }),
+    );
+    const data = (await response.json().catch(() => null)) as
+      | { id?: string; error?: string }
+      | null;
+    if (response.ok && data?.id) return { ok: true, id: data.id };
+    return { ok: false, error: data?.error ?? 'failed' };
+  } catch {
+    return { ok: false, error: 'offline' };
+  }
+}
+
+export type JoinResult = { ok: true } | { ok: false; error: string };
+
+// Joins the caller's card to a group with a mandatory alias (and the password
+// when the group asks for one). Returns the error code on failure.
+export async function joinGroup(
+  groupId: string,
+  cardId: string,
+  secret: string,
+  alias: string,
+  password = '',
+): Promise<JoinResult> {
+  try {
+    const response = await fetch(
+      `/api/groups/${groupId}/join`,
+      jsonInit({ cardId, secret, alias, password }),
+    );
+    if (response.ok || response.status === 204) return { ok: true };
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    return { ok: false, error: data?.error ?? 'failed' };
+  } catch {
+    return { ok: false, error: 'offline' };
+  }
+}
+
+export interface GroupStanding {
+  id: string;
+  alias: string | null;
+  marks: string | null;
+  completedAt: string | null;
+}
+
+export interface GroupStandings {
+  name: string;
+  winnerCardId: string | null;
+  members: GroupStanding[];
+}
+
+// Members-only standings for a private group: proves membership with the
+// card's owner secret. Returns null if not a member or unreachable.
+export function fetchGroupStandings(
+  groupId: string,
+  cardId: string,
+  secret: string,
+): Promise<GroupStandings | null> {
+  return request<GroupStandings>(
+    `/api/groups/${groupId}/standings`,
+    jsonInit({ cardId, secret }),
+  );
 }
 
 export function verificationUrl(cardId: string): string {

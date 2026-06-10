@@ -74,7 +74,7 @@ const ogImage = row?.completed_at ? `/og/diploma/${id}.svg` : '/og/home.svg';
   description="Sigue en directo un cartón del Bingo del Cargador: desgracias marcadas, líneas cantadas y bingo verificable."
   ogImage={ogImage}
 >
-  <main class="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pt-10 pb-6 sm:max-w-lg">
+  <main class="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pt-10 pb-6 sm:max-w-lg landscape:lg:max-w-2xl">
     <p
       class="text-center text-[0.625rem] font-bold uppercase tracking-[0.4em] text-amber-300/80 sm:text-xs"
     >
@@ -113,7 +113,12 @@ const ogImage = row?.completed_at ? `/og/diploma/${id}.svg` : '/og/home.svg';
               </p>
             </header>
 
-            <div class="grid auto-rows-fr grid-cols-4 gap-px bg-ink-900">
+            {/* Same responsive transpose as the playable card: portrait shows
+                the rotated cartón (3 cols x 4 rows), landscape the canonical
+                3x4. DOM order is row-major landscape; grid-flow-col transposes. */}
+            <div
+              class="grid grid-flow-col grid-cols-3 grid-rows-4 gap-px bg-ink-900 landscape:grid-flow-row landscape:grid-cols-4 landscape:grid-rows-3"
+            >
               {
                 cells.map((situationId, index) =>
                   situationId === null ? (

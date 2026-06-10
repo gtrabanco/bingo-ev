@@ -59,6 +59,15 @@
     }
   }
 
+  /* A phone held sideways shows the canonical landscape cartón; shorter
+     cells so its 3 rows roughly fit the squat viewport. */
+  @media (orientation: landscape) and (max-height: 480px) {
+    .cell {
+      font-size: 0.6875rem;
+      min-height: 4.5rem;
+    }
+  }
+
   .cell-in-line {
     background-color: #fbe9b8;
   }
