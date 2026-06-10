@@ -14,10 +14,8 @@ interface CardRow {
   nick: string | null;
 }
 
-const ID_PATTERN = /^[0-9a-z]{8}$/;
-const id = Astro.params.id ?? '';
-
 let row: CardRow | null = null;
+let ogImage = '/og/home.svg';
 if (ID_PATTERN.test(id)) {
   row = await env.DB.prepare('SELECT id, created_at, completed_at, nick FROM cards WHERE id = ?1')
     .bind(id)
@@ -37,6 +35,11 @@ const verdict: 'verified' | 'pending' | 'unknown' = row
     : 'pending'
   : 'unknown';
 
+// OG image for completed cards
+if (row?.completed_at) {
+  ogImage = `/og/diploma/${id}.svg`;
+}
+
 const longDate = new Intl.DateTimeFormat('es-ES', {
   day: 'numeric',
   month: 'long',
@@ -55,6 +58,7 @@ const titles = {
 <Layout
   title={`${titles[verdict]} — El Bingo del Cargador`}
   description="Verificación oficiosa de cartones del Bingo del Cargador."
+  ogImage={ogImage}
 >
   <main class="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pt-10 pb-6">
     <p class="text-center text-[10px] font-bold uppercase tracking-[0.4em] text-amber-300/80">
