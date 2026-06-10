@@ -7,6 +7,7 @@ export interface CertificateData {
   nick: string;
   date: Date; // completion date of the card
   cardId: string;
+  badGuy?: boolean; // true = "sinvergüenza" certificate
 }
 
 // Canonical base for the QR and the printed link: the PNG is a shareable
@@ -103,47 +104,87 @@ export function drawCertificate(canvas: HTMLCanvasElement, data: CertificateData
     letterSpacing: '7px',
   });
 
+  const mainText = data.badGuy ? '¡SINVERGÜENZA!' : '¡BINGO!';
+  const mainColor = data.badGuy ? '#d4781f' : '#b02e22';
+
   drawCentered(ctx, {
-    text: '¡BINGO!',
+    text: mainText,
     y: 350,
     font: `900 165px ${SERIF}`,
-    color: '#b02e22',
+    color: mainColor,
   });
 
-  drawCentered(ctx, {
-    text: 'Se certifica que',
-    y: 430,
-    font: `italic 28px ${SERIF}`,
-    color: '#6b6354',
-  });
-  drawCentered(ctx, {
-    text: nick,
-    y: 495,
-    font: `700 54px ${SERIF}`,
-    color: '#221f1a',
-    maxWidth: 1000,
-  });
-  ctx.strokeStyle = '#b8ab8c';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(280, 516);
-  ctx.lineTo(920, 516);
-  ctx.stroke();
+  if (data.badGuy) {
+    drawCentered(ctx, {
+      text: 'Se certifica que',
+      y: 430,
+      font: `italic 28px ${SERIF}`,
+      color: '#6b6354',
+    });
+    drawCentered(ctx, {
+      text: nick,
+      y: 495,
+      font: `700 54px ${SERIF}`,
+      color: '#221f1a',
+      maxWidth: 1000,
+    });
+    ctx.strokeStyle = '#b8ab8c';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(280, 516);
+    ctx.lineTo(920, 516);
+    ctx.stroke();
 
-  drawCentered(ctx, {
-    text: 'ha completado todas las desgracias de su cartón',
-    y: 580,
-    font: `28px ${SERIF}`,
-    color: '#3f3a33',
-    maxWidth: 1040,
-  });
-  drawCentered(ctx, {
-    text: 'dentro del plazo reglamentario de un mes. Sin atajos.',
-    y: 620,
-    font: `28px ${SERIF}`,
-    color: '#3f3a33',
-    maxWidth: 1040,
-  });
+    drawCentered(ctx, {
+      text: 'ha completado todas las desgracias del cargador que TÚ causaste',
+      y: 580,
+      font: `28px ${SERIF}`,
+      color: '#3f3a33',
+      maxWidth: 1040,
+    });
+    drawCentered(ctx, {
+      text: 'con el vehículo de combustión, la batería en frío o el híbrido.',
+      y: 620,
+      font: `28px ${SERIF}`,
+      color: '#3f3a33',
+      maxWidth: 1040,
+    });
+  } else {
+    drawCentered(ctx, {
+      text: 'Se certifica que',
+      y: 430,
+      font: `italic 28px ${SERIF}`,
+      color: '#6b6354',
+    });
+    drawCentered(ctx, {
+      text: nick,
+      y: 495,
+      font: `700 54px ${SERIF}`,
+      color: '#221f1a',
+      maxWidth: 1000,
+    });
+    ctx.strokeStyle = '#b8ab8c';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(280, 516);
+    ctx.lineTo(920, 516);
+    ctx.stroke();
+
+    drawCentered(ctx, {
+      text: 'ha completado todas las desgracias de su cartón',
+      y: 580,
+      font: `28px ${SERIF}`,
+      color: '#3f3a33',
+      maxWidth: 1040,
+    });
+    drawCentered(ctx, {
+      text: 'dentro del plazo reglamentario de un mes. Sin atajos.',
+      y: 620,
+      font: `28px ${SERIF}`,
+      color: '#3f3a33',
+      maxWidth: 1040,
+    });
+  }
 
   drawCentered(ctx, {
     text: `Dado en un cargador «Disponible», a ${formatDate(data.date)}.`,

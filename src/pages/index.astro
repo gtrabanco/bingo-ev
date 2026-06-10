@@ -31,7 +31,7 @@ import CertificateModal from '../components/CertificateModal.astro';
       <p id="status-lines" class="text-right text-paper-300/85">Sin líneas. De momento.</p>
     </section>
 
-    <div class="mt-4">
+    <div class="mt-4" id="card-container">
       <BingoCard />
     </div>
 
@@ -41,6 +41,14 @@ import CertificateModal from '../components/CertificateModal.astro';
       class="mt-4 hidden w-full rounded-xl bg-amber-300 px-4 py-3 text-sm font-black uppercase tracking-widest text-felt-950 shadow-[0_6px_0_rgb(0_0_0/0.3)] transition-all active:translate-y-0.5 active:shadow-none"
     >
       Tu diploma
+    </button>
+
+    <button
+      id="show-cert-bad"
+      type="button"
+      class="mt-4 hidden w-full rounded-xl bg-orange-600 px-4 py-3 text-sm font-black uppercase tracking-widest text-paper-50 shadow-[0_6px_0_rgb(0_0_0/0.3)] transition-all active:translate-y-0.5 active:shadow-none"
+    >
+      Tu certificado de sinvergüenza
     </button>
 
     <noscript>
@@ -69,7 +77,17 @@ import CertificateModal from '../components/CertificateModal.astro';
           <strong>Sobre este bingo:</strong> Un juego online gratuito de bingo cartón con 40 desgracias reales del cargador público eléctrico en España. Reglas tradicionales: línea por fila, bingo cuando completas los seis. Diplomas verificables con enlace público.
         </p>
         <p class="mt-1.5 font-semibold">bingo.gruxon.com · Hecho con resignación · 2026</p>
-        <p class="mt-1.5">
+        <p class="mt-2 text-[9px]">
+          <a
+            href="https://www.tesla.com/es_es/referral/gabriel746720"
+            target="_blank"
+            rel="noopener"
+            class="text-amber-300 hover:text-amber-200 underline decoration-amber-300/40"
+          >
+            Referido de Tesla 🚗⚡
+          </a>
+        </p>
+        <p class="mt-2">
           Creado por
           <a
             href="https://gtrabanco.com"
@@ -123,6 +141,7 @@ import CertificateModal from '../components/CertificateModal.astro';
     type CertificateData,
   } from '../lib/certificate';
   import { discardCard, registerCard, reportCompletion, verificationUrl } from '../lib/api';
+  import { echarConfetti } from '../lib/confetti';
   import { loadCurrentCard, loadNick, saveCard, saveNick } from '../lib/storage';
   import { cellsInCompletedRows, completedRows, isFullCard, markedCount } from '../lib/wins';
 
@@ -141,6 +160,8 @@ import CertificateModal from '../components/CertificateModal.astro';
   const statusLines = $<HTMLParagraphElement>('#status-lines');
   const newCardButton = $<HTMLButtonElement>('#new-card');
   const showCertButton = $<HTMLButtonElement>('#show-cert');
+  const showCertBadButton = $<HTMLButtonElement>('#show-cert-bad');
+  const cardContainer = $<HTMLDivElement>('#card-container');
   const toast = $<HTMLDivElement>('#toast');
   const toastText = $<HTMLParagraphElement>('#toast-text');
   const dialog = $<HTMLDialogElement>('#bingo-dialog');
@@ -176,6 +197,7 @@ import CertificateModal from '../components/CertificateModal.astro';
   let cellButtons: (HTMLButtonElement | null)[] = [];
   let toastTimer: number | undefined;
   let nickSyncTimer: number | undefined;
+  let isBadGuy = false;
 
   // House rule: expired cards leave the central register.
   if (isExpired(card)) discardCard(card.id);
@@ -231,6 +253,7 @@ import CertificateModal from '../components/CertificateModal.astro';
       // Local timestamp for instant feedback; the server's (authoritative)
       // one replaces it as soon as the completion is registered.
       card.completedAt = new Date().toISOString();
+      echarConfetti(); // Celebra el bingo
       reportCompletion(card.id, loadNick()).then((receipt) => {
         if (!receipt) return;
         card.completedAt = receipt.completedAt;
@@ -273,7 +296,8 @@ import CertificateModal from '../components/CertificateModal.astro';
     });
 
     // The diploma survives unmarking: once sung, a bingo stays sung.
-    showCertButton.classList.toggle('hidden', card.completedAt === null);
+    showCertButton.classList.toggle('hidden', card.completedAt === null || isBadGuy);
+    showCertBadButton.classList.toggle('hidden', card.completedAt === null || !isBadGuy);
   }
 
   function showToast(message: string): void {
@@ -290,6 +314,7 @@ import CertificateModal from '../components/CertificateModal.astro';
       nick: nickInput.value,
       date: card.completedAt ? new Date(card.completedAt) : new Date(),
       cardId: card.id,
+      badGuy: isBadGuy,
     };
   }
 
@@ -313,12 +338,29 @@ import CertificateModal from '../components/CertificateModal.astro';
       return;
     }
     if (card.completedAt === null) discardCard(card.id);
+    isBadGuy = false;
     card = await newCard();
     renderGrid();
     syncStatus();
   });
 
-  showCertButton.addEventListener('click', openCertificate);
+  // Doble click en el cartón: activar modo "sinvergüenza"
+  cardContainer.addEventListener('dblclick', () => {
+    if (card.completedAt) {
+      isBadGuy = !isBadGuy;
+      syncStatus();
+      if (card.completedAt) refreshCertificate();
+    }
+  });
+
+  showCertButton.addEventListener('click', () => {
+    isBadGuy = false;
+    openCertificate();
+  });
+  showCertBadButton.addEventListener('click', () => {
+    isBadGuy = true;
+    openCertificate();
+  });
 
   nickInput.addEventListener('input', () => {
     saveNick(nickInput.value);
