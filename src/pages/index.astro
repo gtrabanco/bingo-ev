@@ -4,7 +4,10 @@ import BingoCard from '../components/BingoCard.astro';
 import CertificateModal from '../components/CertificateModal.astro';
 ---
 
-<Layout>
+<Layout
+  title="El Bingo del Cargador — Juego de bingo online sobre desgracias del cargador EV en España"
+  description="Juega gratis al bingo del cargador eléctrico. Marca las desgracias típicas de la recarga pública en España, canta línea y bingo, y consigue tu diploma verificable."
+>
   <main class="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pt-7 pb-6 sm:max-w-lg sm:pt-12">
     <header class="text-center">
       <p class="text-[10px] font-bold uppercase tracking-[0.4em] text-amber-300/80">
@@ -16,8 +19,7 @@ import CertificateModal from '../components/CertificateModal.astro';
         El Bingo del Cargador
       </h1>
       <p class="mx-auto mt-3 max-w-sm text-sm/relaxed text-paper-300/90">
-        Seis desgracias del cargador público, repartidas al azar entre los huecos. Marca las que
-        vivas: la línea se canta, el bingo se certifica y el cartón caduca en un mes.
+        <strong>Juego de bingo gratuito</strong> sobre las desgracias típicas del cargador público en España. Seis situaciones por cartón, repartidas al azar. Marca las que vivas: la <strong>línea se canta</strong>, el <strong>bingo se certifica</strong> con diploma verificable, y el cartón caduca en un mes.
       </p>
     </header>
 
@@ -62,6 +64,9 @@ import CertificateModal from '../components/CertificateModal.astro';
         <p>
           Situaciones 100&nbsp;% genéricas: aquí no se señala a nadie. Cada cual sabrá si se da
           por aludido.
+        </p>
+        <p class="mt-2 text-[10px]">
+          <strong>Sobre este bingo:</strong> Un juego online gratuito de bingo cartón con 40 desgracias reales del cargador público eléctrico en España. Reglas tradicionales: línea por fila, bingo cuando completas los seis. Diplomas verificables con enlace público.
         </p>
         <p class="mt-1.5 font-semibold">bingo.gruxon.com · Hecho con resignación · 2026</p>
         <p class="mt-1.5">

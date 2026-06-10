@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /.astro/
+
+Sitemap: https://bingo.gruxon.com/sitemap.xml
+
+User-agent: AdsBot-Google
+Allow: /

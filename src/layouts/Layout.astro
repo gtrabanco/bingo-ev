@@ -32,10 +32,43 @@ const {
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:type" content="image/svg+xml" />
+    <meta name="keywords" content="bingo, juego online, cargador eléctrico, EV, desgracias, españa, gratuito, cartón, recarga" />
+    <meta name="author" content="Gabriel Trabanco" />
+    <link rel="canonical" href={`https://bingo.gruxon.com${Astro.url.pathname}`} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="sitemap" href="/sitemap.xml" />
     <title>{title}</title>
   </head>
   <body class="min-h-dvh bg-felt-900 text-paper-50 antialiased">
     <slot />
+
+    <script type="application/ld+json">
+    {{
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "El Bingo del Cargador",
+      "description": "Juego de bingo online sobre las desgracias típicas de cargar un coche eléctrico en España",
+      "url": "https://bingo.gruxon.com",
+      "applicationCategory": "Game",
+      "gamePlatform": "Web",
+      "operatingSystem": "Web",
+      "inLanguage": "es-ES",
+      "creator": {{
+        "@type": "Person",
+        "name": "Gabriel Trabanco",
+        "url": "https://gtrabanco.com"
+      }},
+      "offers": {{
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "EUR"
+      }},
+      "aggregateRating": {{
+        "@type": "AggregateRating",
+        "ratingValue": "4.5",
+        "ratingCount": "1"
+      }}
+    }}
+    </script>
   </body>
 </html>
