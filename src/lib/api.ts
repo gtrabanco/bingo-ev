@@ -60,6 +60,41 @@ export function discardCard(cardId: string, secret: string | null): void {
   void request(`/api/cards/${cardId}`, jsonInit({ secret }, 'DELETE'));
 }
 
+// Owner rehydration: fetch a card's full state with its secret (recovery
+// links). Returns null if it doesn't exist or the secret is wrong.
+export function fetchOwnedCard(
+  cardId: string,
+  secret: string,
+): Promise<{
+  id: string;
+  createdAt: string;
+  completedAt: string | null;
+  cells: (string | null)[];
+  marks: boolean[];
+  secret: string;
+} | null> {
+  return request(`/api/cards/${cardId}?k=${encodeURIComponent(secret)}`);
+}
+
+// Links an email to a card (owner-only) for later recovery; optional opt-in.
+export function linkEmail(
+  cardId: string,
+  secret: string,
+  email: string,
+  newsletter: boolean,
+): Promise<Response | null> {
+  return fetch(`/api/cards/${cardId}/email`, jsonInit({ secret, email, newsletter }))
+    .then((r) => (r.ok || r.status === 204 ? r : null))
+    .catch(() => null);
+}
+
+// Asks the server to email recovery links for every card tied to an address.
+export function requestRecovery(email: string): Promise<Response | null> {
+  return fetch('/api/recover', jsonInit({ email }))
+    .then((r) => (r.ok || r.status === 204 ? r : null))
+    .catch(() => null);
+}
+
 export function verificationUrl(cardId: string): string {
   return `${location.origin}/v/${cardId}`;
 }

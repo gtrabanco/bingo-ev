@@ -79,9 +79,14 @@ that confirms the bingo was sung within the one-month window — per the server 
 - **Certificate**: a placeholder canvas render (1200×900) with "¡Bingo!", the nick, the
   completion date, the card serial, the verification URL and a QR pointing to it,
   downloadable as PNG. Final design pending.
-- **Sharing**: dialog buttons for X and Bluesky (prefilled compose intents citing
-  @gruxon), Instagram (Web Share sheet with the PNG on mobile; caption-copy + profile
-  fallback elsewhere) and YouTube (caption-copy + channel — YouTube has no share intent).
+- **Sharing**: dialog buttons for WhatsApp (wa.me intent), X and Bluesky (prefilled compose
+  intents citing @gruxon), Instagram (Web Share sheet with the PNG on mobile; caption-copy +
+  profile fallback elsewhere) and YouTube (caption-copy + channel). A "Compartir cómo voy"
+  button shares the live read-only card view (`/c/<id>`).
+- **Live card view** (`GET /c/<id>`): public, read-only render of a card and its marks for
+  spectators. Mutations require the owner secret, which never leaves the owner's browser.
+- **Recover by email** (optional, no auth): a player can link an email to a card and get a
+  recovery email with owner links (id + secret), optionally opting into the newsletter.
 
 ## Verification registry (Cloudflare D1)
 
@@ -102,6 +107,28 @@ Lifecycle — designed so the table stays small:
 If the API is unreachable, the game plays on with locally generated cards — they just
 won't be verifiable. Astro's built-in CSRF check (`checkOrigin`) protects the endpoints
 from cross-site form posts.
+
+Columns added over time: `secret` (owner token), `cells`/`marks` (for the live `/c/<id>`
+view), `email`/`newsletter` (optional recovery + opt-in). See `migrations/`.
+
+## Email (Brevo) — optional
+
+Recovery email and the newsletter opt-in go through [Brevo](https://www.brevo.com). They
+are best-effort: with no config the game runs fine, the email features just no-op. Config:
+
+| Name                 | Where        | What                                                        |
+| :------------------- | :----------- | :---------------------------------------------------------- |
+| `BREVO_API_KEY`      | **secret**   | API key (`xkeysib-…`) from Brevo → SMTP & API → API Keys    |
+| `BREVO_LIST_ID`      | var          | Newsletter list id (number) from Contacts → Lists           |
+| `BREVO_SENDER_EMAIL` | var          | A verified sender address (Senders, Domains & Dedicated IPs)|
+| `BREVO_SENDER_NAME`  | var          | Display name for the sender                                 |
+
+```sh
+npx wrangler secret put BREVO_API_KEY      # paste the xkeysib-... key when prompted
+# set the vars in wrangler.jsonc, or in the dashboard
+```
+
+For local dev, fill `.dev.vars` (gitignored) with the same names.
 
 ## Local development
 
@@ -138,5 +165,5 @@ adapter's `SESSION` KV) are auto-provisioned by wrangler on deploy.
 
 ## Out of scope for now
 
-Auth, email capture, final certificate design, photo upload/collage, analytics and a
-public gallery.
+Accounts/passwords, final certificate design, photo upload/collage, analytics, public
+gallery, and bingo groups with a single winner (planned next phase — needs email sending).
