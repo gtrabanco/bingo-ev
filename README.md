@@ -73,6 +73,16 @@ that confirms the bingo was sung within the one-month window — per the server 
 - **Wins**: real-cartón rules. Completing the situations of a row triggers a "¡Línea!"
   toast (blanks don't count); marking all 6 opens the certificate dialog ("¡Bingo!"). Once
   sung, a bingo stays sung even if cells are unmarked later.
+- **Dual marks**: each cell can be marked as *suffered* (kind 1, red dab) or *caused by
+  you* (kind 2, orange dab). A 3-way toggle sets the input mode: Sinvergüenza (taps mark
+  as caused), Mixto (tap = suffered, double tap = caused) or Resignado EV (taps mark as
+  suffered). Both kinds count towards línea/bingo.
+- **Honorifics**: one certificate design for everyone; the title depends on behavior —
+  «Resignado Sufridor» (0 caused, gets thanked for exemplary conduct), «Granujilla»
+  (some caused, less than half) or «Sinvergüenza» (half or more caused).
+- **Groups** (`/g/<id>`): create a group, share the link, members join with their own
+  card. Only the FIRST completion wins (atomic claim server-side); later bingos still get
+  their diploma. Completed cards can't join.
 - **Expiry**: a card must be completed within one calendar month of its creation. Expired
   incomplete cards are frozen under a "CADUCADO" stamp and must be regenerated. Enforced
   client-side for the UI and server-side (server clock) for verification.

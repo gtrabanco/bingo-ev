@@ -1,13 +1,15 @@
 // Certificate stub: renders a mock "diploma" onto a canvas and downloads it
-// as a PNG. The final certificate design is out of scope — this is
-// intentionally a simple, self-contained placeholder.
+// as a PNG. One design for everyone; only the honorific title (and its small
+// print) changes with the player's behavior. Final design still pending.
+
 import { encode } from 'uqr';
+import type { Honorific } from './card';
 
 export interface CertificateData {
   nick: string;
   date: Date; // completion date of the card
   cardId: string;
-  badGuy?: boolean; // true = "sinvergüenza" certificate
+  honorific: Honorific;
 }
 
 // Canonical base for the QR and the printed link: the PNG is a shareable
@@ -22,6 +24,24 @@ const FALLBACK_NICK = 'Alguien con mucha paciencia';
 const SERIF = 'Georgia, "Times New Roman", serif';
 const SANS = 'system-ui, sans-serif';
 const MONO = 'ui-monospace, "Courier New", monospace';
+
+const HONORIFICS: Record<Honorific, { title: string; color: string; line: string }> = {
+  resignado: {
+    title: '«Resignado Sufridor»',
+    color: '#11503c',
+    line: 'Gracias por su comportamiento ejemplar con el resto de usuarios.',
+  },
+  granujilla: {
+    title: '«Granujilla»',
+    color: '#c07820',
+    line: 'Alguna desgracia la causó usted. No todas. Algo es algo.',
+  },
+  sinverguenza: {
+    title: '«Sinvergüenza»',
+    color: '#b02e22',
+    line: 'La mitad o más de las desgracias eran obra suya.',
+  },
+};
 
 interface TextSpec {
   text: string;
@@ -78,6 +98,7 @@ export function drawCertificate(canvas: HTMLCanvasElement, data: CertificateData
   if (!ctx) return;
 
   const nick = data.nick.trim().slice(0, 32) || FALLBACK_NICK;
+  const honorific = HONORIFICS[data.honorific];
 
   // Aged-paper background with a double frame, diploma style.
   ctx.fillStyle = '#f6f0df';
@@ -91,123 +112,99 @@ export function drawCertificate(canvas: HTMLCanvasElement, data: CertificateData
 
   drawCentered(ctx, {
     text: 'CERTIFICADO OFICIOSO',
-    y: 140,
+    y: 134,
     font: `700 30px ${SANS}`,
     color: '#11503c',
     letterSpacing: '14px',
   });
   drawCentered(ctx, {
     text: 'DE SUPERVIVENCIA EN LA CARGA PÚBLICA',
-    y: 184,
+    y: 176,
     font: `600 19px ${SANS}`,
     color: '#7c7464',
     letterSpacing: '7px',
   });
 
-  const mainText = data.badGuy ? '¡SINVERGÜENZA!' : '¡BINGO!';
-  const mainColor = data.badGuy ? '#d4781f' : '#b02e22';
-
   drawCentered(ctx, {
-    text: mainText,
-    y: 350,
-    font: `900 165px ${SERIF}`,
-    color: mainColor,
+    text: '¡BINGO!',
+    y: 330,
+    font: `900 150px ${SERIF}`,
+    color: '#b02e22',
   });
 
-  if (data.badGuy) {
-    drawCentered(ctx, {
-      text: 'Se certifica que',
-      y: 430,
-      font: `italic 28px ${SERIF}`,
-      color: '#6b6354',
-    });
-    drawCentered(ctx, {
-      text: nick,
-      y: 495,
-      font: `700 54px ${SERIF}`,
-      color: '#221f1a',
-      maxWidth: 1000,
-    });
-    ctx.strokeStyle = '#b8ab8c';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(280, 516);
-    ctx.lineTo(920, 516);
-    ctx.stroke();
+  drawCentered(ctx, {
+    text: 'Se certifica que',
+    y: 408,
+    font: `italic 26px ${SERIF}`,
+    color: '#6b6354',
+  });
+  drawCentered(ctx, {
+    text: nick,
+    y: 468,
+    font: `700 50px ${SERIF}`,
+    color: '#221f1a',
+    maxWidth: 1000,
+  });
+  ctx.strokeStyle = '#b8ab8c';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(280, 488);
+  ctx.lineTo(920, 488);
+  ctx.stroke();
 
-    drawCentered(ctx, {
-      text: 'ha completado todas las desgracias del cargador que TÚ causaste',
-      y: 580,
-      font: `28px ${SERIF}`,
-      color: '#3f3a33',
-      maxWidth: 1040,
-    });
-    drawCentered(ctx, {
-      text: 'con el vehículo de combustión, la batería en frío o el híbrido.',
-      y: 620,
-      font: `28px ${SERIF}`,
-      color: '#3f3a33',
-      maxWidth: 1040,
-    });
-  } else {
-    drawCentered(ctx, {
-      text: 'Se certifica que',
-      y: 430,
-      font: `italic 28px ${SERIF}`,
-      color: '#6b6354',
-    });
-    drawCentered(ctx, {
-      text: nick,
-      y: 495,
-      font: `700 54px ${SERIF}`,
-      color: '#221f1a',
-      maxWidth: 1000,
-    });
-    ctx.strokeStyle = '#b8ab8c';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(280, 516);
-    ctx.lineTo(920, 516);
-    ctx.stroke();
+  drawCentered(ctx, {
+    text: 'ha completado todas las desgracias de su cartón dentro del plazo',
+    y: 534,
+    font: `25px ${SERIF}`,
+    color: '#3f3a33',
+    maxWidth: 1000,
+  });
+  drawCentered(ctx, {
+    text: 'reglamentario de un mes, y se le concede el título honorífico de',
+    y: 570,
+    font: `25px ${SERIF}`,
+    color: '#3f3a33',
+    maxWidth: 1000,
+  });
 
-    drawCentered(ctx, {
-      text: 'ha completado todas las desgracias de su cartón',
-      y: 580,
-      font: `28px ${SERIF}`,
-      color: '#3f3a33',
-      maxWidth: 1040,
-    });
-    drawCentered(ctx, {
-      text: 'dentro del plazo reglamentario de un mes. Sin atajos.',
-      y: 620,
-      font: `28px ${SERIF}`,
-      color: '#3f3a33',
-      maxWidth: 1040,
-    });
-  }
+  drawCentered(ctx, {
+    text: honorific.title,
+    y: 634,
+    font: `700 48px ${SERIF}`,
+    color: honorific.color,
+    maxWidth: 720,
+  });
+
+  drawCentered(ctx, {
+    text: honorific.line,
+    y: 678,
+    font: `italic 22px ${SERIF}`,
+    color: '#6b6354',
+    maxWidth: 680,
+  });
 
   drawCentered(ctx, {
     text: `Dado en un cargador «Disponible», a ${formatDate(data.date)}.`,
-    y: 700,
-    font: `italic 26px ${SERIF}`,
+    y: 730,
+    font: `italic 22px ${SERIF}`,
     color: '#6b6354',
-    maxWidth: 1040,
+    maxWidth: 680,
   });
 
   drawCentered(ctx, {
     text: `Verifícalo en bingo.gruxon.com/v/${data.cardId}`,
-    y: 762,
+    y: 778,
     font: `700 21px ${MONO}`,
     color: '#11503c',
-    maxWidth: 1080,
+    maxWidth: 860,
   });
 
   drawCentered(ctx, {
     text: `Cartón nº ${data.cardId} · Sin validez legal, técnica ni emocional.`,
-    y: 812,
-    font: `19px ${MONO}`,
+    y: 820,
+    font: `18px ${MONO}`,
     color: '#8a8170',
-    maxWidth: 880,
+    maxWidth: 860,
   });
 
   drawVerificationQr(ctx, `${VERIFY_BASE_URL}${data.cardId}`);

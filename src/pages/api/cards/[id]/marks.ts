@@ -7,7 +7,8 @@ import { env } from 'cloudflare:workers';
 import { CELL_COUNT } from '../../../../lib/card';
 
 const ID_PATTERN = /^[0-9a-z]{8}$/;
-const MARKS_PATTERN = new RegExp(`^[01]{${CELL_COUNT}}$`);
+// Each digit is a MarkKind: 0 clean, 1 suffered, 2 caused (sinvergüenza).
+const MARKS_PATTERN = new RegExp(`^[012]{${CELL_COUNT}}$`);
 
 export const POST: APIRoute = async ({ params, request }) => {
   const id = params.id ?? '';

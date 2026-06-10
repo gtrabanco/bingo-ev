@@ -11,12 +11,16 @@ export interface Situation {
   text: string;
 }
 
+// How a cell was marked: 0 = clean, 1 = suffered it (resignado EV),
+// 2 = caused it (sinvergüenza). Any mark > 0 counts towards línea/bingo.
+export type MarkKind = 0 | 1 | 2;
+
 export interface CardState {
   id: string;
   createdAt: string; // ISO timestamp
   completedAt: string | null; // ISO timestamp of the first full completion
   cells: (string | null)[]; // 12 entries, row-major; null = blank cell
-  marks: boolean[]; // mark state per cell, same order; blanks stay false
+  marks: MarkKind[]; // mark state per cell, same order; blanks stay 0
   secret: string | null; // owner token for server mutations; null = unregistered
 }
 
@@ -74,18 +78,30 @@ export function generateCard(): CardState {
     createdAt: new Date().toISOString(),
     completedAt: null,
     cells,
-    marks: Array(CELL_COUNT).fill(false),
+    marks: Array(CELL_COUNT).fill(0),
     secret: null,
   };
 }
 
-// Compact wire format for marks: "010010100001" in row-major order.
-export function packMarks(marks: boolean[]): string {
-  return marks.map((mark) => (mark ? '1' : '0')).join('');
+// Compact wire format for marks: "010020100001" in row-major order, where
+// each digit is the MarkKind of that cell.
+export function packMarks(marks: MarkKind[]): string {
+  return marks.join('');
 }
 
-export function unpackMarks(packed: string): boolean[] {
-  return [...packed].map((char) => char === '1');
+export function unpackMarks(packed: string): MarkKind[] {
+  return [...packed].map((char) => (char === '2' ? 2 : char === '1' ? 1 : 0));
+}
+
+// Honorific title earned with the bingo, based on how many of the marked
+// situations the player CAUSED (kind 2) rather than suffered (kind 1).
+export type Honorific = 'resignado' | 'granujilla' | 'sinverguenza';
+
+export function honorificFor(cells: (string | null)[], marks: MarkKind[]): Honorific {
+  const caused = marks.filter((mark, index) => mark === 2 && cells[index] !== null).length;
+  if (caused === 0) return 'resignado';
+  if (caused >= Math.ceil(SITUATION_COUNT / 2)) return 'sinverguenza';
+  return 'granujilla';
 }
 
 // Shared by the browser and the Worker so both clocks agree on the rule.
@@ -109,7 +125,9 @@ export function isExpired(card: CardState, now: Date = new Date()): boolean {
 
 // A stored card is only usable if it has the right shape AND every referenced
 // situation still exists in the current pool; otherwise the caller should
-// generate a fresh card. Cards from older layouts fail here by design.
+// generate a fresh card. Cards from older layouts fail here by design
+// (boolean marks from the previous format are normalized in storage.ts
+// before validation).
 export function isValidCard(value: unknown): value is CardState {
   if (typeof value !== 'object' || value === null) return false;
   const card = value as Partial<CardState>;
@@ -126,7 +144,7 @@ export function isValidCard(value: unknown): value is CardState {
     card.cells.some((cell) => cell !== null) &&
     Array.isArray(card.marks) &&
     card.marks.length === CELL_COUNT &&
-    card.marks.every((mark) => typeof mark === 'boolean') &&
+    card.marks.every((mark) => mark === 0 || mark === 1 || mark === 2) &&
     (card.secret === null || card.secret === undefined || typeof card.secret === 'string')
   );
 }

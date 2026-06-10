@@ -43,7 +43,7 @@ export const GET: APIRoute = async ({ params, request }) => {
   const marks =
     row.marks && row.marks.length === CELL_COUNT
       ? unpackMarks(row.marks)
-      : Array(CELL_COUNT).fill(false);
+      : Array(CELL_COUNT).fill(0);
 
   return Response.json({
     id,

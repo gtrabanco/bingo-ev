@@ -31,7 +31,31 @@ import CertificateModal from '../components/CertificateModal.astro';
       <p id="status-lines" class="text-right text-paper-300/85">Sin líneas. De momento.</p>
     </section>
 
-    <div class="mt-4" id="card-container">
+    <div class="mt-3 flex justify-center">
+      <div
+        class="inline-flex rounded-xl border border-paper-50/20 bg-felt-950/40 p-1 text-[0.625rem] font-bold uppercase tracking-wider sm:text-xs"
+        role="group"
+        aria-label="Modo de marcado"
+      >
+        <button id="mode-sin" type="button" class="mode-btn rounded-lg px-2.5 py-1.5 sm:px-3">
+          Sinvergüenza
+        </button>
+        <button id="mode-mix" type="button" class="mode-btn rounded-lg px-2.5 py-1.5 sm:px-3">
+          Mixto
+        </button>
+        <button id="mode-ev" type="button" class="mode-btn rounded-lg px-2.5 py-1.5 sm:px-3">
+          Resignado EV
+        </button>
+      </div>
+    </div>
+    <p
+      id="mode-hint"
+      class="mt-1.5 text-center text-[0.625rem]/snug text-paper-300/60 sm:text-[0.6875rem]/snug"
+      aria-live="polite"
+    >
+    </p>
+
+    <div class="mt-3" id="card-container">
       <BingoCard />
     </div>
 
@@ -41,14 +65,6 @@ import CertificateModal from '../components/CertificateModal.astro';
       class="mt-4 hidden w-full rounded-xl bg-amber-300 px-4 py-3 text-sm font-black uppercase tracking-widest text-felt-950 shadow-[0_6px_0_rgb(0_0_0/0.3)] transition-all active:translate-y-0.5 active:shadow-none sm:text-base"
     >
       Tu diploma
-    </button>
-
-    <button
-      id="show-cert-bad"
-      type="button"
-      class="mt-4 hidden w-full rounded-xl bg-orange-600 px-4 py-3 text-sm font-black uppercase tracking-widest text-paper-50 shadow-[0_6px_0_rgb(0_0_0/0.3)] transition-all active:translate-y-0.5 active:shadow-none sm:text-base"
-    >
-      Tu certificado de sinvergüenza
     </button>
 
     <button
@@ -152,6 +168,43 @@ import CertificateModal from '../components/CertificateModal.astro';
         </div>
       </details>
 
+      <details class="mt-4 rounded-xl border border-paper-50/15 bg-felt-950/40 px-4 py-3">
+        <summary
+          class="cursor-pointer list-none text-xs font-bold uppercase tracking-widest text-paper-300/80 sm:text-sm"
+        >
+          Grupos de bingo
+        </summary>
+        <div class="mt-3">
+          <p class="text-[0.6875rem]/relaxed text-paper-300/70 sm:text-xs/relaxed">
+            Crea un grupo, comparte el enlace y que cada cual juegue su cartón. Solo el primero
+            en completar canta bingo. Los demás, a aplaudir.
+          </p>
+          <form id="group-form" class="mt-2 flex gap-2">
+            <input
+              id="group-name"
+              type="text"
+              required
+              maxlength="40"
+              placeholder="Nombre del grupo"
+              class="min-w-0 flex-1 rounded-lg border-2 border-paper-50/25 bg-felt-950/60 px-3 py-2 text-sm text-paper-50 outline-none placeholder:text-paper-300/40 focus:border-amber-300 sm:text-base"
+            />
+            <button
+              id="group-submit"
+              type="submit"
+              class="shrink-0 rounded-lg bg-amber-300 px-4 py-2 text-xs font-black uppercase tracking-widest text-felt-950 transition-colors active:bg-amber-400 sm:text-sm"
+            >
+              Crear
+            </button>
+          </form>
+          <p
+            id="group-hint"
+            class="mt-2 min-h-4 text-[0.6875rem]/snug text-amber-200/90 sm:text-xs/snug"
+            aria-live="polite"
+          >
+          </p>
+        </div>
+      </details>
+
       <a
         href="https://www.tesla.com/es_es/referral/gabriel746720"
         target="_blank"
@@ -162,8 +215,7 @@ import CertificateModal from '../components/CertificateModal.astro';
           Publicidad descarada
         </p>
         <p class="mt-1.5 text-sm/relaxed text-paper-50 sm:text-base/relaxed">
-          ¿Pensando en comprar un Tesla? Usa mi
-          <strong>código de referido</strong> y ganamos los dos por igual.
+          Usa mi <strong>código de referido</strong> y ganamos los dos por igual.
         </p>
         <span
           class="mt-3 inline-flex items-center gap-2 rounded-xl bg-amber-300 px-5 py-2.5 text-xs font-black uppercase tracking-widest text-felt-950 shadow-[0_4px_0_rgb(0_0_0/0.3)] transition-all group-hover:shadow-[0_5px_0_rgb(0_0_0/0.3)] group-active:translate-y-0.5 group-active:shadow-none sm:text-sm"
@@ -178,7 +230,7 @@ import CertificateModal from '../components/CertificateModal.astro';
               d="M12 5.362l2.475-3.026s4.245.09 8.471 2.054c-1.082 1.636-3.231 2.438-3.231 2.438-.146-1.439-1.154-1.79-4.354-1.79L12 24 8.619 5.034c-3.18 0-4.211.354-4.359 1.792 0 0-2.144-.804-3.229-2.43C5.255 2.43 9.5 2.34 9.5 2.34L11.976 5.362l.012.002.012-.002zM12 1.575c2.717-.002 5.823.439 9 1.882 0 0 .3.534.387.823 0 0-3.717-1.516-9.387-1.508-5.67-.008-9.386 1.508-9.386 1.508.087-.289.387-.823.387-.823C6.18 2.014 9.285 1.573 12 1.575z"
             ></path>
           </svg>
-          Código gabriel746720
+          ¿Pensando en comprar un Tesla?
         </span>
       </a>
 
@@ -241,6 +293,7 @@ import CertificateModal from '../components/CertificateModal.astro';
     expiryDate,
     generateCard,
     getSituation,
+    honorificFor,
     isExpired,
     packMarks,
     type CardState,
@@ -252,6 +305,7 @@ import CertificateModal from '../components/CertificateModal.astro';
   } from '../lib/certificate';
   import {
     cardShareUrl,
+    createGroup,
     discardCard,
     fetchOwnedCard,
     linkEmail,
@@ -262,7 +316,15 @@ import CertificateModal from '../components/CertificateModal.astro';
     verificationUrl,
   } from '../lib/api';
   import { echarConfetti } from '../lib/confetti';
-  import { loadCurrentCard, loadNick, saveCard, saveNick } from '../lib/storage';
+  import {
+    loadCurrentCard,
+    loadMarkMode,
+    loadNick,
+    saveCard,
+    saveMarkMode,
+    saveNick,
+    type MarkMode,
+  } from '../lib/storage';
   import { cellsInCompletedRows, completedRows, isFullCard, markedCount } from '../lib/wins';
 
   function $<T extends Element>(selector: string): T {
@@ -280,8 +342,12 @@ import CertificateModal from '../components/CertificateModal.astro';
   const statusLines = $<HTMLParagraphElement>('#status-lines');
   const newCardButton = $<HTMLButtonElement>('#new-card');
   const showCertButton = $<HTMLButtonElement>('#show-cert');
-  const showCertBadButton = $<HTMLButtonElement>('#show-cert-bad');
-  const cardContainer = $<HTMLDivElement>('#card-container');
+  const modeButtons: Record<MarkMode, HTMLButtonElement> = {
+    sin: $<HTMLButtonElement>('#mode-sin'),
+    mix: $<HTMLButtonElement>('#mode-mix'),
+    ev: $<HTMLButtonElement>('#mode-ev'),
+  };
+  const modeHint = $<HTMLParagraphElement>('#mode-hint');
   const toast = $<HTMLDivElement>('#toast');
   const toastText = $<HTMLParagraphElement>('#toast-text');
   const dialog = $<HTMLDialogElement>('#bingo-dialog');
@@ -304,6 +370,9 @@ import CertificateModal from '../components/CertificateModal.astro';
   const recoverForm = $<HTMLFormElement>('#recover-form');
   const recoverInput = $<HTMLInputElement>('#recover-input');
   const emailHint = $<HTMLParagraphElement>('#email-hint');
+  const groupForm = $<HTMLFormElement>('#group-form');
+  const groupNameInput = $<HTMLInputElement>('#group-name');
+  const groupHint = $<HTMLParagraphElement>('#group-hint');
 
   const shortDate = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' });
   const longDate = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long' });
@@ -343,7 +412,23 @@ import CertificateModal from '../components/CertificateModal.astro';
   let toastTimer: number | undefined;
   let nickSyncTimer: number | undefined;
   let marksSyncTimer: number | undefined;
-  let isBadGuy = false;
+  let pendingTapTimer: number | undefined;
+  let markMode: MarkMode = loadMarkMode();
+
+  const MODE_HINTS: Record<MarkMode, string> = {
+    sin: 'Todo lo que marques lo causaste tú. Valiente confesión.',
+    mix: 'Un toque: la sufriste. Doble toque: la causaste tú, sinvergüenza.',
+    ev: 'Todo lo que marques te pasó a ti. Pobre.',
+  };
+
+  function setMarkMode(mode: MarkMode): void {
+    markMode = mode;
+    saveMarkMode(mode);
+    for (const [key, button] of Object.entries(modeButtons)) {
+      button.setAttribute('aria-pressed', String(key === mode));
+    }
+    modeHint.textContent = MODE_HINTS[mode];
+  }
 
   // House rule: expired cards leave the central register.
   if (isExpired(card)) discardCard(card.id, card.secret);
@@ -377,7 +462,7 @@ import CertificateModal from '../components/CertificateModal.astro';
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'cell';
-      button.setAttribute('aria-pressed', String(card.marks[index]));
+      button.setAttribute('aria-pressed', String((card.marks[index] ?? 0) > 0));
       button.disabled = expired;
       // Deterministic pseudo-random tilt so each dab looks hand-stamped.
       button.style.setProperty('--dab-rot', `${((index * 53) % 19) - 9}deg`);
@@ -391,7 +476,9 @@ import CertificateModal from '../components/CertificateModal.astro';
       dab.setAttribute('aria-hidden', 'true');
 
       button.append(text, dab);
-      button.addEventListener('click', () => toggleCell(index));
+      button.dataset.kind = String(card.marks[index]);
+      button.addEventListener('click', () => onCellClick(index));
+      button.addEventListener('dblclick', () => onCellDblClick(index));
       grid.append(button);
       return button;
     });
@@ -402,11 +489,29 @@ import CertificateModal from '../components/CertificateModal.astro';
     expiredStamp.classList.toggle('hidden', !expired);
   }
 
-  function toggleCell(index: number): void {
+  // Routes a tap according to the marking mode. In 'mix' mode the single tap
+  // waits a beat so a double tap (mark as caused) can cancel it.
+  function onCellClick(index: number): void {
+    if (markMode === 'mix') {
+      window.clearTimeout(pendingTapTimer);
+      pendingTapTimer = window.setTimeout(() => toggleCell(index, 1), 250);
+      return;
+    }
+    toggleCell(index, markMode === 'sin' ? 2 : 1);
+  }
+
+  function onCellDblClick(index: number): void {
+    if (markMode !== 'mix') return;
+    window.clearTimeout(pendingTapTimer);
+    toggleCell(index, 2);
+  }
+
+  function toggleCell(index: number, kind: 1 | 2): void {
     if (isExpired(card)) return;
 
     const linesBefore = completedRows(card.cells, card.marks).length;
-    card.marks[index] = !card.marks[index];
+    // Same kind again unmarks; anything else stamps (or restamps) the kind.
+    card.marks[index] = card.marks[index] === kind ? 0 : kind;
 
     const becameFull = isFullCard(card.cells, card.marks) && card.completedAt === null;
     if (becameFull) {
@@ -424,7 +529,11 @@ import CertificateModal from '../components/CertificateModal.astro';
 
     saveCard(card);
     scheduleMarksSync(becameFull);
-    cellButtons[index]?.setAttribute('aria-pressed', String(card.marks[index]));
+    const button = cellButtons[index];
+    if (button) {
+      button.setAttribute('aria-pressed', String((card.marks[index] ?? 0) > 0));
+      button.dataset.kind = String(card.marks[index]);
+    }
     syncStatus();
 
     if (becameFull) {
@@ -457,8 +566,7 @@ import CertificateModal from '../components/CertificateModal.astro';
     });
 
     // The diploma survives unmarking: once sung, a bingo stays sung.
-    showCertButton.classList.toggle('hidden', card.completedAt === null || isBadGuy);
-    showCertBadButton.classList.toggle('hidden', card.completedAt === null || !isBadGuy);
+    showCertButton.classList.toggle('hidden', card.completedAt === null);
 
     // Live sharing needs a registered card (owner secret in hand).
     shareCardButton.classList.toggle('hidden', card.secret === null);
@@ -478,7 +586,7 @@ import CertificateModal from '../components/CertificateModal.astro';
       nick: nickInput.value,
       date: card.completedAt ? new Date(card.completedAt) : new Date(),
       cardId: card.id,
-      badGuy: isBadGuy,
+      honorific: honorificFor(card.cells, card.marks),
     };
   }
 
@@ -502,7 +610,6 @@ import CertificateModal from '../components/CertificateModal.astro';
       return;
     }
     if (card.completedAt === null) discardCard(card.id, card.secret);
-    isBadGuy = false;
     card = await newCard();
     renderGrid();
     syncStatus();
@@ -561,23 +668,24 @@ import CertificateModal from '../components/CertificateModal.astro';
     emailHint.textContent = 'Si hay cartones con ese correo, te llegará un email con los enlaces.';
   });
 
-  // Doble click en el cartón: activar modo "sinvergüenza"
-  cardContainer.addEventListener('dblclick', () => {
-    if (card.completedAt) {
-      isBadGuy = !isBadGuy;
-      syncStatus();
-      if (card.completedAt) refreshCertificate();
+  // Marking-mode toggle.
+  for (const [key, button] of Object.entries(modeButtons)) {
+    button.addEventListener('click', () => setMarkMode(key as MarkMode));
+  }
+
+  // Create a bingo group and jump to its page to share/join.
+  groupForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    groupHint.textContent = 'Creando…';
+    const group = await createGroup(groupNameInput.value.trim());
+    if (!group) {
+      groupHint.textContent = 'No se pudo crear el grupo. Inténtalo más tarde.';
+      return;
     }
+    location.href = `/g/${group.id}`;
   });
 
-  showCertButton.addEventListener('click', () => {
-    isBadGuy = false;
-    openCertificate();
-  });
-  showCertBadButton.addEventListener('click', () => {
-    isBadGuy = true;
-    openCertificate();
-  });
+  showCertButton.addEventListener('click', openCertificate);
 
   nickInput.addEventListener('input', () => {
     saveNick(nickInput.value);
@@ -683,6 +791,7 @@ import CertificateModal from '../components/CertificateModal.astro';
   downloadButton.addEventListener('click', () => downloadCertificate(certCanvas, certificateData()));
   closeButton.addEventListener('click', () => dialog.close());
 
+  setMarkMode(markMode);
   renderGrid();
   syncStatus();
 </script>

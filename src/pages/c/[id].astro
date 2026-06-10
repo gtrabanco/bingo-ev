@@ -49,7 +49,7 @@ if (row?.cells) {
 }
 
 const marks =
-  row?.marks && row.marks.length === CELL_COUNT ? unpackMarks(row.marks) : Array(CELL_COUNT).fill(false);
+  row?.marks && row.marks.length === CELL_COUNT ? unpackMarks(row.marks) : Array(CELL_COUNT).fill(0);
 
 const marked = cells ? markedCount(cells, marks) : 0;
 const lines = cells ? completedRows(cells, marks).length : 0;
@@ -122,6 +122,7 @@ const ogImage = row?.completed_at ? `/og/diploma/${id}.svg` : '/og/home.svg';
                     <div
                       class="cell"
                       aria-pressed={marks[index] ? 'true' : 'false'}
+                      data-kind={String(marks[index] ?? 0)}
                       style={`--dab-rot: ${((index * 53) % 19) - 9}deg`}
                     >
                       <span class="cell-text">{getSituation(situationId)?.text ?? '—'}</span>

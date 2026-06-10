@@ -14,6 +14,7 @@ interface CardRow {
   created_at: string;
   completed_at: string | null;
   secret: string | null;
+  group_id: string | null;
 }
 
 export const POST: APIRoute = async ({ params, request }) => {
@@ -22,7 +23,7 @@ export const POST: APIRoute = async ({ params, request }) => {
 
   const db = env.DB;
   const row = await db
-    .prepare('SELECT created_at, completed_at, secret FROM cards WHERE id = ?1')
+    .prepare('SELECT created_at, completed_at, secret, group_id FROM cards WHERE id = ?1')
     .bind(id)
     .first<CardRow>();
   if (!row) return new Response(null, { status: 404 });
@@ -62,5 +63,17 @@ export const POST: APIRoute = async ({ params, request }) => {
     .prepare('UPDATE cards SET completed_at = ?2, nick = ?3 WHERE id = ?1')
     .bind(id, completedAt, nick)
     .run();
-  return Response.json({ completedAt });
+
+  // Group rule: only the FIRST completion claims the win. The conditional
+  // update is atomic, so a near-simultaneous second bingo can't steal it.
+  let groupWinner: boolean | undefined;
+  if (row.group_id) {
+    const claim = await db
+      .prepare('UPDATE groups SET winner_card_id = ?2 WHERE id = ?1 AND winner_card_id IS NULL')
+      .bind(row.group_id, id)
+      .run();
+    groupWinner = claim.meta.changes > 0;
+  }
+
+  return Response.json({ completedAt, groupWinner });
 };

@@ -1,0 +1,248 @@
+---
+// Bingo group page: /g/<groupId>. Public standings; only ONE member wins —
+// the first to complete their card. Joining requires the visitor's own card
+// (its owner secret never leaves their browser; the join call sends it
+// same-origin only).
+export const prerender = false;
+
+import { env } from 'cloudflare:workers';
+import Layout from '../../layouts/Layout.astro';
+import { CELL_COUNT, SITUATION_COUNT } from '../../lib/card';
+
+interface GroupRow {
+  id: string;
+  name: string;
+  created_at: string;
+  winner_card_id: string | null;
+}
+
+interface MemberRow {
+  id: string;
+  nick: string | null;
+  marks: string | null;
+  completed_at: string | null;
+}
+
+const ID_PATTERN = /^[0-9a-z]{8}$/;
+const id = Astro.params.id ?? '';
+
+let group: GroupRow | null = null;
+let members: MemberRow[] = [];
+if (ID_PATTERN.test(id)) {
+  group = await env.DB.prepare(
+    'SELECT id, name, created_at, winner_card_id FROM groups WHERE id = ?1',
+  )
+    .bind(id)
+    .first<GroupRow>();
+  if (group) {
+    const rows = await env.DB.prepare(
+      'SELECT id, nick, marks, completed_at FROM cards WHERE group_id = ?1',
+    )
+      .bind(id)
+      .all<MemberRow>();
+    members = rows.results ?? [];
+  }
+}
+
+function markedOf(member: MemberRow): number {
+  if (!member.marks || member.marks.length !== CELL_COUNT) return 0;
+  return [...member.marks].filter((digit) => digit !== '0').length;
+}
+
+const winnerId = group?.winner_card_id ?? null;
+const standings = [...members].sort((a, b) => {
+  if (a.id === winnerId) return -1;
+  if (b.id === winnerId) return 1;
+  return markedOf(b) - markedOf(a);
+});
+const winner = members.find((member) => member.id === winnerId) ?? null;
+
+const longDate = new Intl.DateTimeFormat('es-ES', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+
+Astro.response.headers.set('cache-control', 'no-store');
+---
+
+<Layout
+  title={group ? `Grupo «${group.name}» — El Bingo del Cargador` : 'Grupo no encontrado — El Bingo del Cargador'}
+  description="Grupo de bingo del cargador: varios cartones, un solo ganador. El primero que complete, canta."
+>
+  <main class="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pt-10 pb-6 sm:max-w-lg">
+    <p
+      class="text-center text-[0.625rem] font-bold uppercase tracking-[0.4em] text-amber-300/80 sm:text-xs"
+    >
+      Grupo de bingo · Solo uno canta
+    </p>
+
+    {
+      group ? (
+        <>
+          <h1 class="mt-2 text-center text-3xl font-black uppercase tracking-tight text-balance text-amber-300 drop-shadow-[0_3px_0_rgb(0_0_0/0.45)] sm:text-4xl">
+            {group.name}
+          </h1>
+
+          {winner ? (
+            <p class="mt-4 rounded-xl border-2 border-amber-300/60 bg-amber-300/10 px-4 py-3 text-center text-sm/relaxed text-paper-50 sm:text-base/relaxed">
+              ¡BINGO! Cantado por
+              <strong>{winner.nick ?? `el cartón nº ${winner.id}`}</strong> el{' '}
+              {longDate.format(new Date(winner.completed_at!))}. El resto: a seguir sufriendo,
+              pero ya sin premio.
+            </p>
+          ) : (
+            <p class="mt-4 text-center text-sm/relaxed text-paper-300/85 sm:text-base/relaxed">
+              Aún sin ganador. El primero que complete su cartón se lo lleva. Los demás se
+              llevan las desgracias, que también es algo.
+            </p>
+          )}
+
+          <section class="mt-5 overflow-hidden rounded-2xl border-4 border-ink-900 bg-paper-50 text-ink-900 shadow-[0_18px_40px_-12px_rgb(0_0_0/0.55)]">
+            <header class="flex items-baseline justify-between gap-3 border-b-4 border-ink-900 bg-dauber-600 px-3.5 py-2 text-paper-50">
+              <p class="text-lg font-black uppercase tracking-[0.35em] sm:text-xl">Sala</p>
+              <p class="shrink-0 font-mono text-[0.625rem] tracking-wider uppercase sm:text-xs">
+                Grupo nº {group.id}
+              </p>
+            </header>
+
+            {standings.length === 0 ? (
+              <p class="px-4 py-6 text-center text-sm text-ink-900/70 sm:text-base">
+                Todavía no hay cartones en la sala. Sé quien reparta las desgracias.
+              </p>
+            ) : (
+              <ul class="divide-y divide-ink-900/15">
+                {standings.map((member) => (
+                  <li
+                    class="flex items-center justify-between gap-3 px-4 py-2.5 text-sm sm:text-base"
+                    data-member-card={member.id}
+                  >
+                    <span class="min-w-0 truncate">
+                      {member.id === winnerId && <span aria-hidden="true">🏆 </span>}
+                      <strong>{member.nick ?? `Cartón nº ${member.id}`}</strong>
+                      <span class="member-you hidden text-ink-900/55"> (tú)</span>
+                    </span>
+                    <span class="flex shrink-0 items-center gap-2">
+                      <a
+                        href={`/c/${member.id}`}
+                        class="text-[0.6875rem] underline decoration-ink-900/30 underline-offset-2 sm:text-xs"
+                      >
+                        ver
+                      </a>
+                      <span class="font-mono font-bold">
+                        {member.completed_at ? 'BINGO' : `${markedOf(member)}/${SITUATION_COUNT}`}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <button
+            id="join-group"
+            type="button"
+            class="mt-5 w-full rounded-xl bg-amber-300 px-4 py-3 text-sm font-black uppercase tracking-widest text-felt-950 shadow-[0_6px_0_rgb(0_0_0/0.3)] transition-all active:translate-y-0.5 active:shadow-none sm:text-base"
+            data-group-id={group.id}
+          >
+            Unirme con mi cartón
+          </button>
+          <button
+            id="share-group"
+            type="button"
+            class="mt-2.5 w-full rounded-xl border-2 border-paper-50/30 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-paper-50 transition-colors hover:bg-paper-50/10 sm:text-sm"
+          >
+            Compartir el grupo
+          </button>
+          <p
+            id="join-hint"
+            class="mt-2 min-h-4 text-center text-[0.6875rem]/snug text-amber-200/90 sm:text-xs/snug"
+            aria-live="polite"
+          >
+          </p>
+        </>
+      ) : (
+        <article class="mt-5 overflow-hidden rounded-2xl border-4 border-ink-900 bg-paper-50 text-ink-900 shadow-[0_18px_40px_-12px_rgb(0_0_0/0.55)]">
+          <div class="px-5 py-8 text-center">
+            <p class="inline-block -rotate-3 rounded-lg border-4 border-double border-dauber-600 px-4 py-1.5 text-2xl font-black uppercase tracking-[0.25em] text-dauber-600">
+              No consta
+            </p>
+            <p class="mt-5 text-sm/relaxed text-ink-900/80 sm:text-base/relaxed">
+              Este grupo no existe. Crea uno desde la página principal y reparte sufrimiento.
+            </p>
+          </div>
+        </article>
+      )
+    }
+
+    <a
+      href="/"
+      class="mt-6 rounded-xl border-2 border-paper-50/30 px-4 py-3 text-center text-sm font-black uppercase tracking-widest text-paper-50 transition-colors hover:bg-paper-50/10 sm:text-base"
+    >
+      Ir a mi cartón
+    </a>
+
+    <footer
+      class="mt-auto pt-8 text-center text-[0.6875rem]/relaxed text-paper-300/55 sm:text-sm/relaxed"
+    >
+      <p class="font-semibold">bingo.gruxon.com · Hecho con resignación · 2026</p>
+    </footer>
+  </main>
+</Layout>
+
+<script>
+  // Join + share wiring. The visitor's card (and its secret) live in their
+  // localStorage; joining sends them same-origin to the join endpoint.
+  import { joinGroup } from '../../lib/api';
+  import { loadCurrentCard } from '../../lib/storage';
+
+  const joinButton = document.querySelector<HTMLButtonElement>('#join-group');
+  const shareButton = document.querySelector<HTMLButtonElement>('#share-group');
+  const hint = document.querySelector<HTMLParagraphElement>('#join-hint');
+
+  const card = loadCurrentCard();
+
+  // Mark the visitor's own card in the standings.
+  if (card) {
+    document
+      .querySelector(`[data-member-card="${card.id}"] .member-you`)
+      ?.classList.remove('hidden');
+  }
+
+  joinButton?.addEventListener('click', async () => {
+    if (!hint) return;
+    if (!card || !card.secret) {
+      hint.textContent = 'No tienes un cartón registrado. Ve a la página principal y vuelve.';
+      return;
+    }
+    if (card.completedAt) {
+      hint.textContent = 'Tu cartón ya está completo: entrar ahora sería hacer trampas.';
+      return;
+    }
+    hint.textContent = 'Entrando…';
+    const ok = await joinGroup(joinButton.dataset.groupId ?? '', card.id, card.secret);
+    if (ok) {
+      location.reload();
+    } else {
+      hint.textContent = 'No se pudo entrar. Inténtalo de nuevo.';
+    }
+  });
+
+  shareButton?.addEventListener('click', async () => {
+    const url = location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Grupo de bingo del cargador', url });
+        return;
+      } catch {
+        // Sheet dismissed: fall through to the clipboard.
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      if (hint) hint.textContent = 'Enlace copiado. Recluta sufridores.';
+    } catch {
+      if (hint) hint.textContent = url;
+    }
+  });
+</script>

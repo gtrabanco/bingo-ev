@@ -1,6 +1,7 @@
 // Thin client for the registry API. Every call degrades to null on failure:
 // the game must keep working offline or with the Worker down — the card just
 // won't be verifiable or watchable afterwards.
+import type { MarkKind } from './card';
 
 export interface RegisteredCard {
   id: string;
@@ -70,7 +71,7 @@ export function fetchOwnedCard(
   createdAt: string;
   completedAt: string | null;
   cells: (string | null)[];
-  marks: boolean[];
+  marks: MarkKind[];
   secret: string;
 } | null> {
   return request(`/api/cards/${cardId}?k=${encodeURIComponent(secret)}`);
@@ -93,6 +94,19 @@ export function requestRecovery(email: string): Promise<Response | null> {
   return fetch('/api/recover', jsonInit({ email }))
     .then((r) => (r.ok || r.status === 204 ? r : null))
     .catch(() => null);
+}
+
+// Creates a bingo group; returns its id for the /g/<id> page.
+export function createGroup(name: string): Promise<{ id: string } | null> {
+  return request<{ id: string }>('/api/groups', jsonInit({ name }));
+}
+
+// Joins the caller's card to a group. True on success (the endpoint answers
+// 204, which request() maps to null, so this needs the raw fetch).
+export function joinGroup(groupId: string, cardId: string, secret: string): Promise<boolean> {
+  return fetch(`/api/groups/${groupId}/join`, jsonInit({ cardId, secret }))
+    .then((response) => response.ok || response.status === 204)
+    .catch(() => false);
 }
 
 export function verificationUrl(cardId: string): string {
