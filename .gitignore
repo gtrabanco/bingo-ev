@@ -28,4 +28,4 @@ pnpm-debug.log*
 .idea/
 
 # Claude Code config (contains local system paths)
-.claude/
+.claude/launch.json
