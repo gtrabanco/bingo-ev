@@ -1,0 +1,420 @@
+---
+import Layout from '../layouts/Layout.astro';
+import BingoCard from '../components/BingoCard.astro';
+import CertificateModal from '../components/CertificateModal.astro';
+---
+
+<Layout>
+  <main class="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pt-7 pb-6 sm:max-w-lg sm:pt-12">
+    <header class="text-center">
+      <p class="text-[10px] font-bold uppercase tracking-[0.4em] text-amber-300/80">
+        Gran sorteo nacional de la recarga
+      </p>
+      <h1
+        class="mt-2 text-4xl font-black uppercase tracking-tight text-balance text-amber-300 drop-shadow-[0_3px_0_rgb(0_0_0/0.45)] sm:text-5xl"
+      >
+        El Bingo del Cargador
+      </h1>
+      <p class="mx-auto mt-3 max-w-sm text-sm/relaxed text-paper-300/90">
+        Seis desgracias del cargador público, repartidas al azar entre los huecos. Marca las que
+        vivas: la línea se canta, el bingo se certifica y el cartón caduca en un mes.
+      </p>
+    </header>
+
+    <section
+      class="mt-5 flex items-center justify-between gap-3 rounded-xl border border-paper-50/15 bg-felt-950/40 px-4 py-2.5 text-sm"
+      aria-live="polite"
+    >
+      <p id="status-marks" class="shrink-0 font-bold">0/6 desgracias</p>
+      <p id="status-lines" class="text-right text-paper-300/85">Sin líneas. De momento.</p>
+    </section>
+
+    <div class="mt-4">
+      <BingoCard />
+    </div>
+
+    <button
+      id="show-cert"
+      type="button"
+      class="mt-4 hidden w-full rounded-xl bg-amber-300 px-4 py-3 text-sm font-black uppercase tracking-widest text-felt-950 shadow-[0_6px_0_rgb(0_0_0/0.3)] transition-all active:translate-y-0.5 active:shadow-none"
+    >
+      Tu diploma
+    </button>
+
+    <noscript>
+      <p
+        class="mt-4 rounded-xl border border-amber-300/40 bg-amber-300/10 px-4 py-3 text-center text-sm text-amber-200"
+      >
+        Esto necesita JavaScript activado. Como los cargadores, pero de verdad.
+      </p>
+    </noscript>
+
+    <div class="mt-auto pt-8">
+      <button
+        id="new-card"
+        type="button"
+        class="w-full rounded-xl border-2 border-paper-50/30 px-4 py-3 text-sm font-black uppercase tracking-widest transition-colors hover:bg-paper-50/10 active:bg-paper-50/15"
+      >
+        Regenerar cartón
+      </button>
+
+      <footer class="pt-6 text-center text-[11px]/relaxed text-paper-300/55">
+        <p>
+          Situaciones 100&nbsp;% genéricas: aquí no se señala a nadie. Cada cual sabrá si se da
+          por aludido.
+        </p>
+        <p class="mt-1.5 font-semibold">bingo.gruxon.com · Hecho con resignación · 2026</p>
+        <p class="mt-1.5">
+          Creado por
+          <a
+            href="https://gtrabanco.com"
+            target="_blank"
+            rel="noopener"
+            class="underline decoration-paper-300/40 underline-offset-2 transition-colors hover:text-paper-50"
+          >Gabriel Trabanco</a>
+          ·
+          <a
+            href="https://github.com/gtrabanco/ev-bingo"
+            target="_blank"
+            rel="noopener"
+            class="underline decoration-paper-300/40 underline-offset-2 transition-colors hover:text-paper-50"
+          >Código en GitHub</a>
+        </p>
+      </footer>
+    </div>
+  </main>
+
+  <!-- "¡Línea!" toast -->
+  <div
+    id="toast"
+    aria-live="polite"
+    class="pointer-events-none fixed inset-x-0 bottom-7 z-50 flex translate-y-3 justify-center opacity-0 transition-all duration-300"
+  >
+    <p
+      id="toast-text"
+      class="rounded-full bg-amber-300 px-6 py-2.5 text-center text-sm font-black uppercase tracking-[0.12em] text-felt-950 shadow-xl"
+    >
+    </p>
+  </div>
+
+  <CertificateModal />
+</Layout>
+
+<script>
+  // Game wiring: render the card, toggle marks, persist, detect wins, enforce
+  // the one-month expiry and drive the certificate dialog. Pure logic lives
+  // in src/lib/.
+  import {
+    SITUATION_COUNT,
+    expiryDate,
+    generateCard,
+    getSituation,
+    isExpired,
+    type CardState,
+  } from '../lib/card';
+  import {
+    downloadCertificate,
+    drawCertificate,
+    type CertificateData,
+  } from '../lib/certificate';
+  import { discardCard, registerCard, reportCompletion, verificationUrl } from '../lib/api';
+  import { loadCurrentCard, loadNick, saveCard, saveNick } from '../lib/storage';
+  import { cellsInCompletedRows, completedRows, isFullCard, markedCount } from '../lib/wins';
+
+  function $<T extends Element>(selector: string): T {
+    const element = document.querySelector<T>(selector);
+    if (!element) throw new Error(`Missing element: ${selector}`);
+    return element;
+  }
+
+  const cardFrame = $<HTMLElement>('#bingo-card');
+  const grid = $<HTMLDivElement>('#bingo-grid');
+  const serial = $<HTMLSpanElement>('#card-serial');
+  const expiryLabel = $<HTMLSpanElement>('#card-expiry');
+  const expiredStamp = $<HTMLDivElement>('#expired-stamp');
+  const statusMarks = $<HTMLParagraphElement>('#status-marks');
+  const statusLines = $<HTMLParagraphElement>('#status-lines');
+  const newCardButton = $<HTMLButtonElement>('#new-card');
+  const showCertButton = $<HTMLButtonElement>('#show-cert');
+  const toast = $<HTMLDivElement>('#toast');
+  const toastText = $<HTMLParagraphElement>('#toast-text');
+  const dialog = $<HTMLDialogElement>('#bingo-dialog');
+  const nickInput = $<HTMLInputElement>('#cert-nick');
+  const certCanvas = $<HTMLCanvasElement>('#cert-canvas');
+  const downloadButton = $<HTMLButtonElement>('#cert-download');
+  const closeButton = $<HTMLButtonElement>('#cert-close');
+  const certLink = $<HTMLParagraphElement>('#cert-link');
+  const copyLinkButton = $<HTMLButtonElement>('#cert-copy');
+  const shareXButton = $<HTMLButtonElement>('#share-x');
+  const shareBlueskyButton = $<HTMLButtonElement>('#share-bluesky');
+  const shareInstagramButton = $<HTMLButtonElement>('#share-instagram');
+  const shareYoutubeButton = $<HTMLButtonElement>('#share-youtube');
+  const shareHint = $<HTMLParagraphElement>('#share-hint');
+
+  const shortDate = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' });
+  const longDate = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long' });
+
+  async function newCard(): Promise<CardState> {
+    const fresh = generateCard();
+    // Server-issued identity and clock when reachable; the locally generated
+    // ones otherwise (the card plays fine, it just won't be verifiable).
+    const registered = await registerCard();
+    if (registered) {
+      fresh.id = registered.id;
+      fresh.createdAt = registered.createdAt;
+    }
+    saveCard(fresh);
+    return fresh;
+  }
+
+  let card: CardState = loadCurrentCard() ?? (await newCard());
+  let cellButtons: (HTMLButtonElement | null)[] = [];
+  let toastTimer: number | undefined;
+  let nickSyncTimer: number | undefined;
+
+  // House rule: expired cards leave the central register.
+  if (isExpired(card)) discardCard(card.id);
+
+  function renderGrid(): void {
+    const expired = isExpired(card);
+    grid.replaceChildren();
+    cellButtons = card.cells.map((situationId, index) => {
+      if (situationId === null) {
+        const blank = document.createElement('div');
+        blank.className = 'cell cell-blank';
+        blank.setAttribute('aria-hidden', 'true');
+        grid.append(blank);
+        return null;
+      }
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'cell';
+      button.setAttribute('aria-pressed', String(card.marks[index]));
+      button.disabled = expired;
+      // Deterministic pseudo-random tilt so each dab looks hand-stamped.
+      button.style.setProperty('--dab-rot', `${((index * 53) % 19) - 9}deg`);
+
+      const text = document.createElement('span');
+      text.className = 'cell-text';
+      text.textContent = getSituation(situationId)?.text ?? situationId;
+
+      const dab = document.createElement('span');
+      dab.className = 'dab';
+      dab.setAttribute('aria-hidden', 'true');
+
+      button.append(text, dab);
+      button.addEventListener('click', () => toggleCell(index));
+      grid.append(button);
+      return button;
+    });
+
+    serial.textContent = card.id;
+    expiryLabel.textContent = shortDate.format(expiryDate(card));
+    cardFrame.classList.toggle('card-expired', expired);
+    expiredStamp.classList.toggle('hidden', !expired);
+  }
+
+  function toggleCell(index: number): void {
+    if (isExpired(card)) return;
+
+    const linesBefore = completedRows(card.cells, card.marks).length;
+    card.marks[index] = !card.marks[index];
+
+    const becameFull = isFullCard(card.cells, card.marks) && card.completedAt === null;
+    if (becameFull) {
+      // Local timestamp for instant feedback; the server's (authoritative)
+      // one replaces it as soon as the completion is registered.
+      card.completedAt = new Date().toISOString();
+      reportCompletion(card.id, loadNick()).then((receipt) => {
+        if (!receipt) return;
+        card.completedAt = receipt.completedAt;
+        saveCard(card);
+        refreshCertificate();
+      });
+    }
+
+    saveCard(card);
+    cellButtons[index]?.setAttribute('aria-pressed', String(card.marks[index]));
+    syncStatus();
+
+    if (becameFull) {
+      openCertificate();
+    } else if (completedRows(card.cells, card.marks).length > linesBefore) {
+      showToast('¡Línea! Enhorabuena, supongo.');
+    }
+  }
+
+  function syncStatus(): void {
+    const marked = markedCount(card.cells, card.marks);
+    const lines = completedRows(card.cells, card.marks).length;
+    const full = isFullCard(card.cells, card.marks);
+    const expired = isExpired(card);
+
+    statusMarks.textContent = `${marked}/${SITUATION_COUNT} desgracias`;
+    statusLines.textContent = expired
+      ? `Caducó el ${longDate.format(expiryDate(card))}. Toca regenerar.`
+      : full
+        ? 'Cartón completo. Era cuestión de tiempo.'
+        : lines === 0
+          ? `Caduca el ${longDate.format(expiryDate(card))}.`
+          : lines === 1
+            ? 'Una línea cantada.'
+            : `${lines} líneas cantadas.`;
+
+    const highlighted = cellsInCompletedRows(card.cells, card.marks);
+    cellButtons.forEach((button, index) => {
+      button?.classList.toggle('cell-in-line', highlighted.has(index));
+    });
+
+    // The diploma survives unmarking: once sung, a bingo stays sung.
+    showCertButton.classList.toggle('hidden', card.completedAt === null);
+  }
+
+  function showToast(message: string): void {
+    toastText.textContent = message;
+    toast.classList.remove('translate-y-3', 'opacity-0');
+    window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(() => {
+      toast.classList.add('translate-y-3', 'opacity-0');
+    }, 2600);
+  }
+
+  function certificateData(): CertificateData {
+    return {
+      nick: nickInput.value,
+      date: card.completedAt ? new Date(card.completedAt) : new Date(),
+      cardId: card.id,
+    };
+  }
+
+  function refreshCertificate(): void {
+    drawCertificate(certCanvas, certificateData());
+  }
+
+  function openCertificate(): void {
+    nickInput.value = loadNick();
+    certLink.textContent = verificationUrl(card.id);
+    refreshCertificate();
+    dialog.showModal();
+  }
+
+  newCardButton.addEventListener('click', async () => {
+    // Old cards stay in localStorage under their own id; only the pointer
+    // moves. Expired or untouched cards regenerate without ceremony, and
+    // never-completed ones leave the central register.
+    const hasMarks = markedCount(card.cells, card.marks) > 0;
+    if (hasMarks && !isExpired(card) && !confirm('¿Regenerar el cartón? El actual se queda archivado, con sus penas.')) {
+      return;
+    }
+    if (card.completedAt === null) discardCard(card.id);
+    card = await newCard();
+    renderGrid();
+    syncStatus();
+  });
+
+  showCertButton.addEventListener('click', openCertificate);
+
+  nickInput.addEventListener('input', () => {
+    saveNick(nickInput.value);
+    refreshCertificate();
+    // Completed cards sync the diploma nick to the register, debounced.
+    if (card.completedAt === null) return;
+    window.clearTimeout(nickSyncTimer);
+    nickSyncTimer = window.setTimeout(() => {
+      void reportCompletion(card.id, nickInput.value);
+    }, 600);
+  });
+
+  copyLinkButton.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(verificationUrl(card.id));
+      copyLinkButton.textContent = 'Copiado';
+      window.setTimeout(() => (copyLinkButton.textContent = 'Copiar'), 1500);
+    } catch {
+      // Clipboard unavailable (permissions/old browser): the link stays
+      // visible right next to the button for manual copying.
+    }
+  });
+
+  // --- Sharing ------------------------------------------------------------
+
+  function shareText(): string {
+    return `He completado «El Bingo del Cargador» de @gruxon: seis desgracias de la carga pública, dentro del plazo. Diploma verificable: ${verificationUrl(card.id)}`;
+  }
+
+  function openShareWindow(url: string): void {
+    window.open(url, '_blank', 'noopener');
+  }
+
+  async function copyShareText(): Promise<boolean> {
+    try {
+      await navigator.clipboard.writeText(shareText());
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function setShareHint(message: string): void {
+    shareHint.textContent = message;
+  }
+
+  async function diplomaFile(): Promise<File | null> {
+    // toBlob can be slow (or pathologically silent) on some engines; cap the
+    // wait so the share button always falls back instead of hanging.
+    const blob = await Promise.race([
+      new Promise<Blob | null>((resolve) => certCanvas.toBlob(resolve, 'image/png')),
+      new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 2000)),
+    ]);
+    if (!blob) return null;
+    return new File([blob], `certificado-bingo-cargador-${card.id}.png`, { type: 'image/png' });
+  }
+
+  shareXButton.addEventListener('click', () => {
+    openShareWindow(`https://x.com/intent/post?text=${encodeURIComponent(shareText())}`);
+  });
+
+  shareBlueskyButton.addEventListener('click', () => {
+    openShareWindow(`https://bsky.app/intent/compose?text=${encodeURIComponent(shareText())}`);
+  });
+
+  shareInstagramButton.addEventListener('click', async () => {
+    // Instagram has no web compose intent. On mobile, hand the PNG to the
+    // system share sheet (Instagram shows up there); elsewhere, copy the
+    // caption and open the profile.
+    const file = await diplomaFile();
+    if (file && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], text: shareText() });
+        return;
+      } catch {
+        // Sheet dismissed or unsupported combo: fall back below.
+      }
+    }
+    const copied = await copyShareText();
+    openShareWindow('https://www.instagram.com/gruxon/');
+    setShareHint(
+      copied
+        ? 'Texto copiado. Instagram no deja precargar nada: pega y sube el PNG a mano.'
+        : 'Instagram no deja precargar nada: descarga el PNG y súbelo a mano.',
+    );
+  });
+
+  shareYoutubeButton.addEventListener('click', async () => {
+    // YouTube has no share intent at all: copy the caption, open the channel.
+    const copied = await copyShareText();
+    openShareWindow('https://www.youtube.com/@gruxon');
+    setShareHint(
+      copied
+        ? 'Texto copiado. En YouTube, al menos, que conste la cita.'
+        : 'YouTube no deja precargar nada. La cita, de memoria.',
+    );
+  });
+
+  downloadButton.addEventListener('click', () => downloadCertificate(certCanvas, certificateData()));
+  closeButton.addEventListener('click', () => dialog.close());
+
+  renderGrid();
+  syncStatus();
+</script>

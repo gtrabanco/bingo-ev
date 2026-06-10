@@ -1,0 +1,112 @@
+---
+// Bingo dialog with the certificate stub (canvas preview + PNG download).
+// All behavior is wired from the page script in index.astro.
+---
+
+<dialog
+  id="bingo-dialog"
+  aria-labelledby="bingo-dialog-title"
+  class="m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-2xl border-4 border-ink-900 bg-paper-50 p-0 text-ink-900 shadow-2xl backdrop:bg-felt-950/80"
+>
+  <div class="p-5 sm:p-6">
+    <p class="text-xs font-bold uppercase tracking-[0.3em] text-dauber-700">Cartón completo</p>
+    <h2 id="bingo-dialog-title" class="mt-1 text-4xl font-black uppercase tracking-tight">
+      ¡Bingo!
+    </h2>
+    <p class="mt-2 text-sm/relaxed text-ink-900/70">
+      Todas las casillas, y dentro del plazo. Una trayectoria impecable hacia el desastre. Pon tu
+      nombre y llévate el diploma.
+    </p>
+
+    <label
+      class="mt-5 block text-xs font-semibold uppercase tracking-wide text-ink-900/60"
+      for="cert-nick"
+    >
+      Tu nombre o apodo
+    </label>
+    <input
+      id="cert-nick"
+      type="text"
+      maxlength="32"
+      placeholder="P. ej.: Conductora resiliente"
+      autocomplete="nickname"
+      class="mt-1.5 w-full rounded-lg border-2 border-ink-900 bg-white px-3 py-2 text-base outline-none focus:border-dauber-600"
+    />
+
+    <canvas
+      id="cert-canvas"
+      width="1200"
+      height="900"
+      aria-label="Vista previa del certificado"
+      class="mt-4 h-auto w-full rounded-md border-2 border-paper-300"></canvas>
+
+    <div
+      class="mt-3 flex items-center gap-2 rounded-lg border-2 border-paper-300 bg-paper-100 px-3 py-2"
+    >
+      <p id="cert-link" class="min-w-0 flex-1 truncate font-mono text-[11px] text-ink-900/70"></p>
+      <button
+        id="cert-copy"
+        type="button"
+        class="shrink-0 rounded-md border-2 border-ink-900 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide transition-colors active:bg-paper-300"
+      >
+        Copiar
+      </button>
+    </div>
+
+    <p class="mt-4 text-xs font-semibold uppercase tracking-wide text-ink-900/60">
+      Presume de desgracia
+    </p>
+    <div class="mt-1.5 grid grid-cols-4 gap-2">
+      <button
+        id="share-x"
+        type="button"
+        aria-label="Compartir en X mencionando a @gruxon"
+        class="rounded-lg border-2 border-ink-900 px-1 py-2 text-[10px] font-bold uppercase transition-colors active:bg-paper-100"
+      >
+        X
+      </button>
+      <button
+        id="share-bluesky"
+        type="button"
+        aria-label="Compartir en Bluesky mencionando a @gruxon"
+        class="rounded-lg border-2 border-ink-900 px-1 py-2 text-[10px] font-bold uppercase transition-colors active:bg-paper-100"
+      >
+        Bluesky
+      </button>
+      <button
+        id="share-instagram"
+        type="button"
+        aria-label="Compartir en Instagram mencionando a @gruxon"
+        class="rounded-lg border-2 border-ink-900 px-1 py-2 text-[10px] font-bold uppercase transition-colors active:bg-paper-100"
+      >
+        Insta
+      </button>
+      <button
+        id="share-youtube"
+        type="button"
+        aria-label="Compartir en YouTube mencionando a @gruxon"
+        class="rounded-lg border-2 border-ink-900 px-1 py-2 text-[10px] font-bold uppercase transition-colors active:bg-paper-100"
+      >
+        YouTube
+      </button>
+    </div>
+    <p id="share-hint" class="mt-2 min-h-4 text-[11px]/snug text-ink-900/60" aria-live="polite"></p>
+
+    <div class="mt-4 flex gap-2">
+      <button
+        id="cert-download"
+        type="button"
+        class="flex-1 rounded-xl bg-dauber-600 px-4 py-3 text-sm font-black uppercase tracking-widest text-paper-50 transition-colors active:bg-dauber-700"
+      >
+        Descargar PNG
+      </button>
+      <button
+        id="cert-close"
+        type="button"
+        class="rounded-xl border-2 border-ink-900 px-4 py-3 text-sm font-bold uppercase tracking-widest transition-colors active:bg-paper-100"
+      >
+        Cerrar
+      </button>
+    </div>
+  </div>
+</dialog>

@@ -1,0 +1,163 @@
+---
+// Public verification page: /v/<cardId>. Server-rendered against D1.
+// Three outcomes: verified completion, card still in play, or no record.
+export const prerender = false;
+
+import { env } from 'cloudflare:workers';
+import Layout from '../../layouts/Layout.astro';
+import { expiryFromCreatedAt } from '../../lib/card';
+
+interface CardRow {
+  id: string;
+  created_at: string;
+  completed_at: string | null;
+  nick: string | null;
+}
+
+const ID_PATTERN = /^[0-9a-z]{8}$/;
+const id = Astro.params.id ?? '';
+
+let row: CardRow | null = null;
+if (ID_PATTERN.test(id)) {
+  row = await env.DB.prepare('SELECT id, created_at, completed_at, nick FROM cards WHERE id = ?1')
+    .bind(id)
+    .first<CardRow>();
+}
+
+// A pending card past its window is as good as gone: delete it lazily and
+// report "no record", same as the API would.
+if (row && !row.completed_at && Date.now() > expiryFromCreatedAt(row.created_at).getTime()) {
+  await env.DB.prepare('DELETE FROM cards WHERE id = ?1').bind(id).run();
+  row = null;
+}
+
+const verdict: 'verified' | 'pending' | 'unknown' = row
+  ? row.completed_at
+    ? 'verified'
+    : 'pending'
+  : 'unknown';
+
+const longDate = new Intl.DateTimeFormat('es-ES', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+
+Astro.response.headers.set('cache-control', 'no-store');
+
+const titles = {
+  verified: 'Bingo verificado',
+  pending: 'Cartón en juego',
+  unknown: 'Este cartón no consta',
+} as const;
+---
+
+<Layout
+  title={`${titles[verdict]} — El Bingo del Cargador`}
+  description="Verificación oficiosa de cartones del Bingo del Cargador."
+>
+  <main class="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pt-10 pb-6">
+    <p class="text-center text-[10px] font-bold uppercase tracking-[0.4em] text-amber-300/80">
+      Registro oficioso de cartones
+    </p>
+
+    <article
+      class="mt-5 overflow-hidden rounded-2xl border-4 border-ink-900 bg-paper-50 text-ink-900 shadow-[0_18px_40px_-12px_rgb(0_0_0/0.55)]"
+    >
+      <header
+        class="flex items-baseline justify-between gap-3 border-b-4 border-ink-900 bg-dauber-600 px-3.5 py-2 text-paper-50"
+      >
+        <p class="text-lg font-black uppercase tracking-[0.35em]">Acta</p>
+        <p class="shrink-0 font-mono text-[10px] tracking-wider uppercase">
+          Cartón nº {ID_PATTERN.test(id) ? id : '????????'}
+        </p>
+      </header>
+
+      <div class="px-5 py-6 text-center">
+        {
+          verdict === 'verified' && row && (
+            <>
+              <p class="inline-block -rotate-3 rounded-lg border-4 border-double border-felt-800 px-4 py-1.5 text-2xl font-black uppercase tracking-[0.25em] text-felt-800">
+                Verificado
+              </p>
+              <p class="mt-5 text-sm/relaxed text-ink-900/80">
+                <strong>{row.nick ?? 'Alguien con mucha paciencia'}</strong> completó este cartón
+                el <strong>{longDate.format(new Date(row.completed_at!))}</strong>, dentro del
+                plazo reglamentario de un mes.
+              </p>
+              <p class="mt-3 text-xs text-ink-900/55">
+                Registrado el {longDate.format(new Date(row.created_at))}. La organización da fe.
+                Hasta donde la organización puede dar fe de algo.
+              </p>
+            </>
+          )
+        }
+        {
+          verdict === 'pending' && row && (
+            <>
+              <p class="inline-block -rotate-3 rounded-lg border-4 border-double border-amber-600 px-4 py-1.5 text-2xl font-black uppercase tracking-[0.25em] text-amber-600">
+                En juego
+              </p>
+              <p class="mt-5 text-sm/relaxed text-ink-900/80">
+                Cartón registrado el <strong>{longDate.format(new Date(row.created_at))}</strong>,
+                aún sin completar.
+              </p>
+              <p class="mt-3 text-xs text-ink-900/55">
+                Tiene hasta el {longDate.format(expiryFromCreatedAt(row.created_at))} para
+                cantar bingo. Las desgracias, por desgracia, llegarán solas.
+              </p>
+            </>
+          )
+        }
+        {
+          verdict === 'unknown' && (
+            <>
+              <p class="inline-block -rotate-3 rounded-lg border-4 border-double border-dauber-600 px-4 py-1.5 text-2xl font-black uppercase tracking-[0.25em] text-dauber-600">
+                No consta
+              </p>
+              <p class="mt-5 text-sm/relaxed text-ink-900/80">
+                Este cartón no figura en el registro. O nunca existió, o caducó sin gloria.
+              </p>
+              <p class="mt-3 text-xs text-ink-900/55">
+                El registro no guarda rencor: los cartones caducados se eliminan.
+              </p>
+            </>
+          )
+        }
+      </div>
+
+      <footer
+        class="border-t-4 border-ink-900 bg-paper-100 px-3.5 py-1.5 text-center text-[9px] font-semibold uppercase tracking-[0.14em] text-ink-900/60"
+      >
+        Verificación sin validez legal, técnica ni emocional
+      </footer>
+    </article>
+
+    <a
+      href="/"
+      class="mt-6 rounded-xl border-2 border-paper-50/30 px-4 py-3 text-center text-sm font-black uppercase tracking-widest text-paper-50 transition-colors hover:bg-paper-50/10"
+    >
+      Jugar mi propio cartón
+    </a>
+
+    <footer class="mt-auto pt-8 text-center text-[11px]/relaxed text-paper-300/55">
+      <p class="font-semibold">bingo.gruxon.com · Hecho con resignación · 2026</p>
+      <p class="mt-1.5">
+        Creado por
+        <a
+          href="https://gtrabanco.com"
+          target="_blank"
+          rel="noopener"
+          class="underline decoration-paper-300/40 underline-offset-2 transition-colors hover:text-paper-50"
+        >Gabriel Trabanco</a>
+        ·
+        <a
+          href="https://github.com/gtrabanco/ev-bingo"
+          target="_blank"
+          rel="noopener"
+          class="underline decoration-paper-300/40 underline-offset-2 transition-colors hover:text-paper-50"
+        >Código en GitHub</a>
+      </p>
+    </footer>
+  </main>
+</Layout>
