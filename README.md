@@ -87,6 +87,8 @@ that confirms the bingo was sung within the one-month window — per the server 
   spectators. Mutations require the owner secret, which never leaves the owner's browser.
 - **Recover by email** (optional, no auth): a player can link an email to a card and get a
   recovery email with owner links (id + secret), optionally opting into the newsletter.
+- **Privacy** (`/privacidad`): GDPR notice — controller, purposes, lawful basis, retention,
+  rights — linked from the email form disclaimer and the footer.
 
 ## Verification registry (Cloudflare D1)
 
@@ -111,15 +113,25 @@ from cross-site form posts.
 Columns added over time: `secret` (owner token), `cells`/`marks` (for the live `/c/<id>`
 view), `email`/`newsletter` (optional recovery + opt-in). See `migrations/`.
 
-## Email (Brevo) — optional
+## Newsletter & privacy
 
-Recovery email and the newsletter opt-in go through [Brevo](https://www.brevo.com). They
-are best-effort: with no config the game runs fine, the email features just no-op. Config:
+- **Newsletter sign-ups** are stored in this site's own D1 `newsletter` table
+  (`email`, `source`, `consented_at`) — *not* pushed to Brevo. `source` is the origin
+  hostname so the list can later be consolidated across Gabriel's sites. The opt-in is an
+  explicit, unticked checkbox (GDPR consent); the timestamp is recorded.
+- **GDPR**: no analytics or advertising cookies; game state is localStorage only (strictly
+  necessary, no banner needed). Email is collected only with consent, with a disclaimer at
+  the point of collection and a full policy at `/privacidad`. Update the contact address and
+  controller details there if they change.
+
+## Email sending (Brevo) — optional
+
+Only the **recovery email** uses [Brevo](https://www.brevo.com), and it's best-effort: with
+no config the game runs fine and recovery just no-ops. Config:
 
 | Name                 | Where        | What                                                        |
 | :------------------- | :----------- | :---------------------------------------------------------- |
 | `BREVO_API_KEY`      | **secret**   | API key (`xkeysib-…`) from Brevo → SMTP & API → API Keys    |
-| `BREVO_LIST_ID`      | var          | Newsletter list id (number) from Contacts → Lists           |
 | `BREVO_SENDER_EMAIL` | var          | A verified sender address (Senders, Domains & Dedicated IPs)|
 | `BREVO_SENDER_NAME`  | var          | Display name for the sender                                 |
 

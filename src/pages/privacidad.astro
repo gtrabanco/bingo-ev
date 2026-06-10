@@ -1,0 +1,109 @@
+---
+// Privacy policy. Plain prose, GDPR-oriented: what we collect, why, the lawful
+// basis, retention and the data subject's rights. Static page.
+import Layout from '../layouts/Layout.astro';
+
+const updated = '10 de junio de 2026';
+---
+
+<Layout
+  title="Privacidad — El Bingo del Cargador"
+  description="Qué datos recoge El Bingo del Cargador, con qué fin y qué derechos tienes sobre ellos."
+>
+  <main
+    class="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pt-10 pb-6 sm:max-w-2xl sm:pt-14"
+  >
+    <h1 class="text-2xl font-black uppercase tracking-tight text-amber-300 sm:text-3xl">
+      Privacidad
+    </h1>
+    <p class="mt-1 text-[0.6875rem] text-paper-300/60 sm:text-xs">
+      Última actualización: {updated}
+    </p>
+
+    <div class="mt-6 space-y-5 text-sm/relaxed text-paper-300/90 sm:text-base/relaxed">
+      <section>
+        <h2 class="text-base font-bold text-paper-50 sm:text-lg">Quién responde de tus datos</h2>
+        <p class="mt-1.5">
+          El responsable del tratamiento es Gabriel Trabanco (<a
+            href="https://gtrabanco.com"
+            class="underline decoration-paper-300/40 hover:text-paper-50"
+            target="_blank"
+            rel="noopener">gtrabanco.com</a
+          >). Puedes contactar para cualquier asunto de privacidad en
+          <a
+            href="mailto:hola@gtrabanco.com"
+            class="underline decoration-paper-300/40 hover:text-paper-50">hola@gtrabanco.com</a
+          >.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-base font-bold text-paper-50 sm:text-lg">Qué recogemos y para qué</h2>
+        <ul class="mt-1.5 list-disc space-y-2 pl-5">
+          <li>
+            <strong>Para jugar no pedimos nada.</strong> El estado de tu cartón se guarda en tu
+            navegador (localStorage), no en un servidor de seguimiento. No usamos cookies de
+            analítica ni de publicidad.
+          </li>
+          <li>
+            <strong>Tu correo, solo si lo das.</strong> Si vinculas un email a un cartón, lo
+            guardamos para poder reenviarte el enlace y que recuperes la partida en otro
+            dispositivo. Base jurídica: tu consentimiento (art. 6.1.a RGPD).
+          </li>
+          <li>
+            <strong>Newsletter, solo si la marcas.</strong> Si activas la casilla, guardamos tu
+            correo y el sitio desde el que te apuntaste para enviarte novedades de los proyectos
+            de Gabriel Trabanco. Esta lista puede ser común a varios de sus sitios. Base
+            jurídica: tu consentimiento, retirable en cualquier momento.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="text-base font-bold text-paper-50 sm:text-lg">Cuánto tiempo y con quién</h2>
+        <p class="mt-1.5">
+          Conservamos tu correo mientras siga vinculado a un cartón vigente o hasta que pidas
+          borrarlo; los cartones caducados se eliminan solos. El envío de correos se apoya en
+          <a
+            href="https://www.brevo.com/es/legal/privacypolicy/"
+            class="underline decoration-paper-300/40 hover:text-paper-50"
+            target="_blank"
+            rel="noopener">Brevo</a
+          >, proveedor que actúa como encargado del tratamiento. No vendemos ni cedemos tus datos
+          a terceros con fines comerciales.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-base font-bold text-paper-50 sm:text-lg">Tus derechos</h2>
+        <p class="mt-1.5">
+          Puedes ejercer tus derechos de acceso, rectificación, supresión, oposición,
+          limitación y portabilidad escribiendo a
+          <a
+            href="mailto:hola@gtrabanco.com"
+            class="underline decoration-paper-300/40 hover:text-paper-50">hola@gtrabanco.com</a
+          >. También puedes retirar tu consentimiento cuando quieras y reclamar ante la Agencia
+          Española de Protección de Datos (<a
+            href="https://www.aepd.es"
+            class="underline decoration-paper-300/40 hover:text-paper-50"
+            target="_blank"
+            rel="noopener">aepd.es</a
+          >).
+        </p>
+      </section>
+    </div>
+
+    <a
+      href="/"
+      class="mt-8 rounded-xl border-2 border-paper-50/30 px-4 py-3 text-center text-sm font-black uppercase tracking-widest text-paper-50 transition-colors hover:bg-paper-50/10 sm:text-base"
+    >
+      Volver al bingo
+    </a>
+
+    <footer
+      class="mt-auto pt-8 text-center text-[0.6875rem]/relaxed text-paper-300/55 sm:text-sm/relaxed"
+    >
+      <p class="font-semibold">bingo.gruxon.com · Hecho con resignación · 2026</p>
+    </footer>
+  </main>
+</Layout>

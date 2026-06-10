@@ -56,7 +56,6 @@ export const POST: APIRoute = async ({ request }) => {
     await sendRecoveryEmail(
       {
         apiKey: env.BREVO_API_KEY,
-        listId: env.BREVO_LIST_ID,
         senderEmail: env.BREVO_SENDER_EMAIL,
         senderName: env.BREVO_SENDER_NAME,
       },

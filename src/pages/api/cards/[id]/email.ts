@@ -1,24 +1,18 @@
 // POST /api/cards/:id/email — link an email to a card (owner-only) so it can
 // be recovered later, with an optional opt-in to the newsletter. No account,
 // no password: the recovery email itself is the proof of ownership.
+//
+// GDPR: the email is stored on the card only to enable recovery; the
+// newsletter opt-in is a separate, explicit consent recorded in its own table
+// with the origin domain, so the list can later be shared across sites.
 export const prerender = false;
 
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import { subscribeToNewsletter } from '../../../../lib/brevo';
 
 const ID_PATTERN = /^[0-9a-z]{8}$/;
 // Pragmatic email shape check; real validation is "did the mail arrive".
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function brevoConfig() {
-  return {
-    apiKey: env.BREVO_API_KEY,
-    listId: env.BREVO_LIST_ID,
-    senderEmail: env.BREVO_SENDER_EMAIL,
-    senderName: env.BREVO_SENDER_NAME,
-  };
-}
 
 export const POST: APIRoute = async ({ params, request }) => {
   const id = params.id ?? '';
@@ -31,7 +25,7 @@ export const POST: APIRoute = async ({ params, request }) => {
     const body: unknown = await request.json();
     const data = body as { secret?: unknown; email?: unknown; newsletter?: unknown };
     if (typeof data.secret === 'string') secret = data.secret;
-    if (typeof data.email === 'string') email = data.email.trim().slice(0, 255);
+    if (typeof data.email === 'string') email = data.email.trim().slice(0, 255).toLowerCase();
     newsletter = data.newsletter === true;
   } catch {
     return new Response(null, { status: 400 });
@@ -46,10 +40,15 @@ export const POST: APIRoute = async ({ params, request }) => {
 
   if (!result.meta.changes) return new Response(null, { status: 403 });
 
-  // Newsletter opt-in is best-effort and must not delay the response or fail
-  // the link if Brevo is down or unconfigured.
+  // Newsletter opt-in: record the explicit consent with the origin domain.
+  // INSERT OR IGNORE keeps it idempotent across re-links.
   if (newsletter) {
-    await subscribeToNewsletter(brevoConfig(), email).catch(() => false);
+    const source = new URL(request.url).hostname;
+    await env.DB.prepare(
+      'INSERT OR IGNORE INTO newsletter (email, source, consented_at) VALUES (?1, ?2, ?3)',
+    )
+      .bind(email, source, new Date().toISOString())
+      .run();
   }
 
   return new Response(null, { status: 204 });

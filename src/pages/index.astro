@@ -116,6 +116,14 @@ import CertificateModal from '../components/CertificateModal.astro';
             >
               Vincular este cartón
             </button>
+            <p class="text-[0.625rem]/snug text-paper-300/55 sm:text-[0.6875rem]/snug">
+              Responsable: Gabriel Trabanco. Usamos tu correo solo para reenviarte tus cartones
+              (y, si lo marcas, para la newsletter). No lo vendemos ni cedemos. Puedes borrarlo
+              cuando quieras. Más en la
+              <a href="/privacidad" class="underline decoration-paper-300/40 hover:text-paper-50"
+                >política de privacidad</a
+              >.
+            </p>
           </form>
 
           <hr class="my-3 border-paper-50/10" />
@@ -155,12 +163,22 @@ import CertificateModal from '../components/CertificateModal.astro';
         </p>
         <p class="mt-1.5 text-sm/relaxed text-paper-50 sm:text-base/relaxed">
           ¿Pensando en comprar un Tesla? Usa mi
-          <strong>código de referido</strong> y ganamos los dos. Sobre todo yo.
+          <strong>código de referido</strong> y ganamos los dos por igual.
         </p>
         <span
-          class="mt-3 inline-block rounded-xl bg-amber-300 px-5 py-2.5 text-xs font-black uppercase tracking-widest text-felt-950 shadow-[0_4px_0_rgb(0_0_0/0.3)] transition-all group-hover:shadow-[0_5px_0_rgb(0_0_0/0.3)] group-active:translate-y-0.5 group-active:shadow-none sm:text-sm"
+          class="mt-3 inline-flex items-center gap-2 rounded-xl bg-amber-300 px-5 py-2.5 text-xs font-black uppercase tracking-widest text-felt-950 shadow-[0_4px_0_rgb(0_0_0/0.3)] transition-all group-hover:shadow-[0_5px_0_rgb(0_0_0/0.3)] group-active:translate-y-0.5 group-active:shadow-none sm:text-sm"
         >
-          gabriel746720
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+            class="h-3.5 w-3.5 sm:h-4 sm:w-4"
+          >
+            <path
+              d="M12 5.362l2.475-3.026s4.245.09 8.471 2.054c-1.082 1.636-3.231 2.438-3.231 2.438-.146-1.439-1.154-1.79-4.354-1.79L12 24 8.619 5.034c-3.18 0-4.211.354-4.359 1.792 0 0-2.144-.804-3.229-2.43C5.255 2.43 9.5 2.34 9.5 2.34L11.976 5.362l.012.002.012-.002zM12 1.575c2.717-.002 5.823.439 9 1.882 0 0 .3.534.387.823 0 0-3.717-1.516-9.387-1.508-5.67-.008-9.386 1.508-9.386 1.508.087-.289.387-.823.387-.823C6.18 2.014 9.285 1.573 12 1.575z"
+            ></path>
+          </svg>
+          Código gabriel746720
         </span>
       </a>
 
@@ -188,6 +206,11 @@ import CertificateModal from '../components/CertificateModal.astro';
             rel="noopener"
             class="underline decoration-paper-300/40 underline-offset-2 transition-colors hover:text-paper-50"
           >Código en GitHub</a>
+          ·
+          <a
+            href="/privacidad"
+            class="underline decoration-paper-300/40 underline-offset-2 transition-colors hover:text-paper-50"
+          >Privacidad</a>
         </p>
       </footer>
     </div>

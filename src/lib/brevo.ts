@@ -1,17 +1,16 @@
-// Minimal Brevo (ex-Sendinblue) REST client for the two things we need:
-// subscribing a contact to the newsletter list, and sending the transactional
-// recovery email. All calls are best-effort and never throw to the caller —
-// email is a nicety, not a blocker for playing.
+// Minimal Brevo (ex-Sendinblue) REST client for the one thing we need it for:
+// sending the transactional recovery email. (Newsletter sign-ups are stored in
+// our own D1 table, not pushed to Brevo — see the newsletter migration.) All
+// calls are best-effort and never throw to the caller: email is a nicety, not
+// a blocker for playing.
 //
 // Required runtime config (see wrangler.jsonc vars + `wrangler secret`):
 //   BREVO_API_KEY      secret, the xkeysib-... key
-//   BREVO_LIST_ID      newsletter list id (number as string)
 //   BREVO_SENDER_EMAIL verified sender address
 //   BREVO_SENDER_NAME  display name for the sender
 
 interface BrevoConfig {
   apiKey?: string;
-  listId?: string;
   senderEmail?: string;
   senderName?: string;
 }
@@ -43,16 +42,6 @@ async function call(config: BrevoConfig, path: string, body: unknown): Promise<b
   } catch {
     return false;
   }
-}
-
-// Adds (or updates) a contact and subscribes it to the newsletter list.
-export function subscribeToNewsletter(config: BrevoConfig, email: string): Promise<boolean> {
-  if (!config.listId) return Promise.resolve(false);
-  return call(config, '/contacts', {
-    email,
-    listIds: [Number(config.listId)],
-    updateEnabled: true,
-  });
 }
 
 // Sends the recovery email listing the player's cards as owner links.

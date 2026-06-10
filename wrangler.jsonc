@@ -13,10 +13,9 @@
 	"observability": {
 		"enabled": true
 	},
-	// Non-secret Brevo config. The API key is a secret: set it with
-	// `npx wrangler secret put BREVO_API_KEY` (never commit it).
+	// Non-secret Brevo config for the transactional recovery email. The API key
+	// is a secret: set it with `npx wrangler secret put BREVO_API_KEY`.
 	"vars": {
-		"BREVO_LIST_ID": "",
 		"BREVO_SENDER_EMAIL": "",
 		"BREVO_SENDER_NAME": "El Bingo del Cargador"
 	},
