@@ -16,8 +16,8 @@
 	// Non-secret Brevo config for the transactional recovery email. The API key
 	// is a secret: set it with `npx wrangler secret put BREVO_API_KEY`.
 	"vars": {
-		"BREVO_SENDER_EMAIL": "",
-		"BREVO_SENDER_NAME": "El Bingo del Cargador"
+		"BREVO_SENDER_EMAIL": "no-reply@gtrabanco.com",
+		"BREVO_SENDER_NAME": "El Bingo EV"
 	},
 	"d1_databases": [
 		{
