@@ -1,0 +1,129 @@
+@import 'tailwindcss';
+
+/* Bingo-hall palette: felt table, cartón paper, dauber ink. */
+@theme {
+  --color-felt-950: #06251b;
+  --color-felt-900: #0b3d2e;
+  --color-felt-800: #11503c;
+  --color-paper-50: #f6f0df;
+  --color-paper-100: #efe6cd;
+  --color-paper-300: #ddcfa9;
+  --color-dauber-600: #b02e22;
+  --color-dauber-700: #8f251c;
+  --color-ink-900: #221f1a;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-felt-900);
+    background-image:
+      radial-gradient(120% 90% at 50% -10%, rgb(255 255 255 / 0.08), transparent 60%),
+      linear-gradient(rgb(0 0 0 / 0) 55%, rgb(0 0 0 / 0.28));
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  /* One bingo cell. State is driven by aria-pressed (marked) and the
+     .cell-in-line class (cell belongs to a completed line). */
+  .cell {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 5.25rem;
+    padding: 0.45rem 0.35rem;
+    background-color: var(--color-paper-50);
+    color: var(--color-ink-900);
+    font-size: 0.6875rem;
+    line-height: 1.25;
+    font-weight: 500;
+    text-align: center;
+    overflow: hidden;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition: background-color 150ms ease;
+  }
+
+  .cell:active {
+    background-color: var(--color-paper-100);
+  }
+
+  .cell-in-line {
+    background-color: #fbe9b8;
+  }
+
+  /* Dead cells, like the blanks of a real cartón. */
+  .cell-blank {
+    background-color: var(--color-paper-100);
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent 0 6px,
+      rgb(34 31 26 / 0.05) 6px 7px
+    );
+    cursor: default;
+  }
+
+  /* Expired, incomplete card: frozen cells under a rubber stamp. */
+  .card-expired #bingo-grid {
+    filter: saturate(0.55) contrast(0.92);
+    opacity: 0.8;
+  }
+
+  .cell:disabled {
+    cursor: not-allowed;
+  }
+
+  .expired-stamp {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 10;
+    transform: translate(-50%, -50%) rotate(-12deg);
+    border: 4px double var(--color-dauber-600);
+    border-radius: 0.5rem;
+    padding: 0.3rem 1.1rem;
+    background-color: rgb(246 240 223 / 0.55);
+    color: var(--color-dauber-600);
+    font-size: 2rem;
+    font-weight: 900;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+
+  .cell-text {
+    position: relative;
+    z-index: 1;
+    overflow-wrap: anywhere;
+    hyphens: auto;
+  }
+
+  /* The dauber blob. Sits above the text but translucent, like real ink. */
+  .dab {
+    position: absolute;
+    inset: 14%;
+    z-index: 2;
+    border-radius: 52% 48% 55% 45% / 47% 56% 44% 53%;
+    background: radial-gradient(
+      circle at 33% 30%,
+      rgb(214 78 60 / 0.66),
+      rgb(146 32 22 / 0.74) 72%
+    );
+    box-shadow: inset 0 0 18px rgb(70 8 0 / 0.3);
+    transform: scale(0) rotate(var(--dab-rot, 0deg));
+    pointer-events: none;
+  }
+
+  .cell[aria-pressed='true'] .dab {
+    transform: scale(1) rotate(var(--dab-rot, 0deg));
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .dab {
+      transition: transform 180ms cubic-bezier(0.2, 1.6, 0.4, 1);
+    }
+  }
+}

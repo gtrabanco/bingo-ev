@@ -1,0 +1,25 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"compatibility_date": "2026-06-10",
+	"compatibility_flags": [
+		"global_fetch_strictly_public"
+	],
+	"name": "ev-bingo",
+	"main": "@astrojs/cloudflare/entrypoints/server",
+	"assets": {
+		"directory": "./dist",
+		"binding": "ASSETS"
+	},
+	"observability": {
+		"enabled": true
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "ev-bingo",
+			// Created with `npx wrangler d1 create ev-bingo`. Local dev ignores it.
+			"database_id": "719934d0-bd05-47d4-ab1b-e4d2b157128f",
+			"migrations_dir": "./migrations"
+		}
+	]
+}

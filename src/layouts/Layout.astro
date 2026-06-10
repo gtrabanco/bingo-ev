@@ -1,0 +1,35 @@
+---
+// Base HTML shell: meta tags, favicon and global styles.
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'El Bingo del Cargador',
+  description = 'El juego de azar favorito de quien conduce un eléctrico por España. Marca las desgracias del cargador público que hayas vivido y canta bingo.',
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#0b3d2e" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://bingo.gruxon.com" />
+    <meta property="og:locale" content="es_ES" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title}</title>
+  </head>
+  <body class="min-h-dvh bg-felt-900 text-paper-50 antialiased">
+    <slot />
+  </body>
+</html>
