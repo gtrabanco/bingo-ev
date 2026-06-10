@@ -10,7 +10,7 @@ import CertificateModal from '../components/CertificateModal.astro';
 >
   <main class="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pt-7 pb-6 sm:max-w-lg sm:pt-12">
     <header class="text-center">
-      <p class="text-[10px] font-bold uppercase tracking-[0.4em] text-amber-300/80">
+      <p class="text-[0.625rem] font-bold uppercase tracking-[0.4em] text-amber-300/80 sm:text-xs">
         Gran sorteo nacional de la recarga
       </p>
       <h1
@@ -18,13 +18,13 @@ import CertificateModal from '../components/CertificateModal.astro';
       >
         El Bingo del Cargador
       </h1>
-      <p class="mx-auto mt-3 max-w-sm text-sm/relaxed text-paper-300/90">
+      <p class="mx-auto mt-3 max-w-sm text-sm/relaxed text-paper-300/90 sm:max-w-md sm:text-base/relaxed">
         <strong>Juego de bingo gratuito</strong> sobre las desgracias típicas del cargador público en España. Seis situaciones por cartón, repartidas al azar. Marca las que vivas: la <strong>línea se canta</strong>, el <strong>bingo se certifica</strong> con diploma verificable, y el cartón caduca en un mes.
       </p>
     </header>
 
     <section
-      class="mt-5 flex items-center justify-between gap-3 rounded-xl border border-paper-50/15 bg-felt-950/40 px-4 py-2.5 text-sm"
+      class="mt-5 flex items-center justify-between gap-3 rounded-xl border border-paper-50/15 bg-felt-950/40 px-4 py-2.5 text-sm sm:text-base"
       aria-live="polite"
     >
       <p id="status-marks" class="shrink-0 font-bold">0/6 desgracias</p>
@@ -38,7 +38,7 @@ import CertificateModal from '../components/CertificateModal.astro';
     <button
       id="show-cert"
       type="button"
-      class="mt-4 hidden w-full rounded-xl bg-amber-300 px-4 py-3 text-sm font-black uppercase tracking-widest text-felt-950 shadow-[0_6px_0_rgb(0_0_0/0.3)] transition-all active:translate-y-0.5 active:shadow-none"
+      class="mt-4 hidden w-full rounded-xl bg-amber-300 px-4 py-3 text-sm font-black uppercase tracking-widest text-felt-950 shadow-[0_6px_0_rgb(0_0_0/0.3)] transition-all active:translate-y-0.5 active:shadow-none sm:text-base"
     >
       Tu diploma
     </button>
@@ -46,9 +46,17 @@ import CertificateModal from '../components/CertificateModal.astro';
     <button
       id="show-cert-bad"
       type="button"
-      class="mt-4 hidden w-full rounded-xl bg-orange-600 px-4 py-3 text-sm font-black uppercase tracking-widest text-paper-50 shadow-[0_6px_0_rgb(0_0_0/0.3)] transition-all active:translate-y-0.5 active:shadow-none"
+      class="mt-4 hidden w-full rounded-xl bg-orange-600 px-4 py-3 text-sm font-black uppercase tracking-widest text-paper-50 shadow-[0_6px_0_rgb(0_0_0/0.3)] transition-all active:translate-y-0.5 active:shadow-none sm:text-base"
     >
       Tu certificado de sinvergüenza
+    </button>
+
+    <button
+      id="share-card"
+      type="button"
+      class="mt-4 hidden w-full rounded-xl border-2 border-paper-50/30 px-4 py-2.5 text-xs font-black uppercase tracking-widest transition-colors hover:bg-paper-50/10 active:bg-paper-50/15 sm:text-sm"
+    >
+      Compartir cómo voy
     </button>
 
     <noscript>
@@ -63,30 +71,40 @@ import CertificateModal from '../components/CertificateModal.astro';
       <button
         id="new-card"
         type="button"
-        class="w-full rounded-xl border-2 border-paper-50/30 px-4 py-3 text-sm font-black uppercase tracking-widest transition-colors hover:bg-paper-50/10 active:bg-paper-50/15"
+        class="w-full rounded-xl border-2 border-paper-50/30 px-4 py-3 text-sm font-black uppercase tracking-widest transition-colors hover:bg-paper-50/10 active:bg-paper-50/15 sm:text-base"
       >
         Regenerar cartón
       </button>
 
-      <footer class="pt-6 text-center text-[11px]/relaxed text-paper-300/55">
+      <a
+        href="https://www.tesla.com/es_es/referral/gabriel746720"
+        target="_blank"
+        rel="noopener"
+        class="group mt-6 block rounded-2xl border-2 border-amber-300/60 bg-gradient-to-br from-amber-300/15 to-amber-300/5 px-5 py-4 text-center transition-colors hover:border-amber-300 hover:bg-amber-300/10"
+      >
+        <p class="text-[0.625rem] font-bold uppercase tracking-[0.3em] text-amber-300/80 sm:text-xs">
+          Publicidad descarada
+        </p>
+        <p class="mt-1.5 text-sm/relaxed text-paper-50 sm:text-base/relaxed">
+          ¿Aun con este bingo te pasas al eléctrico? Hazlo con mi
+          <strong>referido de Tesla</strong> y ganamos los dos. Sobre todo yo.
+        </p>
+        <span
+          class="mt-3 inline-block rounded-xl bg-amber-300 px-5 py-2.5 text-xs font-black uppercase tracking-widest text-felt-950 shadow-[0_4px_0_rgb(0_0_0/0.3)] transition-all group-hover:shadow-[0_5px_0_rgb(0_0_0/0.3)] group-active:translate-y-0.5 group-active:shadow-none sm:text-sm"
+        >
+          ⚡ Usar el referido
+        </span>
+      </a>
+
+      <footer class="pt-6 text-center text-[0.6875rem]/relaxed text-paper-300/55 sm:text-sm/relaxed">
         <p>
           Situaciones 100&nbsp;% genéricas: aquí no se señala a nadie. Cada cual sabrá si se da
           por aludido.
         </p>
-        <p class="mt-2 text-[10px]">
+        <p class="mt-2 text-[0.625rem] sm:text-xs">
           <strong>Sobre este bingo:</strong> Un juego online gratuito de bingo cartón con 40 desgracias reales del cargador público eléctrico en España. Reglas tradicionales: línea por fila, bingo cuando completas los seis. Diplomas verificables con enlace público.
         </p>
         <p class="mt-1.5 font-semibold">bingo.gruxon.com · Hecho con resignación · 2026</p>
-        <p class="mt-2 text-[9px]">
-          <a
-            href="https://www.tesla.com/es_es/referral/gabriel746720"
-            target="_blank"
-            rel="noopener"
-            class="text-amber-300 hover:text-amber-200 underline decoration-amber-300/40"
-          >
-            Referido de Tesla 🚗⚡
-          </a>
-        </p>
         <p class="mt-2">
           Creado por
           <a
@@ -97,7 +115,7 @@ import CertificateModal from '../components/CertificateModal.astro';
           >Gabriel Trabanco</a>
           ·
           <a
-            href="https://github.com/gtrabanco/ev-bingo"
+            href="https://github.com/gtrabanco/bingo-ev"
             target="_blank"
             rel="noopener"
             class="underline decoration-paper-300/40 underline-offset-2 transition-colors hover:text-paper-50"
@@ -115,7 +133,7 @@ import CertificateModal from '../components/CertificateModal.astro';
   >
     <p
       id="toast-text"
-      class="rounded-full bg-amber-300 px-6 py-2.5 text-center text-sm font-black uppercase tracking-[0.12em] text-felt-950 shadow-xl"
+      class="rounded-full bg-amber-300 px-6 py-2.5 text-center text-sm font-black uppercase tracking-[0.12em] text-felt-950 shadow-xl sm:text-base"
     >
     </p>
   </div>
@@ -133,6 +151,7 @@ import CertificateModal from '../components/CertificateModal.astro';
     generateCard,
     getSituation,
     isExpired,
+    packMarks,
     type CardState,
   } from '../lib/card';
   import {
@@ -140,7 +159,14 @@ import CertificateModal from '../components/CertificateModal.astro';
     drawCertificate,
     type CertificateData,
   } from '../lib/certificate';
-  import { discardCard, registerCard, reportCompletion, verificationUrl } from '../lib/api';
+  import {
+    cardShareUrl,
+    discardCard,
+    registerCard,
+    reportCompletion,
+    syncMarks,
+    verificationUrl,
+  } from '../lib/api';
   import { echarConfetti } from '../lib/confetti';
   import { loadCurrentCard, loadNick, saveCard, saveNick } from '../lib/storage';
   import { cellsInCompletedRows, completedRows, isFullCard, markedCount } from '../lib/wins';
@@ -176,18 +202,22 @@ import CertificateModal from '../components/CertificateModal.astro';
   const shareInstagramButton = $<HTMLButtonElement>('#share-instagram');
   const shareYoutubeButton = $<HTMLButtonElement>('#share-youtube');
   const shareHint = $<HTMLParagraphElement>('#share-hint');
+  const shareWhatsappButton = $<HTMLButtonElement>('#share-whatsapp');
+  const shareCardButton = $<HTMLButtonElement>('#share-card');
 
   const shortDate = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' });
   const longDate = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long' });
 
   async function newCard(): Promise<CardState> {
     const fresh = generateCard();
-    // Server-issued identity and clock when reachable; the locally generated
-    // ones otherwise (the card plays fine, it just won't be verifiable).
-    const registered = await registerCard();
+    // Server-issued identity, clock and owner secret when reachable; the
+    // locally generated ones otherwise (the card plays fine, it just won't
+    // be verifiable or watchable).
+    const registered = await registerCard(fresh.cells);
     if (registered) {
       fresh.id = registered.id;
       fresh.createdAt = registered.createdAt;
+      fresh.secret = registered.secret;
     }
     saveCard(fresh);
     return fresh;
@@ -197,10 +227,25 @@ import CertificateModal from '../components/CertificateModal.astro';
   let cellButtons: (HTMLButtonElement | null)[] = [];
   let toastTimer: number | undefined;
   let nickSyncTimer: number | undefined;
+  let marksSyncTimer: number | undefined;
   let isBadGuy = false;
 
   // House rule: expired cards leave the central register.
-  if (isExpired(card)) discardCard(card.id);
+  if (isExpired(card)) discardCard(card.id, card.secret);
+
+  // Debounced push of the marks so the shared /c/<id> view stays live.
+  function scheduleMarksSync(immediate = false): void {
+    if (!card.secret) return;
+    const secret = card.secret;
+    window.clearTimeout(marksSyncTimer);
+    if (immediate) {
+      syncMarks(card.id, secret, packMarks(card.marks));
+      return;
+    }
+    marksSyncTimer = window.setTimeout(() => {
+      syncMarks(card.id, secret, packMarks(card.marks));
+    }, 800);
+  }
 
   function renderGrid(): void {
     const expired = isExpired(card);
@@ -254,7 +299,7 @@ import CertificateModal from '../components/CertificateModal.astro';
       // one replaces it as soon as the completion is registered.
       card.completedAt = new Date().toISOString();
       echarConfetti(); // Celebra el bingo
-      reportCompletion(card.id, loadNick()).then((receipt) => {
+      reportCompletion(card.id, loadNick(), card.secret).then((receipt) => {
         if (!receipt) return;
         card.completedAt = receipt.completedAt;
         saveCard(card);
@@ -263,6 +308,7 @@ import CertificateModal from '../components/CertificateModal.astro';
     }
 
     saveCard(card);
+    scheduleMarksSync(becameFull);
     cellButtons[index]?.setAttribute('aria-pressed', String(card.marks[index]));
     syncStatus();
 
@@ -298,6 +344,9 @@ import CertificateModal from '../components/CertificateModal.astro';
     // The diploma survives unmarking: once sung, a bingo stays sung.
     showCertButton.classList.toggle('hidden', card.completedAt === null || isBadGuy);
     showCertBadButton.classList.toggle('hidden', card.completedAt === null || !isBadGuy);
+
+    // Live sharing needs a registered card (owner secret in hand).
+    shareCardButton.classList.toggle('hidden', card.secret === null);
   }
 
   function showToast(message: string): void {
@@ -337,11 +386,35 @@ import CertificateModal from '../components/CertificateModal.astro';
     if (hasMarks && !isExpired(card) && !confirm('¿Regenerar el cartón? El actual se queda archivado, con sus penas.')) {
       return;
     }
-    if (card.completedAt === null) discardCard(card.id);
+    if (card.completedAt === null) discardCard(card.id, card.secret);
     isBadGuy = false;
     card = await newCard();
     renderGrid();
     syncStatus();
+  });
+
+  // Live card sharing: native sheet on mobile, clipboard elsewhere.
+  shareCardButton.addEventListener('click', async () => {
+    const url = cardShareUrl(card.id);
+    scheduleMarksSync(true); // make sure spectators see the latest marks
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Mi cartón del Bingo del Cargador',
+          text: 'Así va mi colección de desgracias de la carga pública:',
+          url,
+        });
+        return;
+      } catch {
+        // Sheet dismissed: fall through to the clipboard.
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast('Enlace copiado. Que sufran contigo.');
+    } catch {
+      showToast(url);
+    }
   });
 
   // Doble click en el cartón: activar modo "sinvergüenza"
@@ -369,7 +442,7 @@ import CertificateModal from '../components/CertificateModal.astro';
     if (card.completedAt === null) return;
     window.clearTimeout(nickSyncTimer);
     nickSyncTimer = window.setTimeout(() => {
-      void reportCompletion(card.id, nickInput.value);
+      void reportCompletion(card.id, nickInput.value, card.secret);
     }, 600);
   });
 
@@ -417,6 +490,10 @@ import CertificateModal from '../components/CertificateModal.astro';
     if (!blob) return null;
     return new File([blob], `certificado-bingo-cargador-${card.id}.png`, { type: 'image/png' });
   }
+
+  shareWhatsappButton.addEventListener('click', () => {
+    openShareWindow(`https://wa.me/?text=${encodeURIComponent(shareText())}`);
+  });
 
   shareXButton.addEventListener('click', () => {
     openShareWindow(`https://x.com/intent/post?text=${encodeURIComponent(shareText())}`);

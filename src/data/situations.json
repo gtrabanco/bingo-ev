@@ -25,7 +25,7 @@
   { "id": "saldo-cautivo", "text": "20 € de saldo cautivo para siempre." },
   { "id": "negociacion-eterna", "text": "Coche y poste «negociando». Sin acuerdo." },
   { "id": "hibrido-en-rapido", "text": "El híbrido enchufado en el único rápido." },
-  { "id": "hibrido-enchufable-todo", "text": "El enchufable que usa el cargador a gasolina lleno." },
+  { "id": "hibrido-enchufable-todo", "text": "Un enchufable cargando. Con el depósito lleno." },
   { "id": "app-actualizada", "text": "App actualizada. Ya no abre." },
   { "id": "remoto-fallido", "text": "«Inicio remoto fallido». Y el local." },
   { "id": "prueba-otro", "text": "Soporte: «pruebe otro». Está a 40 km." },
@@ -40,5 +40,5 @@
   { "id": "detras-camiones", "text": "El cargador, detrás de los camiones." },
   { "id": "tasa-gestion", "text": "1 € extra por «gestión»." },
   { "id": "qr-pegatina", "text": "El QR es una pegatina sobre otra pegatina." },
-  { "id": "bateria-invernal", "text": "Invierno: se te dimidía el alcance. Sorpresa." }
+  { "id": "bateria-invernal", "text": "En invierno, la mitad de autonomía. Sorpresa." }
 ]

@@ -1,0 +1,196 @@
+---
+// Public, read-only live view of a card: /c/<cardId>. Spectators see the
+// cartón and its marks but can't touch anything — mutations need the owner
+// secret, which never leaves the owner's browser.
+export const prerender = false;
+
+import { env } from 'cloudflare:workers';
+import Layout from '../../layouts/Layout.astro';
+import { CELL_COUNT, expiryFromCreatedAt, getSituation, unpackMarks } from '../../lib/card';
+import { completedRows, isFullCard, markedCount } from '../../lib/wins';
+
+interface CardRow {
+  id: string;
+  created_at: string;
+  completed_at: string | null;
+  nick: string | null;
+  cells: string | null;
+  marks: string | null;
+}
+
+const ID_PATTERN = /^[0-9a-z]{8}$/;
+const id = Astro.params.id ?? '';
+
+let row: CardRow | null = null;
+if (ID_PATTERN.test(id)) {
+  row = await env.DB.prepare(
+    'SELECT id, created_at, completed_at, nick, cells, marks FROM cards WHERE id = ?1',
+  )
+    .bind(id)
+    .first<CardRow>();
+}
+
+// Same lazy cleanup as /v: a pending card past its window is gone.
+if (row && !row.completed_at && Date.now() > expiryFromCreatedAt(row.created_at).getTime()) {
+  await env.DB.prepare('DELETE FROM cards WHERE id = ?1').bind(id).run();
+  row = null;
+}
+
+let cells: (string | null)[] | null = null;
+if (row?.cells) {
+  try {
+    const parsed: unknown = JSON.parse(row.cells);
+    if (Array.isArray(parsed) && parsed.length === CELL_COUNT) {
+      cells = parsed.map((cell) => (typeof cell === 'string' ? cell : null));
+    }
+  } catch {
+    cells = null;
+  }
+}
+
+const marks =
+  row?.marks && row.marks.length === CELL_COUNT ? unpackMarks(row.marks) : Array(CELL_COUNT).fill(false);
+
+const marked = cells ? markedCount(cells, marks) : 0;
+const lines = cells ? completedRows(cells, marks).length : 0;
+const full = row?.completed_at !== null && row !== null ? true : cells ? isFullCard(cells, marks) : false;
+
+const longDate = new Intl.DateTimeFormat('es-ES', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+
+Astro.response.headers.set('cache-control', 'no-store');
+
+const title = row
+  ? `Cartón nº ${row.id} en directo — El Bingo del Cargador`
+  : 'Este cartón no consta — El Bingo del Cargador';
+const ogImage = row?.completed_at ? `/og/diploma/${id}.svg` : '/og/home.svg';
+---
+
+<Layout
+  title={title}
+  description="Sigue en directo un cartón del Bingo del Cargador: desgracias marcadas, líneas cantadas y bingo verificable."
+  ogImage={ogImage}
+>
+  <main class="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pt-10 pb-6 sm:max-w-lg">
+    <p
+      class="text-center text-[0.625rem] font-bold uppercase tracking-[0.4em] text-amber-300/80 sm:text-xs"
+    >
+      Retransmisión en diferido del sufrimiento
+    </p>
+
+    {
+      row && cells ? (
+        <>
+          <section
+            class="mt-5 flex items-center justify-between gap-3 rounded-xl border border-paper-50/15 bg-felt-950/40 px-4 py-2.5 text-sm sm:text-base"
+          >
+            <p class="shrink-0 font-bold">{marked}/6 desgracias</p>
+            <p class="text-right text-paper-300/85">
+              {
+                row.completed_at
+                  ? `Bingo el ${longDate.format(new Date(row.completed_at))}.`
+                  : lines === 0
+                    ? `Caduca el ${longDate.format(expiryFromCreatedAt(row.created_at))}.`
+                    : lines === 1
+                      ? 'Una línea cantada.'
+                      : `${lines} líneas cantadas.`
+              }
+            </p>
+          </section>
+
+          <article
+            class="mt-4 w-full overflow-hidden rounded-2xl border-4 border-ink-900 bg-paper-50 text-ink-900 shadow-[0_18px_40px_-12px_rgb(0_0_0/0.55)]"
+          >
+            <header
+              class="flex items-baseline justify-between gap-3 border-b-4 border-ink-900 bg-dauber-600 px-3.5 py-2 text-paper-50"
+            >
+              <p class="text-lg font-black uppercase tracking-[0.35em] sm:text-xl">Bingo</p>
+              <p class="shrink-0 font-mono text-[0.625rem] tracking-wider uppercase sm:text-xs">
+                Cartón nº {row.id}
+              </p>
+            </header>
+
+            <div class="grid auto-rows-fr grid-cols-4 gap-px bg-ink-900">
+              {
+                cells.map((situationId, index) =>
+                  situationId === null ? (
+                    <div class="cell cell-blank" aria-hidden="true" />
+                  ) : (
+                    <div
+                      class="cell"
+                      aria-pressed={marks[index] ? 'true' : 'false'}
+                      style={`--dab-rot: ${((index * 53) % 19) - 9}deg`}
+                    >
+                      <span class="cell-text">{getSituation(situationId)?.text ?? '—'}</span>
+                      <span class="dab" aria-hidden="true" />
+                    </div>
+                  ),
+                )
+              }
+            </div>
+
+            <footer
+              class="flex items-center justify-between gap-2 border-t-4 border-ink-900 bg-paper-100 px-3.5 py-1.5 text-[0.5625rem] font-semibold uppercase tracking-[0.14em] text-ink-900/60 sm:text-[0.6875rem]"
+            >
+              <span>Solo mirar: las penas son de otro</span>
+              <span class="shrink-0">
+                {row.completed_at ? 'Completado' : `Caduca: ${longDate.format(expiryFromCreatedAt(row.created_at))}`}
+              </span>
+            </footer>
+          </article>
+
+          {
+            row.completed_at && (
+              <a
+                href={`/v/${row.id}`}
+                class="mt-4 rounded-xl bg-amber-300 px-4 py-3 text-center text-sm font-black uppercase tracking-widest text-felt-950 shadow-[0_6px_0_rgb(0_0_0/0.3)] transition-all active:translate-y-0.5 active:shadow-none sm:text-base"
+              >
+                Ver el acta verificada
+              </a>
+            )
+          }
+          {
+            !row.completed_at && full && (
+              <p class="mt-4 text-center text-sm text-paper-300/85 sm:text-base">
+                Cartón lleno, a falta de que el registro dé fe.
+              </p>
+            )
+          }
+        </>
+      ) : (
+        <article
+          class="mt-5 overflow-hidden rounded-2xl border-4 border-ink-900 bg-paper-50 text-ink-900 shadow-[0_18px_40px_-12px_rgb(0_0_0/0.55)]"
+        >
+          <div class="px-5 py-8 text-center">
+            <p class="inline-block -rotate-3 rounded-lg border-4 border-double border-dauber-600 px-4 py-1.5 text-2xl font-black uppercase tracking-[0.25em] text-dauber-600">
+              No consta
+            </p>
+            <p class="mt-5 text-sm/relaxed text-ink-900/80 sm:text-base/relaxed">
+              {
+                row
+                  ? 'Este cartón es de la época anterior al registro en directo. Existe, pero no se deja mirar.'
+                  : 'Este cartón no figura en el registro. O nunca existió, o caducó sin gloria.'
+              }
+            </p>
+          </div>
+        </article>
+      )
+    }
+
+    <a
+      href="/"
+      class="mt-6 rounded-xl border-2 border-paper-50/30 px-4 py-3 text-center text-sm font-black uppercase tracking-widest text-paper-50 transition-colors hover:bg-paper-50/10 sm:text-base"
+    >
+      Jugar mi propio cartón
+    </a>
+
+    <footer
+      class="mt-auto pt-8 text-center text-[0.6875rem]/relaxed text-paper-300/55 sm:text-sm/relaxed"
+    >
+      <p class="font-semibold">bingo.gruxon.com · Hecho con resignación · 2026</p>
+    </footer>
+  </main>
+</Layout>

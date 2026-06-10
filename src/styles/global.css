@@ -51,6 +51,14 @@
     background-color: var(--color-paper-100);
   }
 
+  /* Roomier type on bigger screens; the card column also widens at sm. */
+  @media (min-width: 640px) {
+    .cell {
+      font-size: 0.8125rem;
+      min-height: 6rem;
+    }
+  }
+
   .cell-in-line {
     background-color: #fbe9b8;
   }

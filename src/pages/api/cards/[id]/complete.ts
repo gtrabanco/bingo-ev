@@ -13,6 +13,7 @@ const CONTROL_CHARS = /[\u0000-\u001f\u007f]/g;
 interface CardRow {
   created_at: string;
   completed_at: string | null;
+  secret: string | null;
 }
 
 export const POST: APIRoute = async ({ params, request }) => {
@@ -21,20 +22,27 @@ export const POST: APIRoute = async ({ params, request }) => {
 
   const db = env.DB;
   const row = await db
-    .prepare('SELECT created_at, completed_at FROM cards WHERE id = ?1')
+    .prepare('SELECT created_at, completed_at, secret FROM cards WHERE id = ?1')
     .bind(id)
     .first<CardRow>();
   if (!row) return new Response(null, { status: 404 });
 
   let nick: string | null = null;
+  let secret: string | null = null;
   try {
     const body: unknown = await request.json();
-    const raw = (body as { nick?: unknown })?.nick;
-    if (typeof raw === 'string') {
-      nick = raw.replace(CONTROL_CHARS, '').trim().slice(0, 32) || null;
+    const data = body as { nick?: unknown; secret?: unknown };
+    if (typeof data.nick === 'string') {
+      nick = data.nick.replace(CONTROL_CHARS, '').trim().slice(0, 32) || null;
     }
+    if (typeof data.secret === 'string') secret = data.secret;
   } catch {
     // Nick is optional; a body-less or malformed request still completes.
+  }
+
+  // Owner-only: rows issued with a secret require it. Legacy rows pass.
+  if (row.secret !== null && row.secret !== secret) {
+    return new Response(null, { status: 403 });
   }
 
   if (row.completed_at) {

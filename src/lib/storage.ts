@@ -36,7 +36,7 @@ export function loadCard(cardId: string): CardState | null {
   try {
     const parsed: unknown = JSON.parse(raw);
     if (!isValidCard(parsed)) return null;
-    return { ...parsed, completedAt: parsed.completedAt ?? null };
+    return { ...parsed, completedAt: parsed.completedAt ?? null, secret: parsed.secret ?? null };
   } catch {
     return null;
   }

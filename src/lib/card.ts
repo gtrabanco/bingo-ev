@@ -17,6 +17,7 @@ export interface CardState {
   completedAt: string | null; // ISO timestamp of the first full completion
   cells: (string | null)[]; // 12 entries, row-major; null = blank cell
   marks: boolean[]; // mark state per cell, same order; blanks stay false
+  secret: string | null; // owner token for server mutations; null = unregistered
 }
 
 export const ROWS = 3;
@@ -74,7 +75,17 @@ export function generateCard(): CardState {
     completedAt: null,
     cells,
     marks: Array(CELL_COUNT).fill(false),
+    secret: null,
   };
+}
+
+// Compact wire format for marks: "010010100001" in row-major order.
+export function packMarks(marks: boolean[]): string {
+  return marks.map((mark) => (mark ? '1' : '0')).join('');
+}
+
+export function unpackMarks(packed: string): boolean[] {
+  return [...packed].map((char) => char === '1');
 }
 
 // Shared by the browser and the Worker so both clocks agree on the rule.
@@ -115,6 +126,7 @@ export function isValidCard(value: unknown): value is CardState {
     card.cells.some((cell) => cell !== null) &&
     Array.isArray(card.marks) &&
     card.marks.length === CELL_COUNT &&
-    card.marks.every((mark) => typeof mark === 'boolean')
+    card.marks.every((mark) => typeof mark === 'boolean') &&
+    (card.secret === null || card.secret === undefined || typeof card.secret === 'string')
   );
 }
