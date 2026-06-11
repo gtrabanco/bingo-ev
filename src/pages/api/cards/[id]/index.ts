@@ -15,6 +15,8 @@ interface FullRow {
   completed_at: string | null;
   cells: string | null;
   marks: string | null;
+  alias: string | null;
+  group_id: string | null;
 }
 
 export const GET: APIRoute = async ({ params, request }) => {
@@ -25,7 +27,7 @@ export const GET: APIRoute = async ({ params, request }) => {
   if (!secret) return new Response(null, { status: 400 });
 
   const row = await env.DB.prepare(
-    'SELECT created_at, completed_at, cells, marks FROM cards WHERE id = ?1 AND secret = ?2',
+    'SELECT created_at, completed_at, cells, marks, alias, group_id FROM cards WHERE id = ?1 AND secret = ?2',
   )
     .bind(id, secret)
     .first<FullRow>();
@@ -52,6 +54,12 @@ export const GET: APIRoute = async ({ params, request }) => {
     cells,
     marks,
     secret,
+    // The alias travels with the recovery so the new device greets the
+    // player by their label. It is display-only, never an identifier.
+    alias: row.alias,
+    // Authoritative group membership: the index page uses it to self-heal
+    // after an admin kick or a join made from another device.
+    groupId: row.group_id,
   });
 };
 

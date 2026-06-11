@@ -63,13 +63,29 @@ export const POST: APIRoute = async ({ params, request }) => {
     }
   }
 
+  // One card, one group: a card already playing elsewhere can't switch rooms
+  // (regenerating the card is the way out). Re-joining the same group is fine
+  // — it just refreshes the alias.
   const result = await env.DB.prepare(
-    'UPDATE cards SET group_id = ?3, alias = ?4 WHERE id = ?1 AND secret = ?2 AND completed_at IS NULL',
+    `UPDATE cards SET group_id = ?3, alias = ?4
+     WHERE id = ?1 AND secret = ?2 AND completed_at IS NULL
+       AND (group_id IS NULL OR group_id = ?3)`,
   )
     .bind(cardId, secret, groupId, alias)
     .run();
 
-  // No row changed: wrong secret, unknown card, or already completed.
-  if (!result.meta.changes) return Response.json({ error: 'cannot_join' }, { status: 403 });
+  if (!result.meta.changes) {
+    // Diagnose so the UI can explain: in another group vs. plain rejection
+    // (wrong secret, unknown card, or already completed).
+    const row = await env.DB.prepare(
+      'SELECT group_id FROM cards WHERE id = ?1 AND secret = ?2 AND completed_at IS NULL',
+    )
+      .bind(cardId, secret)
+      .first<{ group_id: string | null }>();
+    if (row?.group_id && row.group_id !== groupId) {
+      return Response.json({ error: 'already_grouped' }, { status: 409 });
+    }
+    return Response.json({ error: 'cannot_join' }, { status: 403 });
+  }
   return new Response(null, { status: 204 });
 };

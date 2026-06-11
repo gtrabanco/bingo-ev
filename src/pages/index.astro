@@ -61,6 +61,37 @@ import CertificateModal from '../components/CertificateModal.astro';
     >
     </p>
 
+    <!-- Player alias: a display label for standings and shared views, never an
+         identity. It lives above the card so it's clearly group-independent.
+         Shown as text + edit button once set; as an input until then. -->
+    <div class="mt-3">
+      <p id="alias-display" class="hidden text-center text-xs text-paper-300/75 sm:text-sm">
+        Juegas como <strong id="alias-label" class="text-amber-200"></strong>
+        <button
+          id="alias-edit"
+          type="button"
+          class="ml-1 underline decoration-paper-300/40 underline-offset-2 transition-colors hover:text-paper-50"
+        >editar</button>
+      </p>
+      <form id="alias-form" class="mx-auto flex hidden w-full max-w-xs items-center gap-2">
+        <input
+          id="alias-input"
+          type="text"
+          required
+          maxlength="32"
+          placeholder="Tu alias (se verá en los grupos)"
+          autocomplete="nickname"
+          class="min-w-0 flex-1 rounded-lg border-2 border-paper-50/25 bg-felt-950/60 px-3 py-2 text-sm text-paper-50 outline-none placeholder:text-paper-300/40 focus:border-amber-300 sm:text-base"
+        />
+        <button
+          type="submit"
+          class="shrink-0 rounded-lg border-2 border-paper-50/30 px-3 py-2 text-xs font-black uppercase tracking-widest transition-colors hover:bg-paper-50/10 sm:text-sm"
+        >
+          Guardar
+        </button>
+      </form>
+    </div>
+
     <div class="mt-3" id="card-container">
       <BingoCard />
     </div>
@@ -185,6 +216,23 @@ import CertificateModal from '../components/CertificateModal.astro';
           Grupos de bingo
         </summary>
         <div class="mt-3">
+          <!-- Shown instead of the create form when the current card already
+               plays in a group: one card, one group. A fresh cartón resets it. -->
+          <div id="group-current" class="hidden">
+            <p class="text-[0.6875rem]/relaxed text-paper-300/70 sm:text-xs/relaxed">
+              Tu cartón ya juega en un grupo. Un cartón, un grupo: para crear o entrar en
+              otro, regenera el cartón.
+            </p>
+            <a
+              id="group-link"
+              href="/"
+              class="mt-2 block rounded-lg bg-amber-300 px-4 py-2 text-center text-xs font-black uppercase tracking-widest text-felt-950 transition-colors active:bg-amber-400 sm:text-sm"
+            >
+              Ver mi grupo y su ranking
+            </a>
+          </div>
+
+          <div id="group-create">
           <p class="text-[0.6875rem]/relaxed text-paper-300/70 sm:text-xs/relaxed">
             Crea un grupo, comparte el enlace y que cada cual juegue su cartón. Solo el primero
             en completar canta bingo. Los demás, a aplaudir.
@@ -199,16 +247,6 @@ import CertificateModal from '../components/CertificateModal.astro';
               autocomplete="off"
               class="w-full rounded-lg border-2 border-paper-50/25 bg-felt-950/60 px-3 py-2 text-sm text-paper-50 outline-none placeholder:text-paper-300/40 focus:border-amber-300 sm:text-base"
             />
-            <input
-              id="group-alias"
-              type="text"
-              required
-              maxlength="32"
-              placeholder="Tu alias en el grupo"
-              autocomplete="nickname"
-              class="w-full rounded-lg border-2 border-paper-50/25 bg-felt-950/60 px-3 py-2 text-sm text-paper-50 outline-none placeholder:text-paper-300/40 focus:border-amber-300 sm:text-base"
-            />
-
             <fieldset class="mt-1">
               <legend class="text-[0.625rem] font-bold uppercase tracking-wide text-paper-300/60 sm:text-[0.6875rem]">
                 ¿Quién puede unirse?
@@ -244,6 +282,7 @@ import CertificateModal from '../components/CertificateModal.astro';
               Crear grupo
             </button>
           </form>
+          </div>
           <p
             id="group-hint"
             class="mt-2 min-h-4 text-[0.6875rem]/snug text-amber-200/90 sm:text-xs/snug"
@@ -362,6 +401,7 @@ import CertificateModal from '../components/CertificateModal.astro';
     registerCard,
     reportCompletion,
     requestRecovery,
+    syncAlias,
     syncMarks,
     verificationUrl,
   } from '../lib/api';
@@ -375,6 +415,7 @@ import CertificateModal from '../components/CertificateModal.astro';
     markNewsletterSubscribed,
     saveAlias,
     saveCard,
+    saveGroupAdmin,
     saveMarkMode,
     saveNick,
     type MarkMode,
@@ -427,10 +468,17 @@ import CertificateModal from '../components/CertificateModal.astro';
   const emailHint = $<HTMLParagraphElement>('#email-hint');
   const groupForm = $<HTMLFormElement>('#group-form');
   const groupNameInput = $<HTMLInputElement>('#group-name');
-  const groupAliasInput = $<HTMLInputElement>('#group-alias');
   const groupPasswordInput = $<HTMLInputElement>('#group-password');
   const groupPublicCheck = $<HTMLInputElement>('#group-public');
   const groupHint = $<HTMLParagraphElement>('#group-hint');
+  const groupCurrentBox = $<HTMLDivElement>('#group-current');
+  const groupCreateBox = $<HTMLDivElement>('#group-create');
+  const groupLink = $<HTMLAnchorElement>('#group-link');
+  const aliasDisplay = $<HTMLParagraphElement>('#alias-display');
+  const aliasLabel = $<HTMLElement>('#alias-label');
+  const aliasEditButton = $<HTMLButtonElement>('#alias-edit');
+  const aliasForm = $<HTMLFormElement>('#alias-form');
+  const aliasInput = $<HTMLInputElement>('#alias-input');
 
   const shortDate = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' });
   const longDate = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long' });
@@ -439,8 +487,9 @@ import CertificateModal from '../components/CertificateModal.astro';
     const fresh = generateCard();
     // Server-issued identity, clock and owner secret when reachable; the
     // locally generated ones otherwise (the card plays fine, it just won't
-    // be verifiable or watchable).
-    const registered = await registerCard(fresh.cells);
+    // be verifiable or watchable). The alias rides along so the card is
+    // born labelled.
+    const registered = await registerCard(fresh.cells, loadAlias());
     if (registered) {
       fresh.id = registered.id;
       fresh.createdAt = registered.createdAt;
@@ -460,7 +509,11 @@ import CertificateModal from '../components/CertificateModal.astro';
     const owned = await fetchOwnedCard(cardId, secret);
     history.replaceState(null, '', location.pathname);
     if (!owned) return null;
-    const recovered: CardState = { ...owned };
+    // The alias rides along with the recovery; adopt it unless this device
+    // already has one of its own (the local label wins).
+    const { alias, ...state } = owned;
+    if (alias && !loadAlias()) saveAlias(alias);
+    const recovered: CardState = { ...state };
     saveCard(recovered);
     return recovered;
   }
@@ -671,6 +724,8 @@ import CertificateModal from '../components/CertificateModal.astro';
     card = await newCard();
     renderGrid();
     syncStatus();
+    // A fresh cartón belongs to no group: the create form comes back.
+    renderGroupPanel();
   });
 
   // Live card sharing: native sheet on mobile, clipboard elsewhere.
@@ -738,6 +793,64 @@ import CertificateModal from '../components/CertificateModal.astro';
     button.addEventListener('click', () => setMarkMode(key as MarkMode));
   }
 
+  // --- Alias ---------------------------------------------------------------
+  // A display label, never an identity: it shows up in group standings and
+  // travels with the card. Set once above the card (no group needed); once
+  // set, it renders as text with an edit button instead of an input.
+
+  function renderAlias(): void {
+    const alias = loadAlias();
+    aliasLabel.textContent = `«${alias}»`;
+    aliasDisplay.classList.toggle('hidden', alias === '');
+    aliasForm.classList.toggle('hidden', alias !== '');
+  }
+
+  function editAlias(): void {
+    aliasInput.value = loadAlias();
+    aliasDisplay.classList.add('hidden');
+    aliasForm.classList.remove('hidden');
+    aliasInput.focus();
+  }
+
+  aliasEditButton.addEventListener('click', editAlias);
+
+  aliasForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const alias = aliasInput.value.trim().slice(0, 32);
+    if (!alias) return;
+    saveAlias(alias);
+    // The server copy follows when the card is registered, so standings and
+    // shared views pick the new label up.
+    if (card.secret) syncAlias(card.id, card.secret, alias);
+    renderAlias();
+  });
+
+  // --- Group panel ----------------------------------------------------------
+  // One card, one group: while the current card plays in a group, the panel
+  // offers the way in (board + ranking) instead of the create form. A fresh
+  // cartón brings the form back.
+
+  function renderGroupPanel(): void {
+    const groupId = card.groupId;
+    groupCurrentBox.classList.toggle('hidden', !groupId);
+    groupCreateBox.classList.toggle('hidden', !!groupId);
+    if (groupId) groupLink.href = `/g/${groupId}`;
+  }
+
+  // The server rules membership (the admin may have kicked this card, or it
+  // joined from another device): refresh quietly and re-render on change.
+  async function refreshGroupMembership(): Promise<void> {
+    if (!card.secret) return;
+    const owned = await fetchOwnedCard(card.id, card.secret);
+    if (!owned || owned.id !== card.id) return;
+    const serverGroup = owned.groupId ?? null;
+    if (serverGroup !== card.groupId) {
+      card.groupId = serverGroup;
+      saveCard(card);
+      renderGroupPanel();
+    }
+  }
+
   // Show the password field only when the group is password-protected.
   function syncGroupPasswordVisibility(): void {
     const policy = (groupForm.elements.namedItem('group-join') as RadioNodeList).value;
@@ -750,15 +863,20 @@ import CertificateModal from '../components/CertificateModal.astro';
       syncGroupPasswordVisibility();
     }
   });
-  groupAliasInput.value = loadAlias();
   syncGroupPasswordVisibility();
 
   // Create a bingo group, auto-join the current card and jump to its page.
   groupForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const name = groupNameInput.value.trim();
-    const alias = groupAliasInput.value.trim();
-    if (!name || !alias) return;
+    if (!name) return;
+    // The global alias (above the card) is how you appear in the standings.
+    const alias = loadAlias();
+    if (!alias) {
+      groupHint.textContent = 'Te falta un alias: ponlo encima del cartón.';
+      editAlias();
+      return;
+    }
     const policy = (groupForm.elements.namedItem('group-join') as RadioNodeList).value;
     const joinPolicy = policy === 'password' ? 'password' : 'open';
     const password = groupPasswordInput.value;
@@ -781,10 +899,15 @@ import CertificateModal from '../components/CertificateModal.astro';
       return;
     }
 
-    saveAlias(alias);
+    // The admin secret rules the group (kicks). It outlives the card.
+    if (result.adminSecret) saveGroupAdmin(result.id, result.adminSecret);
     // Auto-join the creator's card so they land already in the standings.
     if (card.secret && card.completedAt === null) {
-      await joinGroup(result.id, card.id, card.secret, alias, password);
+      const joined = await joinGroup(result.id, card.id, card.secret, alias, password);
+      if (joined.ok) {
+        card.groupId = result.id;
+        saveCard(card);
+      }
     }
     location.href = `/g/${result.id}`;
   });
@@ -899,6 +1022,9 @@ import CertificateModal from '../components/CertificateModal.astro';
   if (isNewsletterSubscribed()) newsletterLabel?.classList.add('hidden');
 
   setMarkMode(markMode);
+  renderAlias();
+  renderGroupPanel();
   renderGrid();
   syncStatus();
+  void refreshGroupMembership();
 </script>

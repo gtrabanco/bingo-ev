@@ -11,6 +11,14 @@ import { hashGroupPassword, isJoinPolicy } from '../../../lib/groups';
 
 const CONTROL_CHARS = /[\u0000-\u001f\u007f]/g;
 
+// Admin token for the creator, same shape as a card's owner secret. It rules
+// the group (kicks), not any card — cards come and go, the office doesn't.
+function newAdminSecret(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => (byte % 36).toString(36)).join('');
+}
+
 export const POST: APIRoute = async ({ request }) => {
   let name = '';
   let joinPolicy: 'open' | 'password' = 'open';
@@ -42,13 +50,22 @@ export const POST: APIRoute = async ({ request }) => {
 
   const id = newCardId();
   const passwordHash = joinPolicy === 'password' ? await hashGroupPassword(id, password) : null;
+  const adminSecret = newAdminSecret();
 
   try {
     await env.DB.prepare(
-      `INSERT INTO groups (id, name, created_at, join_policy, password_hash, public_board)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6)`,
+      `INSERT INTO groups (id, name, created_at, join_policy, password_hash, public_board, admin_secret)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)`,
     )
-      .bind(id, name, new Date().toISOString(), joinPolicy, passwordHash, publicBoard ? 1 : 0)
+      .bind(
+        id,
+        name,
+        new Date().toISOString(),
+        joinPolicy,
+        passwordHash,
+        publicBoard ? 1 : 0,
+        adminSecret,
+      )
       .run();
   } catch (error) {
     // Unique index on the name: surface the clash so the user picks another.
@@ -58,5 +75,5 @@ export const POST: APIRoute = async ({ request }) => {
     throw error;
   }
 
-  return Response.json({ id, name }, { status: 201 });
+  return Response.json({ id, name, adminSecret }, { status: 201 });
 };

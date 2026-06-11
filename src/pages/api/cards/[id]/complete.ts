@@ -66,10 +66,17 @@ export const POST: APIRoute = async ({ params, request }) => {
 
   // Group rule: only the FIRST completion claims the win. The conditional
   // update is atomic, so a near-simultaneous second bingo can't steal it.
+  // Membership is re-checked inside the claim (not trusted from the pre-read
+  // above): an admin kick landing in between would otherwise crown a card
+  // that already left the room — a ghost winner blocking it forever.
   let groupWinner: boolean | undefined;
   if (row.group_id) {
     const claim = await db
-      .prepare('UPDATE groups SET winner_card_id = ?2 WHERE id = ?1 AND winner_card_id IS NULL')
+      .prepare(
+        `UPDATE groups SET winner_card_id = ?2
+         WHERE id = ?1 AND winner_card_id IS NULL
+           AND EXISTS (SELECT 1 FROM cards WHERE id = ?2 AND group_id = ?1)`,
+      )
       .bind(row.group_id, id)
       .run();
     groupWinner = claim.meta.changes > 0;

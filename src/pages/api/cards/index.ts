@@ -8,6 +8,8 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { CELL_COUNT, getSituation, newCardId } from '../../../lib/card';
 
+const CONTROL_CHARS = /[\u0000-\u001f\u007f]/g;
+
 function newSecret(): string {
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
@@ -33,9 +35,16 @@ export const POST: APIRoute = async ({ request }) => {
   const db = env.DB;
 
   let cells: (string | null)[] | null = null;
+  let alias: string | null = null;
   try {
     const body: unknown = await request.json();
-    cells = parseCells((body as { cells?: unknown })?.cells);
+    const data = body as { cells?: unknown; alias?: unknown };
+    cells = parseCells(data?.cells);
+    // Optional alias: a display label carried by the card from birth, so the
+    // player shows up named in group standings without re-typing it.
+    if (typeof data?.alias === 'string') {
+      alias = data.alias.replace(CONTROL_CHARS, '').trim().slice(0, 32) || null;
+    }
   } catch {
     // No body: still issue a card, it just won't be watchable at /c/<id>.
   }
@@ -53,9 +62,16 @@ export const POST: APIRoute = async ({ request }) => {
     ),
     db
       .prepare(
-        'INSERT INTO cards (id, created_at, secret, cells, marks) VALUES (?1, ?2, ?3, ?4, ?5)',
+        'INSERT INTO cards (id, created_at, secret, cells, marks, alias) VALUES (?1, ?2, ?3, ?4, ?5, ?6)',
       )
-      .bind(id, createdAt, secret, cells ? JSON.stringify(cells) : null, '0'.repeat(CELL_COUNT)),
+      .bind(
+        id,
+        createdAt,
+        secret,
+        cells ? JSON.stringify(cells) : null,
+        '0'.repeat(CELL_COUNT),
+        alias,
+      ),
   ]);
 
   return Response.json({ id, createdAt, secret }, { status: 201 });

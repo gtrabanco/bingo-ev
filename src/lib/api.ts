@@ -34,9 +34,19 @@ function jsonInit(body: unknown, method = 'POST'): RequestInit {
 }
 
 // Asks the server to issue a card: id, creation timestamp (server clock) and
-// the owner secret. The cell layout goes along so /c/<id> can render it.
-export function registerCard(cells: (string | null)[]): Promise<RegisteredCard | null> {
-  return request<RegisteredCard>('/api/cards', jsonInit({ cells }));
+// the owner secret. The cell layout goes along so /c/<id> can render it, and
+// the alias (when the player has one) so the card is born labelled.
+export function registerCard(
+  cells: (string | null)[],
+  alias = '',
+): Promise<RegisteredCard | null> {
+  return request<RegisteredCard>('/api/cards', jsonInit({ cells, alias }));
+}
+
+// Updates the card's alias — a display label for standings and shared views,
+// never an identifier. Fire-and-forget, like the marks sync.
+export function syncAlias(cardId: string, secret: string, alias: string): void {
+  void request(`/api/cards/${cardId}/alias`, jsonInit({ secret, alias }));
 }
 
 // Reports a completion (or updates the nick of an already-completed card).
@@ -73,6 +83,8 @@ export function fetchOwnedCard(
   cells: (string | null)[];
   marks: MarkKind[];
   secret: string;
+  alias: string | null;
+  groupId: string | null;
 } | null> {
   return request(`/api/cards/${cardId}?k=${encodeURIComponent(secret)}`);
 }
@@ -103,11 +115,12 @@ export interface GroupSettings {
 }
 
 export type GroupResult =
-  | { ok: true; id: string }
+  | { ok: true; id: string; adminSecret: string | null }
   | { ok: false; error: string };
 
-// Creates a bingo group. On success returns its id for the /g/<id> page; on a
-// name clash (or other rejection) returns the error code so the UI can react.
+// Creates a bingo group. On success returns its id for the /g/<id> page plus
+// the admin secret that rules it (kicks); on a name clash (or other rejection)
+// returns the error code so the UI can react.
 export async function createGroup(name: string, settings: GroupSettings): Promise<GroupResult> {
   try {
     const response = await fetch(
@@ -120,12 +133,29 @@ export async function createGroup(name: string, settings: GroupSettings): Promis
       }),
     );
     const data = (await response.json().catch(() => null)) as
-      | { id?: string; error?: string }
+      | { id?: string; adminSecret?: string; error?: string }
       | null;
-    if (response.ok && data?.id) return { ok: true, id: data.id };
+    if (response.ok && data?.id) {
+      return { ok: true, id: data.id, adminSecret: data.adminSecret ?? null };
+    }
     return { ok: false, error: data?.error ?? 'failed' };
   } catch {
     return { ok: false, error: 'offline' };
+  }
+}
+
+// Admin moderation: unlink a member's card from the group. The card survives
+// untouched — it just stops playing in this room.
+export async function kickMember(
+  groupId: string,
+  adminSecret: string,
+  cardId: string,
+): Promise<boolean> {
+  try {
+    const response = await fetch(`/api/groups/${groupId}/kick`, jsonInit({ adminSecret, cardId }));
+    return response.ok || response.status === 204;
+  } catch {
+    return false;
   }
 }
 

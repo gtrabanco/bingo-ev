@@ -137,7 +137,7 @@ Astro.response.headers.set('cache-control', 'no-store');
                           <strong>{nameOf(member)}</strong>
                           <span class="member-you hidden text-ink-900/55"> (tú)</span>
                         </span>
-                        <span class="flex shrink-0 items-center gap-2">
+                        <span class="member-actions flex shrink-0 items-center gap-2">
                           <a
                             href={`/c/${member.id}`}
                             class="text-[0.6875rem] underline decoration-ink-900/30 underline-offset-2 sm:text-xs"
@@ -175,12 +175,23 @@ Astro.response.headers.set('cache-control', 'no-store');
           )}
 
           <form id="join-form" class="mt-5 flex flex-col gap-2">
+            <p
+              id="join-alias-display"
+              class="hidden text-center text-xs text-paper-300/75 sm:text-sm"
+            >
+              Entrarás como <strong id="join-alias-label" class="text-amber-200"></strong>
+              <button
+                id="join-alias-edit"
+                type="button"
+                class="ml-1 underline decoration-paper-300/40 underline-offset-2 transition-colors hover:text-paper-50"
+              >cambiar</button>
+            </p>
             <input
               id="join-alias"
               type="text"
               required
               maxlength="32"
-              placeholder="Tu alias en el grupo"
+              placeholder="Tu alias (se verá en la sala)"
               autocomplete="nickname"
               class="w-full rounded-lg border-2 border-paper-50/25 bg-felt-950/60 px-3 py-2 text-sm text-paper-50 outline-none placeholder:text-paper-300/40 focus:border-amber-300 sm:text-base"
             />
@@ -206,6 +217,20 @@ Astro.response.headers.set('cache-control', 'no-store');
               Unirme con mi cartón
             </button>
           </form>
+
+          <!-- Replaces the join form when the visitor's card already plays in
+               a group: this one (nothing to do) or another (one card, one group). -->
+          <div
+            id="join-blocked"
+            class="mt-5 hidden text-center text-sm/relaxed text-paper-300/85 sm:text-base/relaxed"
+          >
+            <p id="join-blocked-text"></p>
+            <a
+              id="join-blocked-link"
+              href="/"
+              class="mt-2 hidden underline decoration-paper-300/40 underline-offset-2 transition-colors hover:text-paper-50"
+            ></a>
+          </div>
 
           <p class="mt-5 text-center text-[0.625rem] font-bold uppercase tracking-wide text-paper-300/60 sm:text-xs">
             Recluta sufridores
@@ -274,14 +299,32 @@ Astro.response.headers.set('cache-control', 'no-store');
   // localStorage; joining sends them same-origin to the join endpoint with a
   // mandatory alias (and the password for protected groups). Private groups
   // reveal their standings only to members, fetched here with that secret.
-  import { fetchGroupStandings, joinGroup, type GroupStandings } from '../../lib/api';
+  import {
+    fetchGroupStandings,
+    fetchOwnedCard,
+    joinGroup,
+    kickMember,
+    type GroupStandings,
+  } from '../../lib/api';
   import { SITUATION_COUNT } from '../../lib/card';
-  import { loadAlias, loadCurrentCard, saveAlias } from '../../lib/storage';
+  import {
+    loadAlias,
+    loadCurrentCard,
+    loadGroupAdmin,
+    saveAlias,
+    saveCard,
+  } from '../../lib/storage';
 
   const joinForm = document.querySelector<HTMLFormElement>('#join-form');
   const joinButton = document.querySelector<HTMLButtonElement>('#join-group');
   const aliasInput = document.querySelector<HTMLInputElement>('#join-alias');
+  const aliasDisplay = document.querySelector<HTMLParagraphElement>('#join-alias-display');
+  const aliasLabel = document.querySelector<HTMLElement>('#join-alias-label');
+  const aliasEditButton = document.querySelector<HTMLButtonElement>('#join-alias-edit');
   const passwordInput = document.querySelector<HTMLInputElement>('#join-password');
+  const blockedBox = document.querySelector<HTMLDivElement>('#join-blocked');
+  const blockedText = document.querySelector<HTMLParagraphElement>('#join-blocked-text');
+  const blockedLink = document.querySelector<HTMLAnchorElement>('#join-blocked-link');
   const whatsappButton = document.querySelector<HTMLButtonElement>('#share-whatsapp');
   const xButton = document.querySelector<HTMLButtonElement>('#share-x');
   const copyButton = document.querySelector<HTMLButtonElement>('#share-copy');
@@ -295,11 +338,109 @@ Astro.response.headers.set('cache-control', 'no-store');
   const isPublic = joinButton?.dataset.public === '1';
   const groupName = joinButton?.dataset.groupName ?? '';
 
-  if (aliasInput) aliasInput.value = loadAlias();
-
   function setHint(message: string): void {
     if (hint) hint.textContent = message;
   }
+
+  // --- Alias ----------------------------------------------------------------
+  // The alias is a display label shared with the main page (evbingo.alias).
+  // Once set, it shows as text with a change button instead of an input.
+
+  if (aliasInput) aliasInput.value = loadAlias();
+
+  function renderAliasField(): void {
+    if (!aliasInput || !aliasDisplay || !aliasLabel) return;
+    const alias = loadAlias();
+    aliasLabel.textContent = `«${alias}»`;
+    aliasInput.classList.toggle('hidden', alias !== '');
+    aliasDisplay.classList.toggle('hidden', alias === '');
+  }
+
+  aliasEditButton?.addEventListener('click', () => {
+    aliasDisplay?.classList.add('hidden');
+    aliasInput?.classList.remove('hidden');
+    aliasInput?.focus();
+  });
+
+  renderAliasField();
+
+  // --- Join state -----------------------------------------------------------
+  // One card, one group: a card already playing here has nothing to join, and
+  // a card playing elsewhere can't switch (regenerating it is the way out).
+
+  function renderJoinState(): void {
+    if (!joinForm || !blockedBox || !blockedText || !blockedLink) return;
+    const memberHere = !!card && card.groupId === groupId;
+    const memberElsewhere = !!card?.groupId && card.groupId !== groupId;
+    joinForm.classList.toggle('hidden', memberHere || memberElsewhere);
+    blockedBox.classList.toggle('hidden', !memberHere && !memberElsewhere);
+    if (memberHere) {
+      blockedText.textContent = 'Tu cartón ya está en esta sala. A sufrir, que para eso has venido.';
+      blockedLink.classList.add('hidden');
+    } else if (memberElsewhere) {
+      blockedText.textContent =
+        'Tu cartón ya juega en otra sala. Un cartón, un grupo: regenera el cartón si quieres cambiar.';
+      blockedLink.href = `/g/${card!.groupId}`;
+      blockedLink.textContent = 'Ver mi sala';
+      blockedLink.classList.remove('hidden');
+    }
+  }
+
+  renderJoinState();
+
+  // The server rules membership (the admin may have kicked this card, or it
+  // joined from another device): refresh quietly and re-render on change.
+  async function refreshMembership(): Promise<void> {
+    if (!card?.secret) return;
+    const owned = await fetchOwnedCard(card.id, card.secret);
+    if (!owned || owned.id !== card.id) return;
+    const serverGroup = owned.groupId ?? null;
+    if (serverGroup !== card.groupId) {
+      card.groupId = serverGroup;
+      saveCard(card);
+      renderJoinState();
+    }
+  }
+  void refreshMembership();
+
+  // --- Moderation (group admin) ----------------------------------------------
+  // The creator's browser holds the group's admin secret: it gets an "echar"
+  // button per member. Kicking unlinks the card from the room — the card, its
+  // marks and its diploma survive; only the membership goes.
+
+  const adminSecret = loadGroupAdmin(groupId);
+
+  function wireKickButtons(): void {
+    if (!adminSecret) return;
+    document.querySelectorAll<HTMLElement>('[data-member-card]').forEach((row) => {
+      if (row.querySelector('.kick-btn')) return;
+      const memberId = row.dataset.memberCard ?? '';
+      if (!memberId) return;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className =
+        'kick-btn text-[0.6875rem] font-semibold text-dauber-700 underline decoration-dauber-700/40 underline-offset-2 sm:text-xs';
+      button.textContent = 'echar';
+      button.addEventListener('click', async () => {
+        if (!confirm('¿Echar este cartón de la sala? No se borra: solo deja de jugar en el grupo.')) {
+          return;
+        }
+        const ok = await kickMember(groupId, adminSecret, memberId);
+        if (!ok) {
+          setHint('No se pudo echar. Inténtalo de nuevo.');
+          return;
+        }
+        if (card && memberId === card.id) {
+          card.groupId = null;
+          saveCard(card);
+        }
+        location.reload();
+      });
+      row.querySelector('.member-actions')?.prepend(button);
+    });
+  }
+
+  wireKickButtons();
 
   // Mark the visitor's own card in the (public, server-rendered) standings.
   if (card) {
@@ -339,9 +480,9 @@ Astro.response.headers.set('cache-control', 'no-store');
         const score = member.completedAt
           ? 'BINGO'
           : `${markedOf(member.marks)}/${SITUATION_COUNT}`;
-        return `<li class="flex items-center justify-between gap-3 px-4 py-2.5 text-sm sm:text-base">
+        return `<li class="flex items-center justify-between gap-3 px-4 py-2.5 text-sm sm:text-base" data-member-card="${member.id}">
           <span class="min-w-0 truncate">${trophy}<strong>${name}</strong>${you ? '<span class="text-ink-900/55"> (tú)</span>' : ''}</span>
-          <span class="flex shrink-0 items-center gap-2">
+          <span class="member-actions flex shrink-0 items-center gap-2">
             <a href="/c/${member.id}" class="text-[0.6875rem] underline decoration-ink-900/30 underline-offset-2 sm:text-xs">ver</a>
             <span class="font-mono font-bold">${score}</span>
           </span>
@@ -356,6 +497,8 @@ Astro.response.headers.set('cache-control', 'no-store');
       rows ||
       '<li class="px-4 py-6 text-center text-sm text-ink-900/70 sm:text-base">Todavía no hay cartones en la sala.</li>';
     privateBoard.append(list);
+    // The admin gets their "echar" buttons on the freshly rendered rows too.
+    wireKickButtons();
   }
 
   async function loadPrivateBoard(): Promise<void> {
@@ -392,15 +535,19 @@ Astro.response.headers.set('cache-control', 'no-store');
     saveAlias(alias);
     const result = await joinGroup(groupId, card.id, card.secret, alias, password);
     if (result.ok) {
+      card.groupId = groupId;
+      saveCard(card);
       location.reload();
       return;
     }
     setHint(
       result.error === 'bad_password'
         ? 'Contraseña incorrecta.'
-        : result.error === 'cannot_join'
-          ? 'No se pudo entrar: revisa que el cartón siga en juego.'
-          : 'No se pudo entrar. Inténtalo de nuevo.',
+        : result.error === 'already_grouped'
+          ? 'Tu cartón ya juega en otra sala. Regenera el cartón para cambiar.'
+          : result.error === 'cannot_join'
+            ? 'No se pudo entrar: revisa que el cartón siga en juego.'
+            : 'No se pudo entrar. Inténtalo de nuevo.',
     );
   });
 

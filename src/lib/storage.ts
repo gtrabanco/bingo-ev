@@ -46,7 +46,12 @@ export function loadCard(cardId: string): CardState | null {
       }
     }
     if (!isValidCard(parsed)) return null;
-    return { ...parsed, completedAt: parsed.completedAt ?? null, secret: parsed.secret ?? null };
+    return {
+      ...parsed,
+      completedAt: parsed.completedAt ?? null,
+      secret: parsed.secret ?? null,
+      groupId: parsed.groupId ?? null,
+    };
   } catch {
     return null;
   }
@@ -92,7 +97,9 @@ export function isNewsletterSubscribed(): boolean {
   return read(NEWSLETTER_KEY) === '1';
 }
 
-// Last alias used in a bingo group, so the join/create forms can prefill it.
+// The player's alias: a public display label (group standings, shared views),
+// never an identifier — identity stays with the card id/secret and the
+// optional recovery email. Set from the widget above the card, no group needed.
 const ALIAS_KEY = `${PREFIX}.alias`;
 
 export function saveAlias(alias: string): void {
@@ -101,4 +108,18 @@ export function saveAlias(alias: string): void {
 
 export function loadAlias(): string {
   return read(ALIAS_KEY) ?? '';
+}
+
+// Admin secrets of the groups created from this browser, keyed by group id.
+// The admin moderates the group (kicks members). Losing the browser loses the
+// office — same deal as a card's owner secret, and deliberately NOT tied to a
+// card: cards are regenerated, admin rights persist.
+const groupAdminKey = (groupId: string) => `${PREFIX}.groupAdmin.${groupId}`;
+
+export function saveGroupAdmin(groupId: string, secret: string): void {
+  write(groupAdminKey(groupId), secret);
+}
+
+export function loadGroupAdmin(groupId: string): string | null {
+  return read(groupAdminKey(groupId));
 }

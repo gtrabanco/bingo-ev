@@ -27,6 +27,7 @@ export interface CardState {
   cells: (string | null)[]; // 12 entries, row-major; null = blank cell
   marks: MarkKind[]; // mark state per cell, same order; blanks stay 0
   secret: string | null; // owner token for server mutations; null = unregistered
+  groupId: string | null; // bingo group this card plays in (UX cache; server rules)
 }
 
 export const ROWS = 3;
@@ -85,6 +86,7 @@ export function generateCard(): CardState {
     cells,
     marks: Array(CELL_COUNT).fill(0),
     secret: null,
+    groupId: null,
   };
 }
 
@@ -150,6 +152,7 @@ export function isValidCard(value: unknown): value is CardState {
     Array.isArray(card.marks) &&
     card.marks.length === CELL_COUNT &&
     card.marks.every((mark) => mark === 0 || mark === 1 || mark === 2) &&
-    (card.secret === null || card.secret === undefined || typeof card.secret === 'string')
+    (card.secret === null || card.secret === undefined || typeof card.secret === 'string') &&
+    (card.groupId === null || card.groupId === undefined || typeof card.groupId === 'string')
   );
 }
