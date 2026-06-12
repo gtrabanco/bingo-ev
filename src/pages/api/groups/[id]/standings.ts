@@ -12,6 +12,7 @@ const ID_PATTERN = /^[0-9a-z]{8}$/;
 interface GroupRow {
   name: string;
   winner_card_id: string | null;
+  owner_card_id: string | null;
 }
 
 interface MemberRow {
@@ -47,7 +48,7 @@ export const POST: APIRoute = async ({ params, request }) => {
   if (!member) return new Response(null, { status: 403 });
 
   const group = await env.DB.prepare(
-    'SELECT name, winner_card_id FROM groups WHERE id = ?1',
+    'SELECT name, winner_card_id, owner_card_id FROM groups WHERE id = ?1',
   )
     .bind(groupId)
     .first<GroupRow>();
@@ -62,6 +63,9 @@ export const POST: APIRoute = async ({ params, request }) => {
   return Response.json({
     name: group.name,
     winnerCardId: group.winner_card_id,
+    // Members-only response, so naming the owner here leaks nothing new:
+    // the page uses it to decide who sees the moderation buttons.
+    ownerCardId: group.owner_card_id,
     members: (rows.results ?? []).map((row) => ({
       id: row.id,
       alias: row.alias ?? row.nick,

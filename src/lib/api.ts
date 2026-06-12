@@ -115,13 +115,17 @@ export interface GroupSettings {
 }
 
 export type GroupResult =
-  | { ok: true; id: string; adminSecret: string | null }
+  | { ok: true; id: string }
   | { ok: false; error: string };
 
-// Creates a bingo group. On success returns its id for the /g/<id> page plus
-// the admin secret that rules it (kicks); on a name clash (or other rejection)
-// returns the error code so the UI can react.
-export async function createGroup(name: string, settings: GroupSettings): Promise<GroupResult> {
+// Creates a bingo group. The creator's card (id + secret) becomes the owner —
+// the office that kicks, deletes and gets handed over on leave. On a name
+// clash (or other rejection) returns the error code so the UI can react.
+export async function createGroup(
+  name: string,
+  settings: GroupSettings,
+  owner: { cardId: string; secret: string } | null = null,
+): Promise<GroupResult> {
   try {
     const response = await fetch(
       '/api/groups',
@@ -130,33 +134,64 @@ export async function createGroup(name: string, settings: GroupSettings): Promis
         joinPolicy: settings.joinPolicy,
         password: settings.password,
         publicBoard: settings.publicBoard,
+        cardId: owner?.cardId,
+        secret: owner?.secret,
       }),
     );
     const data = (await response.json().catch(() => null)) as
-      | { id?: string; adminSecret?: string; error?: string }
+      | { id?: string; error?: string }
       | null;
-    if (response.ok && data?.id) {
-      return { ok: true, id: data.id, adminSecret: data.adminSecret ?? null };
-    }
+    if (response.ok && data?.id) return { ok: true, id: data.id };
     return { ok: false, error: data?.error ?? 'failed' };
   } catch {
     return { ok: false, error: 'offline' };
   }
 }
 
-// Admin moderation: unlink a member's card from the group. The card survives
-// untouched — it just stops playing in this room.
-export async function kickMember(
-  groupId: string,
-  adminSecret: string,
-  cardId: string,
-): Promise<boolean> {
+export type GroupActionResult = { ok: true } | { ok: false; error: string };
+
+async function groupAction(path: string, body: unknown, method = 'POST'): Promise<GroupActionResult> {
   try {
-    const response = await fetch(`/api/groups/${groupId}/kick`, jsonInit({ adminSecret, cardId }));
-    return response.ok || response.status === 204;
+    const response = await fetch(path, jsonInit(body, method));
+    if (response.ok || response.status === 204) return { ok: true };
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    return { ok: false, error: data?.error ?? 'failed' };
   } catch {
-    return false;
+    return { ok: false, error: 'offline' };
   }
+}
+
+// Owner moderation: unlink a member's card from the room. The card survives
+// untouched — it just stops playing here. Auth is the owner card's id+secret.
+// The error code matters: 'not_member' means the row already walked out.
+export function kickMember(
+  groupId: string,
+  cardId: string,
+  secret: string,
+  memberId: string,
+): Promise<GroupActionResult> {
+  return groupAction(`/api/groups/${groupId}/kick`, { cardId, secret, memberId });
+}
+
+// Walks the caller's own card out of the room. If the owner leaves, the
+// office passes to the most veteran member; an emptied room dissolves.
+// 'not_member' here means the card was already out (kicked meanwhile).
+export function leaveGroup(
+  groupId: string,
+  cardId: string,
+  secret: string,
+): Promise<GroupActionResult> {
+  return groupAction(`/api/groups/${groupId}/leave`, { cardId, secret });
+}
+
+// Owner-only: dissolves the room. Every member card is unlinked, none is
+// deleted — marks and diplomas stay with their owners.
+export function deleteGroup(
+  groupId: string,
+  cardId: string,
+  secret: string,
+): Promise<GroupActionResult> {
+  return groupAction(`/api/groups/${groupId}`, { cardId, secret }, 'DELETE');
 }
 
 export type JoinResult = { ok: true } | { ok: false; error: string };
@@ -193,6 +228,7 @@ export interface GroupStanding {
 export interface GroupStandings {
   name: string;
   winnerCardId: string | null;
+  ownerCardId: string | null;
   members: GroupStanding[];
 }
 

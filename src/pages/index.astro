@@ -20,7 +20,7 @@ import CertificateModal from '../components/CertificateModal.astro';
       >
         El Bingo del Cargador
       </h1>
-      <p class="mx-auto mt-3 max-w-sm text-sm/relaxed text-paper-300/90 sm:max-w-md sm:text-base/relaxed">
+      <p class="mx-auto mt-3 max-w-sm text-sm/relaxed text-paper-300/90 sm:max-w-md sm:text-base/relaxed lg:max-w-2xl">
         <strong>Juego de bingo gratuito</strong> sobre las desgracias típicas del cargador público en España. Seis situaciones por cartón, repartidas al azar. Marca las que vivas: la <strong>línea se canta</strong>, el <strong>bingo se certifica</strong> con diploma verificable, y el cartón caduca en un mes.
       </p>
     </header>
@@ -292,36 +292,39 @@ import CertificateModal from '../components/CertificateModal.astro';
         </div>
       </details>
 
-      <a
-        href="https://www.tesla.com/es_es/referral/gabriel746720"
-        target="_blank"
-        rel="noopener"
-        class="group mt-6 block rounded-2xl border-2 border-amber-300/60 bg-gradient-to-br from-amber-300/15 to-amber-300/5 px-5 py-4 text-center transition-colors hover:border-amber-300 hover:bg-amber-300/10"
-      >
-        <p class="text-[0.625rem] font-bold uppercase tracking-[0.3em] text-amber-300/80 sm:text-xs">
-          Publicidad descarada
-        </p>
-        <p class="mt-1.5 text-sm/relaxed text-paper-50 sm:text-base/relaxed">
-          Usa mi <strong>código de referido</strong> y ganamos los dos por igual.
-        </p>
-        <span
-          class="mt-3 inline-flex items-center gap-2 rounded-xl bg-amber-300 px-5 py-2.5 text-xs font-black uppercase tracking-widest text-felt-950 shadow-[0_4px_0_rgb(0_0_0/0.3)] transition-all group-hover:shadow-[0_5px_0_rgb(0_0_0/0.3)] group-active:translate-y-0.5 group-active:shadow-none sm:text-sm"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            aria-hidden="true"
-            class="h-3.5 w-3.5 sm:h-4 sm:w-4"
-          >
-            <path
-              d="M12 5.362l2.475-3.026s4.245.09 8.471 2.054c-1.082 1.636-3.231 2.438-3.231 2.438-.146-1.439-1.154-1.79-4.354-1.79L12 24 8.619 5.034c-3.18 0-4.211.354-4.359 1.792 0 0-2.144-.804-3.229-2.43C5.255 2.43 9.5 2.34 9.5 2.34L11.976 5.362l.012.002.012-.002zM12 1.575c2.717-.002 5.823.439 9 1.882 0 0 .3.534.387.823 0 0-3.717-1.516-9.387-1.508-5.67-.008-9.386 1.508-9.386 1.508.087-.289.387-.823.387-.823C6.18 2.014 9.285 1.573 12 1.575z"
-            ></path>
-          </svg>
-          ¿Pensando en comprar un Tesla?
-        </span>
-      </a>
     </aside>
     </div>
+
+    <!-- The referral sits outside the two columns, as the footer's hat:
+         centered and capped at card width so it doesn't grow on desktop. -->
+    <a
+      href="https://www.tesla.com/es_es/referral/gabriel746720"
+      target="_blank"
+      rel="noopener"
+      class="group mx-auto mt-8 block w-full max-w-md rounded-2xl border-2 border-amber-300/60 bg-gradient-to-br from-amber-300/15 to-amber-300/5 px-5 py-4 text-center transition-colors hover:border-amber-300 hover:bg-amber-300/10 lg:mt-10"
+    >
+      <p class="text-[0.625rem] font-bold uppercase tracking-[0.3em] text-amber-300/80 sm:text-xs">
+        Publicidad descarada
+      </p>
+      <p class="mt-1.5 text-sm/relaxed text-paper-50 sm:text-base/relaxed">
+        Usa mi <strong>código de referido</strong> y ganamos los dos por igual.
+      </p>
+      <span
+        class="mt-3 inline-flex items-center gap-2 rounded-xl bg-amber-300 px-5 py-2.5 text-xs font-black uppercase tracking-widest text-felt-950 shadow-[0_4px_0_rgb(0_0_0/0.3)] transition-all group-hover:shadow-[0_5px_0_rgb(0_0_0/0.3)] group-active:translate-y-0.5 group-active:shadow-none sm:text-sm"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
+          class="h-3.5 w-3.5 sm:h-4 sm:w-4"
+        >
+          <path
+            d="M12 5.362l2.475-3.026s4.245.09 8.471 2.054c-1.082 1.636-3.231 2.438-3.231 2.438-.146-1.439-1.154-1.79-4.354-1.79L12 24 8.619 5.034c-3.18 0-4.211.354-4.359 1.792 0 0-2.144-.804-3.229-2.43C5.255 2.43 9.5 2.34 9.5 2.34L11.976 5.362l.012.002.012-.002zM12 1.575c2.717-.002 5.823.439 9 1.882 0 0 .3.534.387.823 0 0-3.717-1.516-9.387-1.508-5.67-.008-9.386 1.508-9.386 1.508.087-.289.387-.823.387-.823C6.18 2.014 9.285 1.573 12 1.575z"
+          ></path>
+        </svg>
+        ¿Pensando en comprar un Tesla?
+      </span>
+    </a>
 
     <footer class="mt-auto pt-8 text-center text-[0.6875rem]/relaxed text-paper-300/55 sm:text-sm/relaxed">
         <p>
@@ -415,7 +418,6 @@ import CertificateModal from '../components/CertificateModal.astro';
     markNewsletterSubscribed,
     saveAlias,
     saveCard,
-    saveGroupAdmin,
     saveMarkMode,
     saveNick,
     type MarkMode,
@@ -482,6 +484,16 @@ import CertificateModal from '../components/CertificateModal.astro';
 
   const shortDate = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' });
   const longDate = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long' });
+
+  // Wide screens show the paperwork column expanded: collapsed bars floating
+  // next to the cartón look half-broken, and there's room to spare. This runs
+  // BEFORE the card-loading awaits below — done later it would flash closed
+  // panels for seconds on slow networks and stomp on the user's own toggles.
+  if (matchMedia('(min-width: 1024px)').matches) {
+    for (const panel of document.querySelectorAll('main details')) {
+      panel.setAttribute('open', '');
+    }
+  }
 
   async function newCard(): Promise<CardState> {
     const fresh = generateCard();
@@ -870,6 +882,12 @@ import CertificateModal from '../components/CertificateModal.astro';
     event.preventDefault();
     const name = groupNameInput.value.trim();
     if (!name) return;
+    // A completed card can't join any room (instant unearned win), so letting
+    // it create one would leave an owner locked out of their own sala.
+    if (card.completedAt !== null) {
+      groupHint.textContent = 'Tu cartón ya está completo: regenera uno para crear un grupo.';
+      return;
+    }
     // The global alias (above the card) is how you appear in the standings.
     const alias = loadAlias();
     if (!alias) {
@@ -886,21 +904,27 @@ import CertificateModal from '../components/CertificateModal.astro';
     }
 
     groupHint.textContent = 'Creando…';
-    const result = await createGroup(name, {
-      joinPolicy,
-      password,
-      publicBoard: groupPublicCheck.checked,
-    });
+    // The creator's card becomes the owner: it kicks, deletes and hands the
+    // office over if it ever leaves the room.
+    const result = await createGroup(
+      name,
+      {
+        joinPolicy,
+        password,
+        publicBoard: groupPublicCheck.checked,
+      },
+      card.secret ? { cardId: card.id, secret: card.secret } : null,
+    );
     if (!result.ok) {
       groupHint.textContent =
         result.error === 'name_taken'
           ? 'Ese nombre ya está cogido. Prueba con otro.'
-          : 'No se pudo crear el grupo. Inténtalo más tarde.';
+          : result.error === 'card_completed'
+            ? 'Tu cartón ya está completo: regenera uno para crear un grupo.'
+            : 'No se pudo crear el grupo. Inténtalo más tarde.';
       return;
     }
 
-    // The admin secret rules the group (kicks). It outlives the card.
-    if (result.adminSecret) saveGroupAdmin(result.id, result.adminSecret);
     // Auto-join the creator's card so they land already in the standings.
     if (card.secret && card.completedAt === null) {
       const joined = await joinGroup(result.id, card.id, card.secret, alias, password);

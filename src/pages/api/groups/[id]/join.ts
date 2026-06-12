@@ -65,24 +65,32 @@ export const POST: APIRoute = async ({ params, request }) => {
 
   // One card, one group: a card already playing elsewhere can't switch rooms
   // (regenerating the card is the way out). Re-joining the same group is fine
-  // — it just refreshes the alias.
+  // — it just refreshes the alias. Two existence guards run INSIDE the
+  // update: the target room must still exist (groups are deletable now, and
+  // this UPDATE races owner-delete/dissolution/GC), and a membership left
+  // dangling by one of those deletions counts as free, not as "elsewhere".
   const result = await env.DB.prepare(
     `UPDATE cards SET group_id = ?3, alias = ?4
      WHERE id = ?1 AND secret = ?2 AND completed_at IS NULL
-       AND (group_id IS NULL OR group_id = ?3)`,
+       AND (group_id IS NULL OR group_id = ?3
+            OR NOT EXISTS (SELECT 1 FROM groups WHERE id = cards.group_id))
+       AND EXISTS (SELECT 1 FROM groups WHERE id = ?3)`,
   )
     .bind(cardId, secret, groupId, alias)
     .run();
 
   if (!result.meta.changes) {
-    // Diagnose so the UI can explain: in another group vs. plain rejection
-    // (wrong secret, unknown card, or already completed).
+    // Diagnose so the UI can explain: in another (live) group vs. plain
+    // rejection (wrong secret, unknown card, completed, or the target room
+    // vanished mid-join).
     const row = await env.DB.prepare(
-      'SELECT group_id FROM cards WHERE id = ?1 AND secret = ?2 AND completed_at IS NULL',
+      `SELECT group_id,
+              EXISTS (SELECT 1 FROM groups WHERE id = cards.group_id) AS group_alive
+       FROM cards WHERE id = ?1 AND secret = ?2 AND completed_at IS NULL`,
     )
       .bind(cardId, secret)
-      .first<{ group_id: string | null }>();
-    if (row?.group_id && row.group_id !== groupId) {
+      .first<{ group_id: string | null; group_alive: number }>();
+    if (row?.group_id && row.group_alive && row.group_id !== groupId) {
       return Response.json({ error: 'already_grouped' }, { status: 409 });
     }
     return Response.json({ error: 'cannot_join' }, { status: 403 });

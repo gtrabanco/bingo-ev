@@ -7,6 +7,7 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { CELL_COUNT, getSituation, newCardId } from '../../../lib/card';
+import { orphanedOwnerRepair } from '../../../lib/groups';
 
 const CONTROL_CHARS = /[\u0000-\u001f\u007f]/g;
 
@@ -60,6 +61,9 @@ export const POST: APIRoute = async ({ request }) => {
     db.prepare(
       "DELETE FROM cards WHERE completed_at IS NULL AND datetime(created_at) < datetime('now', '-1 month', '-1 day')",
     ),
+    // The sweep above may have deleted a room owner's card: hand those
+    // offices over (or NULL them) so no group points at a missing row.
+    orphanedOwnerRepair(),
     db
       .prepare(
         'INSERT INTO cards (id, created_at, secret, cells, marks, alias) VALUES (?1, ?2, ?3, ?4, ?5, ?6)',

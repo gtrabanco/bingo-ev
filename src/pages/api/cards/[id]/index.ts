@@ -7,6 +7,7 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { CELL_COUNT, unpackMarks } from '../../../../lib/card';
+import { settleDeparture } from '../../../../lib/groups';
 
 const ID_PATTERN = /^[0-9a-z]{8}$/;
 
@@ -26,8 +27,12 @@ export const GET: APIRoute = async ({ params, request }) => {
   const secret = new URL(request.url).searchParams.get('k') ?? '';
   if (!secret) return new Response(null, { status: 400 });
 
+  // group_id is validated against a live room: a membership left dangling by
+  // a room deletion reads as NULL, so clients self-heal back to grouplessness.
   const row = await env.DB.prepare(
-    'SELECT created_at, completed_at, cells, marks, alias, group_id FROM cards WHERE id = ?1 AND secret = ?2',
+    `SELECT created_at, completed_at, cells, marks, alias,
+            (SELECT g.id FROM groups g WHERE g.id = cards.group_id) AS group_id
+     FROM cards WHERE id = ?1 AND secret = ?2`,
   )
     .bind(id, secret)
     .first<FullRow>();
@@ -78,10 +83,15 @@ export const DELETE: APIRoute = async ({ params, request }) => {
 
   // Owner-only for rows issued with a secret; legacy rows (secret NULL)
   // remain deletable without one. Completed cards are always immune.
-  await env.DB.prepare(
-    'DELETE FROM cards WHERE id = ?1 AND completed_at IS NULL AND (secret IS NULL OR secret = ?2)',
+  // RETURNING tells us whether the card was in a room: a deleted member must
+  // still settle its departure (ownership handover, empty-room dissolution),
+  // or the office would dangle on a row that no longer exists.
+  const deleted = await env.DB.prepare(
+    `DELETE FROM cards WHERE id = ?1 AND completed_at IS NULL AND (secret IS NULL OR secret = ?2)
+     RETURNING group_id`,
   )
     .bind(id, secret)
-    .run();
+    .first<{ group_id: string | null }>();
+  if (deleted?.group_id) await settleDeparture(deleted.group_id, id);
   return new Response(null, { status: 204 });
 };

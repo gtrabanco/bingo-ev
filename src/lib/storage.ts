@@ -109,17 +109,3 @@ export function saveAlias(alias: string): void {
 export function loadAlias(): string {
   return read(ALIAS_KEY) ?? '';
 }
-
-// Admin secrets of the groups created from this browser, keyed by group id.
-// The admin moderates the group (kicks members). Losing the browser loses the
-// office — same deal as a card's owner secret, and deliberately NOT tied to a
-// card: cards are regenerated, admin rights persist.
-const groupAdminKey = (groupId: string) => `${PREFIX}.groupAdmin.${groupId}`;
-
-export function saveGroupAdmin(groupId: string, secret: string): void {
-  write(groupAdminKey(groupId), secret);
-}
-
-export function loadGroupAdmin(groupId: string): string | null {
-  return read(groupAdminKey(groupId));
-}

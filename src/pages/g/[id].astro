@@ -18,6 +18,7 @@ interface GroupRow {
   winner_card_id: string | null;
   join_policy: string;
   public_board: number;
+  owner_card_id: string | null;
 }
 
 interface MemberRow {
@@ -35,7 +36,7 @@ let group: GroupRow | null = null;
 let members: MemberRow[] = [];
 if (ID_PATTERN.test(id)) {
   group = await env.DB.prepare(
-    'SELECT id, name, created_at, winner_card_id, join_policy, public_board FROM groups WHERE id = ?1',
+    'SELECT id, name, created_at, winner_card_id, join_policy, public_board, owner_card_id FROM groups WHERE id = ?1',
   )
     .bind(id)
     .first<GroupRow>();
@@ -213,6 +214,7 @@ Astro.response.headers.set('cache-control', 'no-store');
               data-policy={group.join_policy}
               data-public={isPublic ? '1' : '0'}
               data-group-name={group.name}
+              data-owner-card={isPublic ? (group.owner_card_id ?? '') : ''}
             >
               Unirme con mi cartón
             </button>
@@ -231,6 +233,23 @@ Astro.response.headers.set('cache-control', 'no-store');
               class="mt-2 hidden underline decoration-paper-300/40 underline-offset-2 transition-colors hover:text-paper-50"
             ></a>
           </div>
+
+          <!-- Membership/ownership actions, revealed by the page script:
+               leaving is for members, dissolving the room for its owner. -->
+          <button
+            id="leave-group"
+            type="button"
+            class="mt-3 hidden w-full rounded-xl border-2 border-paper-50/30 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-paper-50 transition-colors hover:bg-paper-50/10 sm:text-sm"
+          >
+            Salir de la sala
+          </button>
+          <button
+            id="delete-group"
+            type="button"
+            class="mt-2 hidden w-full rounded-xl border-2 border-dauber-600/70 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-dauber-600 transition-colors hover:bg-dauber-600/15 sm:text-sm"
+          >
+            Borrar la sala
+          </button>
 
           <p class="mt-5 text-center text-[0.625rem] font-bold uppercase tracking-wide text-paper-300/60 sm:text-xs">
             Recluta sufridores
@@ -300,20 +319,16 @@ Astro.response.headers.set('cache-control', 'no-store');
   // mandatory alias (and the password for protected groups). Private groups
   // reveal their standings only to members, fetched here with that secret.
   import {
+    deleteGroup,
     fetchGroupStandings,
     fetchOwnedCard,
     joinGroup,
     kickMember,
+    leaveGroup,
     type GroupStandings,
   } from '../../lib/api';
   import { SITUATION_COUNT } from '../../lib/card';
-  import {
-    loadAlias,
-    loadCurrentCard,
-    loadGroupAdmin,
-    saveAlias,
-    saveCard,
-  } from '../../lib/storage';
+  import { loadAlias, loadCurrentCard, saveAlias, saveCard } from '../../lib/storage';
 
   const joinForm = document.querySelector<HTMLFormElement>('#join-form');
   const joinButton = document.querySelector<HTMLButtonElement>('#join-group');
@@ -332,11 +347,17 @@ Astro.response.headers.set('cache-control', 'no-store');
   const privateBoard = document.querySelector<HTMLElement>('#private-board');
   const privateNotice = document.querySelector<HTMLParagraphElement>('#private-notice');
 
+  const leaveButton = document.querySelector<HTMLButtonElement>('#leave-group');
+  const deleteButton = document.querySelector<HTMLButtonElement>('#delete-group');
+
   const card = loadCurrentCard();
   const groupId = joinButton?.dataset.groupId ?? '';
   const policy = joinButton?.dataset.policy ?? 'open';
   const isPublic = joinButton?.dataset.public === '1';
   const groupName = joinButton?.dataset.groupName ?? '';
+  // Who owns the room: server-rendered for public boards; private boards
+  // reveal it through the members-only standings fetch below.
+  let ownerCardId: string | null = joinButton?.dataset.ownerCard || null;
 
   function setHint(message: string): void {
     if (hint) hint.textContent = message;
@@ -367,13 +388,20 @@ Astro.response.headers.set('cache-control', 'no-store');
   // --- Join state -----------------------------------------------------------
   // One card, one group: a card already playing here has nothing to join, and
   // a card playing elsewhere can't switch (regenerating it is the way out).
+  // Members get the way out (salir); the owner also gets the demolition lever.
+
+  function isOwner(): boolean {
+    return !!card?.secret && !!ownerCardId && card.id === ownerCardId;
+  }
 
   function renderJoinState(): void {
     if (!joinForm || !blockedBox || !blockedText || !blockedLink) return;
-    const memberHere = !!card && card.groupId === groupId;
+    const memberHere = !!card?.secret && card.groupId === groupId;
     const memberElsewhere = !!card?.groupId && card.groupId !== groupId;
     joinForm.classList.toggle('hidden', memberHere || memberElsewhere);
     blockedBox.classList.toggle('hidden', !memberHere && !memberElsewhere);
+    leaveButton?.classList.toggle('hidden', !memberHere);
+    deleteButton?.classList.toggle('hidden', !isOwner());
     if (memberHere) {
       blockedText.textContent = 'Tu cartón ya está en esta sala. A sufrir, que para eso has venido.';
       blockedLink.classList.add('hidden');
@@ -387,6 +415,45 @@ Astro.response.headers.set('cache-control', 'no-store');
   }
 
   renderJoinState();
+
+  // Walk out. If the owner leaves, the server hands the office to the most
+  // veteran remaining member; an emptied room dissolves on its own.
+  leaveButton?.addEventListener('click', async () => {
+    if (!card?.secret) return;
+    const warning = isOwner()
+      ? '¿Salir de la sala? El cargo pasa al miembro más veterano. Tu cartón no se borra.'
+      : '¿Salir de la sala? Tu cartón no se borra: sigue jugándose en solitario.';
+    if (!confirm(warning)) return;
+    const result = await leaveGroup(groupId, card.id, card.secret);
+    // 'not_member' = already out (kicked while this page sat open): same end
+    // state as a successful leave, so sync and move on instead of retrying.
+    if (!result.ok && result.error !== 'not_member') {
+      setHint('No se pudo salir. Inténtalo de nuevo.');
+      return;
+    }
+    card.groupId = null;
+    saveCard(card);
+    location.reload();
+  });
+
+  // Demolition, owner-only: every member card is unlinked, none is deleted.
+  deleteButton?.addEventListener('click', async () => {
+    if (!card?.secret || !isOwner()) return;
+    if (!confirm('¿Borrar la sala para todos? Los cartones no se borran: se quedan sin sala.')) {
+      return;
+    }
+    const result = await deleteGroup(groupId, card.id, card.secret);
+    // 'not_found' = the room is already gone; that's the goal anyway.
+    if (!result.ok && result.error !== 'not_found') {
+      setHint('No se pudo borrar la sala. Inténtalo de nuevo.');
+      return;
+    }
+    if (card.groupId === groupId) {
+      card.groupId = null;
+      saveCard(card);
+    }
+    location.href = '/';
+  });
 
   // The server rules membership (the admin may have kicked this card, or it
   // joined from another device): refresh quietly and re-render on change.
@@ -403,19 +470,19 @@ Astro.response.headers.set('cache-control', 'no-store');
   }
   void refreshMembership();
 
-  // --- Moderation (group admin) ----------------------------------------------
-  // The creator's browser holds the group's admin secret: it gets an "echar"
-  // button per member. Kicking unlinks the card from the room — the card, its
-  // marks and its diploma survive; only the membership goes.
-
-  const adminSecret = loadGroupAdmin(groupId);
+  // --- Moderation (room owner) ------------------------------------------------
+  // The owner's card holds the office: every OTHER member's row gets an
+  // "echar" button (the owner leaves via "Salir de la sala", not by kicking
+  // themselves). Kicking unlinks the card from the room — the card, its marks
+  // and its diploma survive; only the membership goes.
 
   function wireKickButtons(): void {
-    if (!adminSecret) return;
+    if (!card?.secret || !isOwner()) return;
+    const ownerCard = card;
     document.querySelectorAll<HTMLElement>('[data-member-card]').forEach((row) => {
       if (row.querySelector('.kick-btn')) return;
       const memberId = row.dataset.memberCard ?? '';
-      if (!memberId) return;
+      if (!memberId || memberId === ownerCard.id) return;
       const button = document.createElement('button');
       button.type = 'button';
       button.className =
@@ -425,14 +492,12 @@ Astro.response.headers.set('cache-control', 'no-store');
         if (!confirm('¿Echar este cartón de la sala? No se borra: solo deja de jugar en el grupo.')) {
           return;
         }
-        const ok = await kickMember(groupId, adminSecret, memberId);
-        if (!ok) {
+        const result = await kickMember(groupId, ownerCard.id, ownerCard.secret!, memberId);
+        // 'not_member' = the row already walked out on its own; reloading
+        // shows the same end state either way.
+        if (!result.ok && result.error !== 'not_member') {
           setHint('No se pudo echar. Inténtalo de nuevo.');
           return;
-        }
-        if (card && memberId === card.id) {
-          card.groupId = null;
-          saveCard(card);
         }
         location.reload();
       });
@@ -504,7 +569,12 @@ Astro.response.headers.set('cache-control', 'no-store');
   async function loadPrivateBoard(): Promise<void> {
     if (isPublic || !privateBoard || !card?.secret) return;
     const data = await fetchGroupStandings(groupId, card.id, card.secret);
-    if (data) renderPrivateBoard(data);
+    if (!data) return;
+    // Private boards learn the owner here (it never renders server-side):
+    // refresh the moderation UI before drawing the rows it decorates.
+    ownerCardId = data.ownerCardId ?? null;
+    renderJoinState();
+    renderPrivateBoard(data);
   }
   void loadPrivateBoard();
 

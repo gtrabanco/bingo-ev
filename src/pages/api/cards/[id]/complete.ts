@@ -6,6 +6,7 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { expiryFromCreatedAt } from '../../../../lib/card';
+import { settleDeparture } from '../../../../lib/groups';
 
 const ID_PATTERN = /^[0-9a-z]{8}$/;
 const CONTROL_CHARS = /[\u0000-\u001f\u007f]/g;
@@ -54,7 +55,13 @@ export const POST: APIRoute = async ({ params, request }) => {
   const now = new Date();
   if (now.getTime() > expiryFromCreatedAt(row.created_at).getTime()) {
     // Expired without glory: per the house rules, the record is deleted.
-    await db.prepare('DELETE FROM cards WHERE id = ?1').bind(id).run();
+    // A member's departure still settles (handover, dissolution) so the
+    // room's office never dangles on a deleted row.
+    const deleted = await db
+      .prepare('DELETE FROM cards WHERE id = ?1 RETURNING group_id')
+      .bind(id)
+      .first<{ group_id: string | null }>();
+    if (deleted?.group_id) await settleDeparture(deleted.group_id, id);
     return new Response(null, { status: 410 });
   }
 
