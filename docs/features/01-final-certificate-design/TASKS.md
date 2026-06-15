@@ -1,0 +1,50 @@
+# 01 — final-certificate-design · TASKS
+
+> Checklist expanded from `PLAN.md`. Check off as each lands; one commit per phase.
+
+## P0 — Planning (this skill)
+
+- [x] SPEC written and scoped (size M, scope + direction confirmed with user)
+- [x] PLAN + TASKS generated
+- [ ] Roadmap row registered as `in-progress` when execution starts
+- [ ] Tracking issue opened; PR will carry `Closes #<issue>`
+
+## P1 — Shared design module
+
+- [ ] Create `src/lib/certificate-design.ts` with `PALETTE`, `HONORIFICS`,
+      shared copy constants, and font stacks
+- [ ] Move `HONORIFICS` out of `certificate.ts`; import from the new module
+- [ ] Replace inlined hexes in `certificate.ts` with `PALETTE`
+- [ ] `npm run build` green
+- [ ] Visual check: downloaded PNG identical to pre-refactor
+- [ ] Commit `refactor(certificate): extract shared design tokens`
+
+## P2 — Final PNG design
+
+- [ ] Elevate frame (double border + corner ornaments)
+- [ ] Render honorific as a rotated seal/stamp echoing `.expired-stamp`
+- [ ] Tighten type hierarchy + vertical rhythm; keep all content rows
+- [ ] Crisper QR seal corner (keep integer-module scaling)
+- [ ] Visual check: `resignado`, `granujilla`, `sinverguenza` all download clean
+- [ ] Visual check: empty-nick fallback path
+- [ ] `npm run build` green
+- [ ] Commit `feat(certificate): final diploma PNG design`
+
+## P3 — OG parity
+
+- [ ] Rebuild `diplomaSvg` to match the PNG at 1200×630 (incl. honorific seal)
+- [ ] Remove the `fonts.googleapis.com` `@import`; use shared `SERIF` stack
+- [ ] `og/diploma/[id].svg.ts`: select `marks`, derive honorific via
+      `honorificFor`, pass to `diplomaSvg`
+- [ ] Keep `escapeXml` on nick (and any new interpolated text)
+- [ ] Decide mini-QR on OG (default: omit)
+- [ ] Visual check: `/og/diploma/<id>.svg` for each honorific matches the PNG
+- [ ] Verify no `fonts.googleapis.com` remains anywhere
+- [ ] `npm run build` green
+- [ ] Commit `feat(og): diploma share card parity with final design`
+
+## P4 — PR
+
+- [ ] One PR to `main`, body `Closes #<issue>`
+- [ ] Flip roadmap row `01` to `done`
+- [ ] Companion reviews per CLAUDE.md (design-review, brand-review, web-perf, SEO)

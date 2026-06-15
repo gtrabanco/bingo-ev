@@ -14,7 +14,7 @@ every row must have a folder (or be `planned` with no folder yet).
 
 | NN | Slug | Status | Depends on | Summary |
 |----|------|--------|------------|---------|
-| 01 | `final-certificate-design` | planned | — | Replace the placeholder canvas diploma with the final design |
+| 01 | `final-certificate-design` | planned | — | Final diploma design across both renderers: downloadable PNG (canvas) + OG share card (SVG) at visual parity, honorific shown on the OG card. SPEC: `01-final-certificate-design/` |
 | 02 | `photo-upload-collage` | planned | — | Let players attach/collage photos of real charger misery |
 | 03 | `public-gallery` | planned | 01 | Public, shareable gallery of certificates |
 | 04 | `analytics` | planned | — | Privacy-respecting analytics (no ad/analytics cookies) |
