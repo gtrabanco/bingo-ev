@@ -21,14 +21,15 @@
 
 ## P2 — Final PNG design
 
-- [ ] Elevate frame (double border + corner ornaments)
-- [ ] Render honorific as a rotated seal/stamp echoing `.expired-stamp`
-- [ ] Tighten type hierarchy + vertical rhythm; keep all content rows
-- [ ] Crisper QR seal corner (keep integer-module scaling)
-- [ ] Visual check: `resignado`, `granujilla`, `sinverguenza` all download clean
-- [ ] Visual check: empty-nick fallback path
-- [ ] `npm run build` green
-- [ ] Commit `feat(certificate): final diploma PNG design`
+- [x] Elevate frame (double border + corner ornaments)
+- [x] Render honorific as a rotated seal/stamp echoing `.expired-stamp`
+- [x] Tighten type hierarchy + vertical rhythm; keep all content rows
+- [x] Crisper QR seal corner (keep integer-module scaling)
+- [x] Visual check: `sinverguenza` renders in preview — stamp + QR border visible
+- [ ] Visual check: `resignado`, `granujilla` variants — manual browser check
+- [ ] Visual check: empty-nick fallback path — manual browser check
+- [x] `npm run build` green
+- [x] Commit `feat(certificate): final diploma PNG design`
 
 ## P3 — OG parity
 
