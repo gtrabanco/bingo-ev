@@ -19,6 +19,8 @@ every row must have a folder (or be `planned` with no folder yet).
 | 03 | `public-gallery` | planned | 01 | Public, shareable gallery of certificates |
 | 04 | `analytics` | planned | — | Privacy-respecting analytics (no ad/analytics cookies) |
 | 05 | `accounts` | planned | — | Optional accounts layered on the id+secret identity model |
+| 06 | `achievements-badges` | planned | 01 | Logros/badges so a player with multiple diplomas has something to chase. Two tiers: **per-card** badges (single diploma, no identity change — e.g. one-situation achievements) and **cross-card** badges that aggregate across all of a player's cards (e.g. "20+ distinct desgracias", "N from the *charger* category"). Requires tagging situations with **categories** (enabling slice). Cross-card tier needs durable aggregation → benefits from `05 accounts`; until then it can only aggregate per-browser via localStorage (device-bound, fragile). Positive badges follow once positive situations exist. See memory `achievements-badges-idea`. |
+| 07 | `situations-total-count` | planned | — | XS: surface how many distinct desgracias exist in total (currently **43**, `src/data/situations.json`). Transparency + the denominator for the "X distinct" badge in `06`. |
 
 ## Status legend
 
