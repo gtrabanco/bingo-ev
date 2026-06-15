@@ -8,6 +8,7 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { CELL_COUNT, getSituation, newCardId } from '../../../lib/card';
 import { orphanedOwnerRepair, settleDeparture } from '../../../lib/groups';
+import { verifyTurnstile } from '../../../lib/turnstile';
 
 const CONTROL_CHARS = /[\u0000-\u001f\u007f]/g;
 
@@ -37,18 +38,23 @@ export const POST: APIRoute = async ({ request }) => {
 
   let cells: (string | null)[] | null = null;
   let alias: string | null = null;
+  let tsToken = '';
   try {
     const body: unknown = await request.json();
-    const data = body as { cells?: unknown; alias?: unknown };
+    const data = body as { cells?: unknown; alias?: unknown; 'cf-turnstile-response'?: unknown };
     cells = parseCells(data?.cells);
     // Optional alias: a display label carried by the card from birth, so the
     // player shows up named in group standings without re-typing it.
     if (typeof data?.alias === 'string') {
       alias = data.alias.replace(CONTROL_CHARS, '').trim().slice(0, 32) || null;
     }
+    if (typeof data?.['cf-turnstile-response'] === 'string') tsToken = data['cf-turnstile-response'];
   } catch {
     // No body: still issue a card, it just won't be watchable at /c/<id>.
   }
+
+  const ip = request.headers.get('CF-Connecting-IP') ?? '';
+  if (!(await verifyTurnstile(tsToken, ip))) return new Response(null, { status: 403 });
 
   const id = newCardId();
   const secret = newSecret();

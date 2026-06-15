@@ -67,6 +67,22 @@ SQL without additional correctness benefit. The `orphanedOwnerRepair` backstop
 covers any residual inconsistency if the sweep fires from one endpoint and not
 the other.
 
+## D7 — Turnstile site key in `.env`, not `wrangler.jsonc` vars (P6)
+
+**Decision:** `PUBLIC_TURNSTILE_SITE_KEY` is a Vite/Astro build-time env var (from
+`.env`, gitignored) rather than a `wrangler.jsonc` `vars` entry.
+
+**Why:** `src/pages/index.astro` is a **prerendered static page** (no `export const
+prerender = false`). It cannot access Worker runtime vars at build time — only
+`import.meta.env.*` (Vite) is available. `g/[id].astro` is SSR and could use
+`env.*`, but using the same mechanism everywhere avoids confusion.
+
+**Production setup:** set `PUBLIC_TURNSTILE_SITE_KEY` in Cloudflare Workers Builds
+environment variables (dashboard → Settings → Variables); set `TURNSTILE_SECRET_KEY`
+via `wrangler secret put` (never in `wrangler.jsonc`). The `.env` file (gitignored)
+holds the test site key `1x00000000000000000000BB` for local dev; `.dev.vars` has the
+corresponding test secret `1x0000000000000000000000000000000AA`.
+
 ## D5 — Abuse-prevention mechanism = full stack, scoped by endpoint
 
 **Decision:** **Turnstile** on the endpoints that create resources / send email

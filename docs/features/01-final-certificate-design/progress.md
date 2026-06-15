@@ -1,5 +1,49 @@
 # 01 — final-certificate-design · Progress
 
+## P6 — Feature B: Turnstile on creation/email endpoints (done)
+
+Cloudflare Turnstile guards the 4 endpoints that create resources or send email
+without a pre-existing owned card — the anonymous-spam surface.
+
+**`src/lib/turnstile.ts`** (new):
+- `verifyTurnstile(token, ip)` — calls `https://challenges.cloudflare.com/turnstile/v0/siteverify`.
+- Fail closed: rejects when `TURNSTILE_SECRET_KEY` is set but the token is missing or invalid.
+- Degrades open when the secret is not configured (local dev without `.dev.vars` entry).
+
+**4 gated endpoints** — each now extracts `'cf-turnstile-response'` from the JSON body,
+reads `CF-Connecting-IP` from the request headers, calls `verifyTurnstile`, and returns
+403 on failure:
+- `POST /api/cards` (index.ts)
+- `POST /api/recover`
+- `POST /api/groups` (index.ts)
+- `POST /api/groups/[id]/join`
+
+**`src/lib/api.ts`** — `registerCard`, `requestRecovery`, `createGroup`, `joinGroup`
+each gain an optional `turnstileToken = ''` param, forwarded in the JSON body as
+`'cf-turnstile-response'`.
+
+**Client (`index.astro`, `g/[id].astro`)**:
+- Invisible Turnstile widget (`data-size="invisible"`) loaded when
+  `PUBLIC_TURNSTILE_SITE_KEY` is set, plus a synchronous `is:inline` script that
+  pre-registers `onTsSuccess`/`onTsExpiry` callbacks before the deferred CF script loads.
+- `getTsToken(ms)` polls `window._ts.ready` for up to 2 s; `resetTs()` clears the
+  token and resets the widget after each use (Turnstile tokens are single-use).
+- `newCard()`, `recoverForm.submit`, `groupForm.submit` (index.astro) and
+  `joinForm.submit` (g/[id].astro) now await the token before the API call and reset
+  after.
+
+**Environment** (see decisions.md D7):
+- `.env` (gitignored, new): `PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000BB` (CF
+  invisible always-pass test key for local dev).
+- `.dev.vars` (gitignored, updated): `TURNSTILE_SECRET_KEY=` (empty → degrade open).
+- Production: set `PUBLIC_TURNSTILE_SITE_KEY` in CF Workers Builds dashboard;
+  `wrangler secret put TURNSTILE_SECRET_KEY` for the real secret.
+
+**`src/pages/privacidad.astro`** + **`docs/legal/README.md`**: Turnstile disclosure
+added (cookieless, CF as data processor).
+
+Build green. Manual verification pending (token rejection, happy path with test keys).
+
 ## P5 — Feature A: 12-month retention GC (done)
 
 Completed cards older than 12 months are now swept by the opportunistic GC that

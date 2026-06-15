@@ -8,6 +8,7 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { expiryFromCreatedAt } from '../../lib/card';
 import { sendRecoveryEmail } from '../../lib/brevo';
+import { verifyTurnstile } from '../../lib/turnstile';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -20,14 +21,20 @@ interface CardRow {
 
 export const POST: APIRoute = async ({ request }) => {
   let email = '';
+  let tsToken = '';
   try {
     const body: unknown = await request.json();
-    const raw = (body as { email?: unknown })?.email;
+    const data = body as { email?: unknown; 'cf-turnstile-response'?: unknown };
+    const raw = data?.email;
     if (typeof raw === 'string') email = raw.trim().slice(0, 255);
+    if (typeof data?.['cf-turnstile-response'] === 'string') tsToken = data['cf-turnstile-response'];
   } catch {
     return new Response(null, { status: 400 });
   }
   if (!EMAIL_PATTERN.test(email)) return new Response(null, { status: 400 });
+
+  const ip = request.headers.get('CF-Connecting-IP') ?? '';
+  if (!(await verifyTurnstile(tsToken, ip))) return new Response(null, { status: 403 });
 
   const origin = new URL(request.url).origin;
   const rows = await env.DB.prepare(

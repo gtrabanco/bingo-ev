@@ -39,8 +39,9 @@ function jsonInit(body: unknown, method = 'POST'): RequestInit {
 export function registerCard(
   cells: (string | null)[],
   alias = '',
+  turnstileToken = '',
 ): Promise<RegisteredCard | null> {
-  return request<RegisteredCard>('/api/cards', jsonInit({ cells, alias }));
+  return request<RegisteredCard>('/api/cards', jsonInit({ cells, alias, 'cf-turnstile-response': turnstileToken }));
 }
 
 // Updates the card's alias — a display label for standings and shared views,
@@ -119,8 +120,8 @@ export function linkEmail(
 }
 
 // Asks the server to email recovery links for every card tied to an address.
-export function requestRecovery(email: string): Promise<Response | null> {
-  return fetch('/api/recover', jsonInit({ email }))
+export function requestRecovery(email: string, turnstileToken = ''): Promise<Response | null> {
+  return fetch('/api/recover', jsonInit({ email, 'cf-turnstile-response': turnstileToken }))
     .then((r) => (r.ok || r.status === 204 ? r : null))
     .catch(() => null);
 }
@@ -142,6 +143,7 @@ export async function createGroup(
   name: string,
   settings: GroupSettings,
   owner: { cardId: string; secret: string } | null = null,
+  turnstileToken = '',
 ): Promise<GroupResult> {
   try {
     const response = await fetch(
@@ -153,6 +155,7 @@ export async function createGroup(
         publicBoard: settings.publicBoard,
         cardId: owner?.cardId,
         secret: owner?.secret,
+        'cf-turnstile-response': turnstileToken,
       }),
     );
     const data = (await response.json().catch(() => null)) as
@@ -221,11 +224,12 @@ export async function joinGroup(
   secret: string,
   alias: string,
   password = '',
+  turnstileToken = '',
 ): Promise<JoinResult> {
   try {
     const response = await fetch(
       `/api/groups/${groupId}/join`,
-      jsonInit({ cardId, secret, alias, password }),
+      jsonInit({ cardId, secret, alias, password, 'cf-turnstile-response': turnstileToken }),
     );
     if (response.ok || response.status === 204) return { ok: true };
     const data = (await response.json().catch(() => null)) as { error?: string } | null;

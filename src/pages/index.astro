@@ -363,6 +363,18 @@ import CertificateModal from '../components/CertificateModal.astro';
   </div>
 
   <CertificateModal />
+
+  {import.meta.env.PUBLIC_TURNSTILE_SITE_KEY && (
+    <Fragment>
+      <script is:inline>
+        window._ts = {token: '', ready: false};
+        function onTsSuccess(t) { window._ts.token = t; window._ts.ready = true; }
+        function onTsExpiry() { window._ts.token = ''; window._ts.ready = false; }
+      </script>
+      <div class="cf-turnstile" data-sitekey={import.meta.env.PUBLIC_TURNSTILE_SITE_KEY} data-callback="onTsSuccess" data-expired-callback="onTsExpiry" data-size="invisible" aria-hidden="true"></div>
+      <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    </Fragment>
+  )}
 </Layout>
 
 <script>
@@ -486,13 +498,36 @@ import CertificateModal from '../components/CertificateModal.astro';
     }
   }
 
+  // Polls window._ts (set by the is:inline Turnstile callback) for up to `ms`
+  // milliseconds. Returns the token when ready or an empty string on timeout.
+  async function getTsToken(ms = 2000): Promise<string> {
+    const ts = (window as any)._ts as { token: string; ready: boolean } | undefined;
+    if (!ts) return '';
+    const deadline = Date.now() + ms;
+    while (Date.now() < deadline) {
+      if (ts.ready) return ts.token;
+      await new Promise<void>((r) => setTimeout(r, 50));
+    }
+    return ts.token;
+  }
+
+  function resetTs(): void {
+    const ts = (window as any)._ts as { token: string; ready: boolean } | undefined;
+    if (!ts) return;
+    ts.ready = false;
+    ts.token = '';
+    (window as any).turnstile?.reset(document.querySelector('.cf-turnstile'));
+  }
+
   async function newCard(): Promise<CardState> {
     const fresh = generateCard();
     // Server-issued identity, clock and owner secret when reachable; the
     // locally generated ones otherwise (the card plays fine, it just won't
     // be verifiable or watchable). The alias rides along so the card is
     // born labelled.
-    const registered = await registerCard(fresh.cells, loadAlias());
+    const tsToken = await getTsToken();
+    const registered = await registerCard(fresh.cells, loadAlias(), tsToken);
+    if (tsToken) resetTs();
     if (registered) {
       fresh.id = registered.id;
       fresh.createdAt = registered.createdAt;
@@ -818,7 +853,9 @@ import CertificateModal from '../components/CertificateModal.astro';
     const email = recoverInput.value.trim();
     if (!email) return;
     emailHint.textContent = 'Enviando…';
-    await requestRecovery(email);
+    const tsToken = await getTsToken();
+    await requestRecovery(email, tsToken);
+    if (tsToken) resetTs();
     // Always the same message: we don't reveal whether the email had cards.
     emailHint.textContent = 'Si hay cartones con ese correo, te llegará un email con los enlaces.';
   });
@@ -927,6 +964,7 @@ import CertificateModal from '../components/CertificateModal.astro';
     }
 
     groupHint.textContent = 'Creando…';
+    const tsToken = await getTsToken();
     // The creator's card becomes the owner: it kicks, deletes and hands the
     // office over if it ever leaves the room.
     const result = await createGroup(
@@ -937,7 +975,9 @@ import CertificateModal from '../components/CertificateModal.astro';
         publicBoard: groupPublicCheck.checked,
       },
       card.secret ? { cardId: card.id, secret: card.secret } : null,
+      tsToken,
     );
+    if (tsToken) resetTs();
     if (!result.ok) {
       groupHint.textContent =
         result.error === 'name_taken'

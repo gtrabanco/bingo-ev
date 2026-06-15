@@ -8,6 +8,7 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { newCardId } from '../../../lib/card';
 import { hashGroupPassword, isJoinPolicy, orphanedOwnerRepair } from '../../../lib/groups';
+import { verifyTurnstile } from '../../../lib/turnstile';
 
 const ID_PATTERN = /^[0-9a-z]{8}$/;
 
@@ -20,6 +21,7 @@ export const POST: APIRoute = async ({ request }) => {
   let publicBoard = true;
   let cardId = '';
   let secret = '';
+  let tsToken = '';
   try {
     const body: unknown = await request.json();
     const data = body as {
@@ -29,6 +31,7 @@ export const POST: APIRoute = async ({ request }) => {
       publicBoard?: unknown;
       cardId?: unknown;
       secret?: unknown;
+      'cf-turnstile-response'?: unknown;
     };
     if (typeof data.name === 'string') {
       name = data.name.replace(CONTROL_CHARS, '').trim().slice(0, 40);
@@ -38,12 +41,18 @@ export const POST: APIRoute = async ({ request }) => {
     publicBoard = data.publicBoard !== false;
     if (typeof data.cardId === 'string') cardId = data.cardId;
     if (typeof data.secret === 'string') secret = data.secret;
+    if (typeof data['cf-turnstile-response'] === 'string') tsToken = data['cf-turnstile-response'];
   } catch {
     return Response.json({ error: 'bad_request' }, { status: 400 });
   }
 
   // The name is required now, so two groups can't share a human label.
   if (!name) return Response.json({ error: 'name_required' }, { status: 400 });
+
+  const ip = request.headers.get('CF-Connecting-IP') ?? '';
+  if (!(await verifyTurnstile(tsToken, ip))) {
+    return Response.json({ error: 'forbidden' }, { status: 403 });
+  }
   if (joinPolicy === 'password' && !password) {
     return Response.json({ error: 'password_required' }, { status: 400 });
   }

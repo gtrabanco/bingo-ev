@@ -8,6 +8,7 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { hashGroupPassword } from '../../../../lib/groups';
+import { verifyTurnstile } from '../../../../lib/turnstile';
 
 const ID_PATTERN = /^[0-9a-z]{8}$/;
 const CONTROL_CHARS = /[\u0000-\u001f\u007f]/g;
@@ -26,6 +27,7 @@ export const POST: APIRoute = async ({ params, request }) => {
   let secret = '';
   let alias = '';
   let password = '';
+  let tsToken = '';
   try {
     const body: unknown = await request.json();
     const data = body as {
@@ -33,11 +35,13 @@ export const POST: APIRoute = async ({ params, request }) => {
       secret?: unknown;
       alias?: unknown;
       password?: unknown;
+      'cf-turnstile-response'?: unknown;
     };
     if (typeof data.cardId === 'string') cardId = data.cardId;
     if (typeof data.secret === 'string') secret = data.secret;
     if (typeof data.alias === 'string') alias = data.alias.replace(CONTROL_CHARS, '').trim().slice(0, 32);
     if (typeof data.password === 'string') password = data.password.slice(0, 64);
+    if (typeof data['cf-turnstile-response'] === 'string') tsToken = data['cf-turnstile-response'];
   } catch {
     return Response.json({ error: 'bad_request' }, { status: 400 });
   }
@@ -46,6 +50,11 @@ export const POST: APIRoute = async ({ params, request }) => {
   }
   // Alias is mandatory to take part in a group.
   if (!alias) return Response.json({ error: 'alias_required' }, { status: 400 });
+
+  const ip = request.headers.get('CF-Connecting-IP') ?? '';
+  if (!(await verifyTurnstile(tsToken, ip))) {
+    return Response.json({ error: 'forbidden' }, { status: 403 });
+  }
 
   const group = await env.DB.prepare(
     'SELECT id, join_policy, password_hash FROM groups WHERE id = ?1',
