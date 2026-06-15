@@ -107,7 +107,7 @@
 
 ## P8 — PR
 
-- [ ] One PR to `main` (no originating issue → no `Closes`)
-- [ ] Flip roadmap row `01` to `done`
+- [x] One PR to `main` (no originating issue → no `Closes`)
+- [x] Flip roadmap row `01` to `done`
 - [ ] Companion reviews per CLAUDE.md: design, brand, web-perf, SEO,
       **security-review**, accessibility
