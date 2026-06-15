@@ -1,5 +1,43 @@
 # 01 — final-certificate-design · Progress
 
+## P7 — Feature B: per-IP rate limiting on writes (done)
+
+Workers Rate Limiting binding applied to all 12 write endpoints; two tiers.
+
+**`src/lib/rate-limit.ts`** (new):
+- `checkRateLimit(bindingName, key)` — calls `limiter.limit({ key })` on the named
+  binding; returns `true` (pass) when the binding is absent (dev) or a platform error
+  occurs (fail-open). Returns `false` when the IP has exceeded the limit.
+
+**`wrangler.jsonc`** — `unsafe.bindings` section added:
+- `RATE_LIMITER_CREATE`: 10 req / 60 s — creation + email endpoints.
+- `RATE_LIMITER_WRITE`: 120 req / 60 s — all other writes (marks sync, complete,
+  alias, email-link, delete, leave, kick).
+
+**Endpoint changes** (12 endpoints total):
+- 4 creation/join endpoints: `RATE_LIMITER_CREATE` check **before** Turnstile
+  (binding call is cheaper than the external HTTP round-trip).
+- 8 remaining write endpoints: `RATE_LIMITER_WRITE` check after ID validation.
+- All return 429 on rate limit exceeded; group endpoints include `{ error: 'ratelimited' }`
+  JSON body; card-mutation endpoints use a plain 204-style null body.
+
+**`src/lib/api.ts`**:
+- `createGroup` and `joinGroup` detect HTTP 429 and return
+  `{ ok: false, error: 'ratelimited' }` so the UI can react specifically.
+- Fire-and-forget calls (marks, alias, complete, delete) absorb 429 silently via the
+  existing `null` degradation — intentional per the offline-first contract.
+
+**UI (`index.astro`, `g/[id].astro`)**:
+- `groupForm.submit` error handler: `'ratelimited'` → "Demasiados intentos seguidos.
+  Espera un momento."
+- `joinForm.submit` hint: same message on `'ratelimited'`.
+
+**`docs/infrastructure/README.md`**: new "Anti-abuse layer" section documents both
+Turnstile and rate-limiting tiers, plus complementary WAF rule guidance.
+
+Build green. Manual verification pending (loop writes past limit → 429; normal play
+should never trip the 120/60s tier).
+
 ## P6 — Feature B: Turnstile on creation/email endpoints (done)
 
 Cloudflare Turnstile guards the 4 endpoints that create resources or send email
