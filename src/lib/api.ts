@@ -62,8 +62,25 @@ export function reportCompletion(
 }
 
 // Pushes the current marks so the shared /c/<id> view stays up to date.
-export function syncMarks(cardId: string, secret: string, marks: string): void {
-  void request(`/api/cards/${cardId}/marks`, jsonInit({ secret, marks }));
+// Returns 'locked' (409) when the server rejects because the diploma is sealed;
+// 'ok' on success; 'error' on any other failure (network, 4xx, etc.).
+// Callers must handle 'locked' by reverting local state to the server's version.
+export async function syncMarks(
+  cardId: string,
+  secret: string,
+  marks: string,
+): Promise<'ok' | 'locked' | 'error'> {
+  try {
+    const response = await fetch(`/api/cards/${cardId}/marks`, {
+      signal: AbortSignal.timeout(4000),
+      ...jsonInit({ secret, marks }),
+    });
+    if (response.status === 409) return 'locked';
+    if (response.ok || response.status === 204) return 'ok';
+    return 'error';
+  } catch {
+    return 'error';
+  }
 }
 
 // Removes a never-completed card (regenerated or expired). Fire-and-forget.

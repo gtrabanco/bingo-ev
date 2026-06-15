@@ -371,6 +371,7 @@ import CertificateModal from '../components/CertificateModal.astro';
   // in src/lib/.
   import {
     SITUATION_COUNT,
+    areMarksLocked,
     expiryDate,
     generateCard,
     getSituation,
@@ -547,21 +548,36 @@ import CertificateModal from '../components/CertificateModal.astro';
   if (isExpired(card)) discardCard(card.id, card.secret);
 
   // Debounced push of the marks so the shared /c/<id> view stays live.
+  // If the server returns 409 (marks sealed) we re-fetch and restore canonical state.
   function scheduleMarksSync(immediate = false): void {
     if (!card.secret) return;
     const secret = card.secret;
     window.clearTimeout(marksSyncTimer);
+    const doSync = async () => {
+      const result = await syncMarks(card.id, secret, packMarks(card.marks));
+      if (result === 'locked') {
+        // Server rejected: the diploma is sealed. Re-fetch to restore server state.
+        const owned = await fetchOwnedCard(card.id, card.secret!);
+        if (owned) {
+          card.marks = owned.marks;
+          card.completedAt = owned.completedAt;
+          saveCard(card);
+          renderGrid();
+          syncStatus();
+          showToast('El cartón ya estaba sellado. Se restauró su estado.');
+        }
+      }
+    };
     if (immediate) {
-      syncMarks(card.id, secret, packMarks(card.marks));
+      void doSync();
       return;
     }
-    marksSyncTimer = window.setTimeout(() => {
-      syncMarks(card.id, secret, packMarks(card.marks));
-    }, 800);
+    marksSyncTimer = window.setTimeout(() => { void doSync(); }, 800);
   }
 
   function renderGrid(): void {
     const expired = isExpired(card);
+    const locked = card.completedAt !== null && areMarksLocked(card.completedAt);
     grid.replaceChildren();
     cellButtons = card.cells.map((situationId, index) => {
       if (situationId === null) {
@@ -576,7 +592,7 @@ import CertificateModal from '../components/CertificateModal.astro';
       button.type = 'button';
       button.className = 'cell';
       button.setAttribute('aria-pressed', String((card.marks[index] ?? 0) > 0));
-      button.disabled = expired;
+      button.disabled = expired || locked;
       // Deterministic pseudo-random tilt so each dab looks hand-stamped.
       button.style.setProperty('--dab-rot', `${((index * 53) % 19) - 9}deg`);
 
@@ -622,11 +638,20 @@ import CertificateModal from '../components/CertificateModal.astro';
   function toggleCell(index: number, kind: 1 | 2): void {
     if (isExpired(card)) return;
 
+    // Locked: past the 24h grace window — marks are sealed, diploma can't be revoked.
+    if (card.completedAt && areMarksLocked(card.completedAt)) {
+      showToast('Este cartón ya está sellado. No se aceptan más cambios.');
+      return;
+    }
+
     const linesBefore = completedRows(card.cells, card.marks).length;
+    const wasCompleted = card.completedAt !== null;
     // Same kind again unmarks; anything else stamps (or restamps) the kind.
     card.marks[index] = card.marks[index] === kind ? 0 : kind;
 
-    const becameFull = isFullCard(card.cells, card.marks) && card.completedAt === null;
+    const becameFull = isFullCard(card.cells, card.marks) && !wasCompleted;
+    const wasInvalidated = wasCompleted && !isFullCard(card.cells, card.marks);
+
     if (becameFull) {
       // Local timestamp for instant feedback; the server's (authoritative)
       // one replaces it as soon as the completion is registered.
@@ -638,6 +663,9 @@ import CertificateModal from '../components/CertificateModal.astro';
         saveCard(card);
         refreshCertificate();
       });
+    } else if (wasInvalidated) {
+      // Un-marked within grace window, bingo no longer holds: revoke diploma.
+      card.completedAt = null;
     }
 
     saveCard(card);
@@ -651,6 +679,8 @@ import CertificateModal from '../components/CertificateModal.astro';
 
     if (becameFull) {
       openCertificate();
+    } else if (wasInvalidated) {
+      showToast('Diploma anulado. Queda cartón por sufrir.');
     } else if (completedRows(card.cells, card.marks).length > linesBefore) {
       showToast('¡Línea! Enhorabuena, supongo.');
     }
@@ -661,24 +691,27 @@ import CertificateModal from '../components/CertificateModal.astro';
     const lines = completedRows(card.cells, card.marks).length;
     const full = isFullCard(card.cells, card.marks);
     const expired = isExpired(card);
+    const locked = card.completedAt !== null && areMarksLocked(card.completedAt);
 
     statusMarks.textContent = `${marked}/${SITUATION_COUNT} desgracias`;
     statusLines.textContent = expired
       ? `Caducó el ${longDate.format(expiryDate(card))}. Toca regenerar.`
-      : full
-        ? 'Cartón completo. Era cuestión de tiempo.'
-        : lines === 0
-          ? `Caduca el ${longDate.format(expiryDate(card))}.`
-          : lines === 1
-            ? 'Una línea cantada.'
-            : `${lines} líneas cantadas.`;
+      : locked
+        ? 'Cartón sellado. Ya no hay marcha atrás.'
+        : full
+          ? 'Cartón completo. Era cuestión de tiempo.'
+          : lines === 0
+            ? `Caduca el ${longDate.format(expiryDate(card))}.`
+            : lines === 1
+              ? 'Una línea cantada.'
+              : `${lines} líneas cantadas.`;
 
     const highlighted = cellsInCompletedRows(card.cells, card.marks);
     cellButtons.forEach((button, index) => {
       button?.classList.toggle('cell-in-line', highlighted.has(index));
     });
 
-    // The diploma survives unmarking: once sung, a bingo stays sung.
+    // Diploma shown while completedAt is set (revoked on un-mark within grace, sealed after lock).
     showCertButton.classList.toggle('hidden', card.completedAt === null);
 
     // Live sharing needs a registered card (owner secret in hand).

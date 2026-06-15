@@ -1,5 +1,41 @@
 # 01 — final-certificate-design · Progress
 
+## P4 — Feature A: unmark invalidation + lock (done)
+
+Implemented the diploma lifecycle rules (D3). Server is authoritative; client
+mirrors the lock state for immediate UX feedback.
+
+**Domain (`src/lib/card.ts`):**
+- `MARKS_LOCK_HOURS = 24` — the constant; shared by Worker + browser.
+- `marksLockAt(completedAt)` — returns `completedAt + 24h` as a `Date`.
+- `areMarksLocked(completedAt, now?)` — `true` when past the lock threshold.
+
+**Server (`src/pages/api/cards/[id]/marks.ts`):**
+- Now SELECT-before-UPDATE: fetches `completed_at` + `cells` for the card
+  (same `WHERE id AND secret` guard).
+- 409 if `areMarksLocked(completed_at)` — enforced independently of the client.
+- Within grace + new marks not a full card → clears `completed_at` in the same
+  UPDATE; returns 204.
+
+**API client (`src/lib/api.ts`):**
+- `syncMarks` changed from fire-and-forget `void` to `Promise<'ok'|'locked'|'error'>`.
+- Uses a raw `fetch` (not `request()`) to distinguish 409 from other failures.
+
+**UI (`src/pages/index.astro`):**
+- `areMarksLocked` imported from `card.ts`.
+- `toggleCell`: blocks immediately (toast) if locked; sets `card.completedAt = null`
+  and shows "Diploma anulado" toast when a within-grace un-mark breaks the bingo.
+- `scheduleMarksSync`: awaits `syncMarks`; on `'locked'` re-fetches + restores state.
+- `renderGrid`: `button.disabled = expired || locked`.
+- `syncStatus`: shows "Cartón sellado" text when locked; correct diploma-button
+  visibility (hidden when `completedAt === null`).
+
+**Docs (`docs/domain/README.md`):**
+- Replaced "Once sung, a bingo stays sung" with the grace/lock/retention rules.
+
+Build green. Manual verification pending (in-progress at `/v/<id>`, grace
+invalidation, post-24h lock).
+
 ## P3 — OG parity (done)
 
 Rebuilt `diplomaSvg` in `src/lib/og-image.ts` to match the final PNG design

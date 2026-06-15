@@ -53,18 +53,18 @@
 
 ## P4 — Feature A: unmark invalidation + lock
 
-- [ ] `src/lib/card.ts`: `MARKS_LOCK_HOURS = 24`, `marksLockAt`, `areMarksLocked`
-- [ ] `marks.ts` endpoint: fetch `completed_at`+`cells`; 409 if locked; clear
+- [x] `src/lib/card.ts`: `MARKS_LOCK_HOURS = 24`, `marksLockAt`, `areMarksLocked`
+- [x] `marks.ts` endpoint: fetch `completed_at`+`cells`; 409 if locked; clear
       `completed_at` when un-marked within grace breaks the bingo
-- [ ] `index.astro` `toggleCell`: block when locked (toast); invalidate +
+- [x] `index.astro` `toggleCell`: block when locked (toast); invalidate +
       return to progress view when within grace
-- [ ] `index.astro`: render grid disabled when locked
-- [ ] `api.ts` `syncMarks`: handle 409 (revert + refetch)
-- [ ] `docs/domain/README.md`: rewrite "bingo sung stays sung" → grace/lock rules
+- [x] `index.astro`: render grid disabled when locked
+- [x] `api.ts` `syncMarks`: handle 409 (revert + refetch)
+- [x] `docs/domain/README.md`: rewrite "bingo sung stays sung" → grace/lock rules
 - [ ] Verify `/v/<id>` shows in-progress when `completed_at` is NULL
-- [ ] `npm run build` green
+- [x] `npm run build` green
 - [ ] Manual: un-mark <24h voids diploma + OG 404; >24h grid locked + POST 409
-- [ ] Commit `feat(cards): invalidate/lock diploma on unmark`
+- [x] Commit `feat(cards): invalidate/lock diploma on unmark`
 
 ## P5 — Feature A: 12-month retention GC
 

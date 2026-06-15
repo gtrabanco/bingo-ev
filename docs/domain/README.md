@@ -24,8 +24,15 @@ The language of the game, independent of framework or storage. Pure logic lives 
 ## Rules
 
 - **Línea**: a canonical row whose 2 situations are both marked (blanks don't count) →
-  "¡Línea!". Bingo: all 6 situations marked → certificate. **Once sung, a bingo stays
-  sung** — unmarking later never revokes the diploma (`completedAt` is sticky).
+  "¡Línea!". Bingo: all 6 situations marked → certificate.
+- **Diploma lifecycle** (D3/D4 — `decisions.md`):
+  - **Grace window (<24 h)**: un-marking a cell that breaks the bingo *invalidates* the
+    diploma (`completed_at → NULL`; card reverts to in-progress and is recompletable).
+  - **Lock (≥24 h after completion)**: marks become immutable; the server returns 409 and
+    the client disables the grid. The diploma is permanent.
+  - The 24 h boundary is enforced by the **server clock** (`areMarksLocked` in `card.ts`),
+    shared between the Worker and the browser for consistent UX.
+  - Completed cards are retained for **12 months** from `completed_at`, then GC'd (P5).
 - **Win detection is orientation-independent**: always computed from `ROWS`/`COLS`, never
   the rendered grid. In portrait a completed row lights up vertically — correct.
 - **Honorific** (one certificate, title by behavior): «Resignado Sufridor» (0 caused),
