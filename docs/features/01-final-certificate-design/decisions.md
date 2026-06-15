@@ -53,6 +53,20 @@ alive well beyond the joke's shelf life while bounding D1 growth; the real spam
 defense is Feature B (rate-limit + Turnstile at ingress), so retention can stay
 generous rather than aggressively short.
 
+## D6 — 12-month GC: no mirror in `groups/index.ts` (P5)
+
+**Decision:** The 12-month completed-card sweep lives only in `cards/index.ts`
+(the `POST /api/cards` opportunistic GC batch). `groups/index.ts` already sweeps
+empty rooms older than 1 month; no mirror of the completed-card sweep is added
+there.
+
+**Why:** The completed-card sweep in `cards/index.ts` is comprehensive — it
+handles both ungrouped and grouped cards (settling departure for grouped ones
+before deletion). Adding an identical sweep to `groups/index.ts` would duplicate
+SQL without additional correctness benefit. The `orphanedOwnerRepair` backstop
+covers any residual inconsistency if the sweep fires from one endpoint and not
+the other.
+
 ## D5 — Abuse-prevention mechanism = full stack, scoped by endpoint
 
 **Decision:** **Turnstile** on the endpoints that create resources / send email

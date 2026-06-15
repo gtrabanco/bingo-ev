@@ -68,15 +68,16 @@
 
 ## P5 — Feature A: 12-month retention GC
 
-- [ ] GC sweep: delete completed cards with `completed_at` > 12 months
-- [ ] Grouped expired-completed cards run `settleDeparture` (no dangling
+- [x] GC sweep: delete completed cards with `completed_at` > 12 months
+- [x] Grouped expired-completed cards run `settleDeparture` (no dangling
       winner/owner); `orphanedOwnerRepair` backstop kept
-- [ ] Mirror sweep in `groups/index.ts` if cheap
-- [ ] `docs/domain/README.md`: document 12-month completed retention
-- [ ] `npm run build` green
+- [x] Mirror sweep in `groups/index.ts` if cheap — not needed; `cards/index.ts`
+      sweep is comprehensive (see decisions.md D6)
+- [x] `docs/domain/README.md`: document 12-month completed retention
+- [x] `npm run build` green
 - [ ] Manual: old completed card (grouped + ungrouped) in local D1 is swept on
       next card issue; group settled
-- [ ] Commit `feat(cards): 12-month retention for completed cards`
+- [x] Commit `feat(cards): 12-month retention for completed cards`
 
 ## P6 — Feature B: Turnstile
 

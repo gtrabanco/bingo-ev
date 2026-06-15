@@ -1,5 +1,28 @@
 # 01 — final-certificate-design · Progress
 
+## P5 — Feature A: 12-month retention GC (done)
+
+Completed cards older than 12 months are now swept by the opportunistic GC that
+already runs on each `POST /api/cards`.
+
+**`src/pages/api/cards/index.ts`:**
+- Before the main batch, SELECTs grouped completed cards older than 12 months
+  and runs `settleDeparture(group_id, id)` for each (winner vacated, owner
+  transferred, empty room dissolved).
+- The main `db.batch([...])` gains a second DELETE:
+  `DELETE FROM cards WHERE completed_at IS NOT NULL AND datetime(completed_at) < datetime('now', '-12 months')`
+- `orphanedOwnerRepair` backstop kept after both sweeps.
+
+**`src/lib/groups.ts`:** no changes — `settleDeparture` already existed.
+
+**Mirror in `groups/index.ts`:** not added (D6: the sweep in `cards/index.ts`
+is comprehensive; no correctness gain from duplicating it).
+
+**`docs/domain/README.md`:** retention rule updated with GC implementation detail.
+
+Build green. Manual verification pending (insert old completed card in local D1,
+issue a card, confirm deletion and group settlement).
+
 ## P4 — Feature A: unmark invalidation + lock (done)
 
 Implemented the diploma lifecycle rules (D3). Server is authoritative; client

@@ -7,7 +7,7 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { CELL_COUNT, getSituation, newCardId } from '../../../lib/card';
-import { orphanedOwnerRepair } from '../../../lib/groups';
+import { orphanedOwnerRepair, settleDeparture } from '../../../lib/groups';
 
 const CONTROL_CHARS = /[\u0000-\u001f\u007f]/g;
 
@@ -54,15 +54,37 @@ export const POST: APIRoute = async ({ request }) => {
   const secret = newSecret();
   const createdAt = new Date().toISOString();
 
+  // 12-month retention GC: completed cards older than a year are swept.
+  // Grouped ones must have their departure settled first so the room's
+  // winner/owner pointers stay consistent and empty rooms dissolve — the
+  // same invariant as any other card removal (see settleDeparture in groups.ts).
+  // In the common case (no such old cards) the SELECT returns 0 rows and the
+  // loop is a no-op.
+  const expiredGrouped = await db
+    .prepare(
+      `SELECT id, group_id FROM cards
+       WHERE completed_at IS NOT NULL
+         AND group_id IS NOT NULL
+         AND datetime(completed_at) < datetime('now', '-12 months')`,
+    )
+    .all<{ id: string; group_id: string }>();
+  for (const { id, group_id } of expiredGrouped.results) {
+    await settleDeparture(group_id, id);
+  }
+
   // Opportunistic GC: expired, never-completed cards vanish so the table
   // stays tiny. One day of slack so the precise (clamped) JS expiry check
   // at completion time always wins over SQLite's month arithmetic.
+  // The completed-card sweep runs in the same batch for atomicity.
   await db.batch([
     db.prepare(
       "DELETE FROM cards WHERE completed_at IS NULL AND datetime(created_at) < datetime('now', '-1 month', '-1 day')",
     ),
-    // The sweep above may have deleted a room owner's card: hand those
-    // offices over (or NULL them) so no group points at a missing row.
+    // Remove completed cards older than 12 months (grouped ones settled above).
+    db.prepare(
+      "DELETE FROM cards WHERE completed_at IS NOT NULL AND datetime(completed_at) < datetime('now', '-12 months')",
+    ),
+    // Backstop: repair any owner pointers the sweeps above may have orphaned.
     orphanedOwnerRepair(),
     db
       .prepare(
