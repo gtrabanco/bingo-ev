@@ -40,5 +40,6 @@
   { "id": "detras-camiones", "text": "El cargador, detrás de los camiones." },
   { "id": "tasa-gestion", "text": "1 € extra por «gestión»." },
   { "id": "qr-pegatina", "text": "El QR es una pegatina sobre otra pegatina." },
-  { "id": "bateria-invernal", "text": "En invierno, la mitad de autonomía. Sorpresa." }
+  { "id": "bateria-invernal", "text": "En invierno, la mitad de autonomía. Sorpresa." },
+  { "id": "kwh-de-oro", "text": "0,69 €/kWh. A esto le llaman ahorrar." }
 ]
