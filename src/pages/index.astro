@@ -952,8 +952,10 @@ import CertificateModal from '../components/CertificateModal.astro';
 
   // --- Sharing ------------------------------------------------------------
 
-  function shareText(): string {
-    return `He completado «El Bingo del Cargador» de @gruxon: seis desgracias de la carga pública, dentro del plazo. Diploma verificable: ${verificationUrl(card.id)}`;
+  function shareText(platform: 'bluesky' | 'default' = 'default'): string {
+    const mention = platform === 'bluesky' ? '@gtrabanco.bsky.social' : '@GabrielTrabanco';
+    const tags = '#BingoDelCargador #EVEspaña #Tesla';
+    return `He completado «El Bingo del Cargador» (cc ${mention}): seis desgracias de la carga pública, dentro del plazo. ${tags} Diploma verificable: ${verificationUrl(card.id)}`;
   }
 
   function openShareWindow(url: string): void {
@@ -993,7 +995,7 @@ import CertificateModal from '../components/CertificateModal.astro';
   });
 
   shareBlueskyButton.addEventListener('click', () => {
-    openShareWindow(`https://bsky.app/intent/compose?text=${encodeURIComponent(shareText())}`);
+    openShareWindow(`https://bsky.app/intent/compose?text=${encodeURIComponent(shareText('bluesky'))}`);
   });
 
   shareInstagramButton.addEventListener('click', async () => {
