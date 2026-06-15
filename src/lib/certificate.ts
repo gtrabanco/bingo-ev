@@ -1,9 +1,12 @@
-// Certificate stub: renders a mock "diploma" onto a canvas and downloads it
-// as a PNG. One design for everyone; only the honorific title (and its small
+// Renders the diploma onto a canvas and downloads it as a PNG.
+// One design for everyone; only the honorific title (and its small
 // print) changes with the player's behavior. Final design still pending.
 
 import { encode } from 'uqr';
 import type { Honorific } from './card';
+import { PALETTE, SERIF, SANS, MONO, HONORIFICS, FALLBACK_NICK, COPY } from './certificate-design';
+
+export type { Honorific };
 
 export interface CertificateData {
   nick: string;
@@ -18,30 +21,6 @@ export const VERIFY_BASE_URL = 'https://bingo.gruxon.com/v/';
 
 export const CERT_WIDTH = 1200;
 export const CERT_HEIGHT = 900;
-
-const FALLBACK_NICK = 'Alguien con mucha paciencia';
-
-const SERIF = 'Georgia, "Times New Roman", serif';
-const SANS = 'system-ui, sans-serif';
-const MONO = 'ui-monospace, "Courier New", monospace';
-
-const HONORIFICS: Record<Honorific, { title: string; color: string; line: string }> = {
-  resignado: {
-    title: '«Resignado Sufridor»',
-    color: '#11503c',
-    line: 'Gracias por su comportamiento ejemplar con el resto de usuarios.',
-  },
-  granujilla: {
-    title: '«Granujilla»',
-    color: '#c07820',
-    line: 'Alguna desgracia la causó usted. No todas. Algo es algo.',
-  },
-  sinverguenza: {
-    title: '«Sinvergüenza»',
-    color: '#b02e22',
-    line: 'La mitad o más de las desgracias eran obra suya.',
-  },
-};
 
 interface TextSpec {
   text: string;
@@ -81,7 +60,7 @@ function drawVerificationQr(ctx: CanvasRenderingContext2D, url: string): void {
 
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(x0, y0, edge, edge);
-  ctx.fillStyle = '#221f1a';
+  ctx.fillStyle = PALETTE.ink;
   for (let row = 0; row < qr.size; row++) {
     for (let col = 0; col < qr.size; col++) {
       if (qr.data[row]![col]) {
@@ -101,27 +80,27 @@ export function drawCertificate(canvas: HTMLCanvasElement, data: CertificateData
   const honorific = HONORIFICS[data.honorific];
 
   // Aged-paper background with a double frame, diploma style.
-  ctx.fillStyle = '#f6f0df';
+  ctx.fillStyle = PALETTE.paper;
   ctx.fillRect(0, 0, CERT_WIDTH, CERT_HEIGHT);
 
-  ctx.strokeStyle = '#11503c';
+  ctx.strokeStyle = PALETTE.frameGreen;
   ctx.lineWidth = 9;
   ctx.strokeRect(28, 28, CERT_WIDTH - 56, CERT_HEIGHT - 56);
   ctx.lineWidth = 2;
   ctx.strokeRect(48, 48, CERT_WIDTH - 96, CERT_HEIGHT - 96);
 
   drawCentered(ctx, {
-    text: 'CERTIFICADO OFICIOSO',
+    text: COPY.eyebrow1,
     y: 134,
     font: `700 30px ${SANS}`,
-    color: '#11503c',
+    color: PALETTE.frameGreen,
     letterSpacing: '14px',
   });
   drawCentered(ctx, {
-    text: 'DE SUPERVIVENCIA EN LA CARGA PÚBLICA',
+    text: COPY.eyebrow2,
     y: 176,
     font: `600 19px ${SANS}`,
-    color: '#7c7464',
+    color: PALETTE.mutedMid,
     letterSpacing: '7px',
   });
 
@@ -129,23 +108,23 @@ export function drawCertificate(canvas: HTMLCanvasElement, data: CertificateData
     text: '¡BINGO!',
     y: 330,
     font: `900 150px ${SERIF}`,
-    color: '#b02e22',
+    color: PALETTE.dauberRed,
   });
 
   drawCentered(ctx, {
-    text: 'Se certifica que',
+    text: COPY.certifying,
     y: 408,
     font: `italic 26px ${SERIF}`,
-    color: '#6b6354',
+    color: PALETTE.mutedDark,
   });
   drawCentered(ctx, {
     text: nick,
     y: 468,
     font: `700 50px ${SERIF}`,
-    color: '#221f1a',
+    color: PALETTE.ink,
     maxWidth: 1000,
   });
-  ctx.strokeStyle = '#b8ab8c';
+  ctx.strokeStyle = PALETTE.rule;
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(280, 488);
@@ -153,17 +132,17 @@ export function drawCertificate(canvas: HTMLCanvasElement, data: CertificateData
   ctx.stroke();
 
   drawCentered(ctx, {
-    text: 'ha completado todas las desgracias de su cartón dentro del plazo',
+    text: COPY.body1,
     y: 534,
     font: `25px ${SERIF}`,
-    color: '#3f3a33',
+    color: PALETTE.body,
     maxWidth: 1000,
   });
   drawCentered(ctx, {
-    text: 'reglamentario de un mes, y se le concede el título honorífico de',
+    text: COPY.body2,
     y: 570,
     font: `25px ${SERIF}`,
-    color: '#3f3a33',
+    color: PALETTE.body,
     maxWidth: 1000,
   });
 
@@ -179,31 +158,31 @@ export function drawCertificate(canvas: HTMLCanvasElement, data: CertificateData
     text: honorific.line,
     y: 678,
     font: `italic 22px ${SERIF}`,
-    color: '#6b6354',
+    color: PALETTE.mutedDark,
     maxWidth: 680,
   });
 
   drawCentered(ctx, {
-    text: `Dado en un cargador «Disponible», a ${formatDate(data.date)}.`,
+    text: COPY.issuedAt(formatDate(data.date)),
     y: 730,
     font: `italic 22px ${SERIF}`,
-    color: '#6b6354',
+    color: PALETTE.mutedDark,
     maxWidth: 680,
   });
 
   drawCentered(ctx, {
-    text: `Verifícalo en bingo.gruxon.com/v/${data.cardId}`,
+    text: COPY.verifyLabel(data.cardId),
     y: 778,
     font: `700 21px ${MONO}`,
-    color: '#11503c',
+    color: PALETTE.frameGreen,
     maxWidth: 860,
   });
 
   drawCentered(ctx, {
-    text: `Cartón nº ${data.cardId} · Sin validez legal, técnica ni emocional.`,
+    text: COPY.footer(data.cardId),
     y: 820,
     font: `18px ${MONO}`,
-    color: '#8a8170',
+    color: PALETTE.mutedLight,
     maxWidth: 860,
   });
 

@@ -11,13 +11,13 @@
 
 ## P1 — Shared design module
 
-- [ ] Create `src/lib/certificate-design.ts` with `PALETTE`, `HONORIFICS`,
+- [x] Create `src/lib/certificate-design.ts` with `PALETTE`, `HONORIFICS`,
       shared copy constants, and font stacks
-- [ ] Move `HONORIFICS` out of `certificate.ts`; import from the new module
-- [ ] Replace inlined hexes in `certificate.ts` with `PALETTE`
-- [ ] `npm run build` green
+- [x] Move `HONORIFICS` out of `certificate.ts`; import from the new module
+- [x] Replace inlined hexes in `certificate.ts` with `PALETTE`
+- [x] `npm run build` green
 - [ ] Visual check: downloaded PNG identical to pre-refactor
-- [ ] Commit `refactor(certificate): extract shared design tokens`
+- [x] Commit `refactor(certificate): extract shared design tokens`
 
 ## P2 — Final PNG design
 
