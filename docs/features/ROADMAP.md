@@ -14,7 +14,7 @@ every row must have a folder (or be `planned` with no folder yet).
 
 | NN | Slug | Status | Depends on | Summary |
 |----|------|--------|------------|---------|
-| 01 | `final-certificate-design` | planned | — | Final diploma design across both renderers: downloadable PNG (canvas) + OG share card (SVG) at visual parity, honorific shown on the OG card. SPEC: `01-final-certificate-design/` |
+| 01 | `final-certificate-design` | in-progress | — | Final diploma design across both renderers (PNG + OG, P1–P3 done). **Scope expanded 2026-06-15** (owner decision, bundled): + Feature A diploma lifecycle/integrity (unmark invalidation/lock, 12-month retention) + Feature B abuse prevention (Turnstile + rate-limit). SPEC: `01-final-certificate-design/` |
 | 02 | `photo-upload-collage` | planned | — | Let players attach/collage photos of real charger misery |
 | 03 | `public-gallery` | planned | 01 | Public, shareable gallery of certificates |
 | 04 | `analytics` | planned | — | Privacy-respecting analytics (no ad/analytics cookies) |

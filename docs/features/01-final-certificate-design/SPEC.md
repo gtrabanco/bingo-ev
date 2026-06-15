@@ -17,9 +17,30 @@ as stubs and they diverge.
 
 ## Size
 
-`M` — two independent render paths (canvas + OG SVG), a design pass, and manual
-visual verification at multiple sizes. Not splittable into shippable slices
-(parity is the point), so it stays one feature, executed in phases.
+`L` — originally `M` (the two render paths + design pass, phases P1–P3, now done).
+**Expanded by owner decision on 2026-06-15** to also carry two behavioural
+work-streams (see *Scope expansion* below): diploma lifecycle/integrity and abuse
+prevention. Executed in phases, one commit per phase.
+
+## Scope expansion (owner decision, 2026-06-15)
+
+The owner explicitly chose to **bundle two further concerns into this branch/PR**
+rather than ship them as separate roadmap features, with the trade-off surfaced
+(this contradicts the project's "one PR per unit of work" convention and grows
+the PR). Recorded in `decisions.md` so the PR audit treats it as deliberate, not
+drift. The two added streams:
+
+- **Feature A — Diploma lifecycle / integrity.** Un-marking a cell on an
+  already-completed card invalidates the diploma within a 24 h grace (reverts to
+  in-progress, recompletable) and is locked after 24 h; completed cards are
+  retained 12 months instead of forever.
+- **Feature B — Abuse prevention.** Cloudflare Turnstile on the resource-creating
+  / email-sending endpoints + rate-limiting on all writes.
+
+The original *technical* non-goals still hold: **no change to the `marks` wire
+format, win detection, or honorific derivation**, and **no new npm dependency**
+(Turnstile and the rate-limit binding are Cloudflare platform features, not
+packages). What expands is only "design-only" → design + A + B.
 
 ## Dependencies
 
@@ -162,6 +183,25 @@ a schema change.
 - No new entry in `package.json` dependencies; no webfont; no brand name in any
   string.
 
+**Feature A:**
+- Un-marking a completed card **< 24 h** after completion clears `completed_at`
+  server-side, hides the diploma, and the OG endpoint 404s for it.
+- A marks change to a card completed **> 24 h** ago is rejected by the server
+  (409) and the grid is disabled client-side.
+- A completed card whose `completed_at` is **> 12 months** old is removed by the
+  next opportunistic GC; if it was in a group, `settleDeparture` ran (no dangling
+  `winner_card_id`/`owner_card_id`).
+- The `marks` wire format, win detection and honorific derivation are **unchanged**.
+
+**Feature B:**
+- `POST /api/cards`, `/api/recover`, `/api/groups`, `/api/groups/[id]/join`
+  reject requests with a missing/invalid Turnstile token.
+- Writes past the per-IP limit return **429**; the client surfaces it without
+  crashing the offline-first flow.
+- `TURNSTILE_SECRET_KEY` is a `wrangler secret`, **never** in `wrangler.jsonc`.
+- Turnstile is disclosed in `/privacidad`; it sets **no cookies**.
+- No new npm dependency (Turnstile + rate-limit binding are platform features).
+
 ## Testing requirements
 
 No automated suite exists (project has no tests/linter); verification is the
@@ -182,23 +222,111 @@ local dev:
 | `cert:complete-sinverguenza` | finished card, mostly caused | complete a card with ≥ half double-tap marks → honorific seal = Sinvergüenza |
 | `cert:og-render` | link preview card | GET `/og/diploma/<id>.svg` for a completed card id |
 | `cert:fallback-nick` | empty nick | complete without typing a nick → `FALLBACK_NICK` path in both renderers |
+| `life:unmark-grace` | un-mark < 24 h | complete, then un-mark a cell → diploma void, card back to in-progress, OG 404s, recompletable |
+| `life:unmark-locked` | un-mark > 24 h | completed > 24 h ago → grid disabled; a forged marks POST returns 409 |
+| `life:retention` | 12-month sweep | a completed card with `completed_at` > 12 months is deleted on the next GC; grouped one settles departure |
+| `abuse:turnstile` | bot issue/recover | `POST /api/cards` or `/api/recover` without a valid Turnstile token → rejected |
+| `abuse:ratelimit` | flood | repeated writes from one IP past the limit → 429 |
+
+## Feature A — Diploma lifecycle / integrity
+
+**Rule (replaces "a bingo sung stays sung").** A completed card stays valid only
+while its marks are not walked back. The **server clock is authoritative**:
+
+- **Within 24 h of `completed_at`** — removing a mark so the card is no longer a
+  full card **invalidates** the diploma: `completed_at` is set back to `NULL`, the
+  card reverts to in-progress and is recompletable. The verify page (`/v/<id>`)
+  and the OG endpoint already treat `completed_at IS NULL` as "not completed"
+  (OG 404s), so invalidation is mostly a matter of clearing the column and
+  updating client UI.
+- **After 24 h** — the marks are **locked**: the server rejects any marks change
+  to a completed card (HTTP 409) and the client disables the grid.
+- **Retention** — completed cards are deleted **12 months** after `completed_at`
+  (was: immune forever). The opportunistic GC gains a second sweep; grouped cards
+  deleted this way must run `settleDeparture` (and `orphanedOwnerRepair` is the
+  backstop).
+
+**Touch points (from code map):**
+- `src/lib/card.ts` — add `MARKS_LOCK_HOURS = 24`, `marksLockAt(completedAt)`,
+  `areMarksLocked(completedAt, now)`. No wire-format change.
+- `src/pages/api/cards/[id]/marks.ts:29` — fetch `completed_at` + `cells`; if
+  completed & locked → 409; if completed & within grace & resulting marks not a
+  full card → also set `completed_at = NULL` in the UPDATE.
+- `src/pages/index.astro:622` (`toggleCell`) — block toggles when locked (toast);
+  on within-grace un-mark that breaks the bingo, clear `completedAt` locally, hide
+  the diploma button, return to the "cómo va" view.
+- `src/lib/api.ts:65` (`syncMarks`) — surface 409 so the client can revert + reload.
+- GC: `src/pages/api/cards/index.ts:60` batch (+ mirror in `groups/index.ts:74`);
+  helper in `src/lib/groups.ts`; settle grouped deletions.
+- `docs/domain/README.md` — rewrite the "Once sung, a bingo stays sung" rule and
+  the expiry/immunity lines.
+
+**No migration** — `completed_at` already exists; lock/retention are derived.
+
+## Feature B — Abuse prevention
+
+**Turnstile** (anti-bot, cookieless) gates only the endpoints that create
+resources or send email **without requiring a pre-existing owned card** — because
+Turnstile tokens are single-use and short-lived, so they cannot gate the
+high-frequency, owner-secret-authorized syncs:
+
+- Turnstile-gated: `POST /api/cards` (issue — primary bloat vector),
+  `POST /api/recover` (email), `POST /api/groups` (create),
+  `POST /api/groups/[id]/join`.
+- Rate-limit only (already require the owner secret): marks, complete, alias,
+  email-link, leave, kick, group-delete, card-delete.
+
+**Rate-limit** every write by IP (`cf-connecting-ip`), tighter on issue/recover/
+create, via the Cloudflare **Workers Rate Limiting binding** (native, configured
+in `wrangler.jsonc`, no KV, no npm dep). Cloudflare **WAF** rate-limit rules are
+the coarse edge layer (dashboard config, documented in `docs/infrastructure`).
+
+**Touch points (from code map):**
+- New `src/lib/turnstile.ts` (server-side siteverify) and `src/lib/rate-limit.ts`
+  (binding wrapper reading `cf-connecting-ip`).
+- The 4 gated endpoints call `verifyTurnstile`; all write endpoints call the
+  rate-limit check first (429 on exceed).
+- `src/lib/api.ts` — attach the `cf-turnstile-response` token on the 4 gated
+  client calls (`registerCard`, `requestRecovery`, `createGroup`, `joinGroup`);
+  handle 429.
+- Turnstile widget in the relevant client flows in `src/pages/index.astro` /
+  `src/pages/g/[id].astro`.
+- `wrangler.jsonc` — add the rate-limit binding + the Turnstile **site key** as a
+  public `var`; the **secret** via `npx wrangler secret put TURNSTILE_SECRET_KEY`
+  (never in `wrangler.jsonc`, same pattern as `BREVO_API_KEY`).
+- `src/pages/privacidad.astro` + `docs/legal/README.md` — disclose Turnstile
+  (Cloudflare processor, cookieless, no data stored).
 
 ## Phases
 
-- **P0 — Planning.** Produce `PLAN.md` + `TASKS.md` from this SPEC. (this skill)
-- **P1 — Shared design module.** Extract `PALETTE` + `HONORIFICS` + shared copy
-  into one module; repoint `certificate.ts` to it (no visual change yet). Gate.
-- **P2 — Final PNG design.** Elevate `drawCertificate`. Visual-verify all three
-  honorifics. Gate.
-- **P3 — OG parity.** Rebuild `diplomaSvg` to match; add honorific to the OG
-  endpoint's data path; remove the Google-Fonts import. Visual-verify. Gate.
-- **P4 — PR.** One PR to `main`, `Closes #<issue>`.
+- **P0 — Planning.** Produce `PLAN.md` + `TASKS.md` from this SPEC. (done)
+- **P1 — Shared design module.** (done)
+- **P2 — Final PNG design.** (done)
+- **P3 — OG parity.** (done; P2 review fixes folded in)
+- **P4 — Feature A: unmark invalidation + lock.** Server enforce + client UI +
+  `card.ts` helpers + `docs/domain` rewrite. Gate + manual verify.
+- **P5 — Feature A: 12-month retention GC.** Add the completed-card sweep with
+  `settleDeparture` integration. Gate.
+- **P6 — Feature B: Turnstile.** `turnstile.ts`, verify on the 4 gated endpoints,
+  client widget + token, `wrangler.jsonc` site key + secret, privacy/legal docs.
+  Gate.
+- **P7 — Feature B: rate-limiting.** Rate-limit binding + `rate-limit.ts`, apply
+  to all writes, 429 handling, WAF rules documented. Gate.
+- **P8 — PR.** One PR to `main`. Companion reviews (design, brand, web-perf, SEO,
+  security, a11y). Flip roadmap row `01` to `done`.
+
+Review checkpoints: after P4+P5, after P6+P7, and before P8 (per `execute-phase`).
 
 ## Deploy & rollback
 
-n/a beyond merging — no schema migration (the honorific is derived from existing
-`marks`), no env/config change, no feature flag. Rollback = revert the PR; the
-prior renderers are pure functions with the same signatures.
+- **Design (P1–P3):** no migration, no env change. Rollback = revert.
+- **Feature A (P4–P5):** no migration (`completed_at` reused). Pure logic +
+  GC sweep; rollback = revert.
+- **Feature B (P6–P7):** requires a new secret `TURNSTILE_SECRET_KEY`
+  (`wrangler secret put`), a Turnstile **site key** public var, and the
+  rate-limit binding in `wrangler.jsonc` — set these **before** deploy or the
+  gated endpoints fail closed. WAF rules are dashboard config. Rollback = revert
+  the PR; the secret/binding can stay (unused).
 
 ## Open questions / risks
 
@@ -212,13 +340,32 @@ prior renderers are pure functions with the same signatures.
 
 ## Deliverables
 
+**Design (P1–P3, done):**
 - `src/lib/certificate-design.ts` (shared tokens/copy) — new.
 - `src/lib/certificate.ts` — final PNG design, consuming the shared module.
 - `src/lib/og-image.ts` — `diplomaSvg` rebuilt for parity, Google-Fonts import
   removed.
 - `src/pages/og/diploma/[id].svg.ts` — passes the derived honorific.
-- This SPEC + `PLAN.md` + `TASKS.md`; roadmap row flipped to `in-progress` then
-  `done`.
+
+**Feature A (P4–P5):**
+- `src/lib/card.ts` — lock/grace helpers.
+- `src/pages/api/cards/[id]/marks.ts` — server enforces invalidate/lock.
+- `src/pages/index.astro` — client lock/invalidate UX.
+- `src/lib/api.ts` — 409 handling on `syncMarks`.
+- GC sweep in `src/pages/api/cards/index.ts` (+ `groups/index.ts`), helper in
+  `src/lib/groups.ts`.
+- `docs/domain/README.md` — rewritten lifecycle rules.
+
+**Feature B (P6–P7):**
+- `src/lib/turnstile.ts`, `src/lib/rate-limit.ts` — new.
+- The 4 gated endpoints + all write endpoints (rate-limit).
+- `src/lib/api.ts` — token attach + 429 handling.
+- `wrangler.jsonc` — rate-limit binding + Turnstile site-key var; secret via CLI.
+- `src/pages/privacidad.astro`, `docs/legal/README.md`, `docs/infrastructure` —
+  disclosures + WAF config.
+
+**Planning:** this SPEC + `PLAN.md` + `TASKS.md` + `decisions.md`; roadmap row
+`01` flipped `in-progress` → `done`.
 
 ## Post-merge next feature
 

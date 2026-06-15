@@ -51,8 +51,61 @@
 - [x] Fix typo `drawHonorifcSeal` → `drawHonorificSeal`
 - [x] Remove unused `cardId` param from `drawVerificationQr`
 
-## P4 — PR
+## P4 — Feature A: unmark invalidation + lock
 
-- [ ] One PR to `main`, body `Closes #<issue>`
+- [ ] `src/lib/card.ts`: `MARKS_LOCK_HOURS = 24`, `marksLockAt`, `areMarksLocked`
+- [ ] `marks.ts` endpoint: fetch `completed_at`+`cells`; 409 if locked; clear
+      `completed_at` when un-marked within grace breaks the bingo
+- [ ] `index.astro` `toggleCell`: block when locked (toast); invalidate +
+      return to progress view when within grace
+- [ ] `index.astro`: render grid disabled when locked
+- [ ] `api.ts` `syncMarks`: handle 409 (revert + refetch)
+- [ ] `docs/domain/README.md`: rewrite "bingo sung stays sung" → grace/lock rules
+- [ ] Verify `/v/<id>` shows in-progress when `completed_at` is NULL
+- [ ] `npm run build` green
+- [ ] Manual: un-mark <24h voids diploma + OG 404; >24h grid locked + POST 409
+- [ ] Commit `feat(cards): invalidate/lock diploma on unmark`
+
+## P5 — Feature A: 12-month retention GC
+
+- [ ] GC sweep: delete completed cards with `completed_at` > 12 months
+- [ ] Grouped expired-completed cards run `settleDeparture` (no dangling
+      winner/owner); `orphanedOwnerRepair` backstop kept
+- [ ] Mirror sweep in `groups/index.ts` if cheap
+- [ ] `docs/domain/README.md`: document 12-month completed retention
+- [ ] `npm run build` green
+- [ ] Manual: old completed card (grouped + ungrouped) in local D1 is swept on
+      next card issue; group settled
+- [ ] Commit `feat(cards): 12-month retention for completed cards`
+
+## P6 — Feature B: Turnstile
+
+- [ ] `src/lib/turnstile.ts`: `verifyTurnstile(token, ip)` (fail closed)
+- [ ] Gate `POST /api/cards`, `/api/recover`, `/api/groups`,
+      `/api/groups/[id]/join` (403 on bad token)
+- [ ] Client widget in issue/recover (`index.astro`) + create/join (`g/[id].astro`)
+- [ ] `api.ts`: attach `cf-turnstile-response` on the 4 gated calls
+- [ ] `wrangler.jsonc`: Turnstile site key (public var); secret via
+      `wrangler secret put TURNSTILE_SECRET_KEY` + `.dev.vars`
+- [ ] `privacidad.astro` + `docs/legal/README.md`: Turnstile disclosure (cookieless)
+- [ ] `npm run build` green
+- [ ] Manual: gated endpoints reject missing/garbage token; happy path works
+- [ ] Commit `feat(security): Turnstile on creation/email endpoints`
+
+## P7 — Feature B: rate-limiting
+
+- [ ] `wrangler.jsonc`: Workers Rate Limiting binding
+- [ ] `src/lib/rate-limit.ts`: per-IP (`cf-connecting-ip`) check, degrades open in dev
+- [ ] Apply to all write endpoints; 429 on exceed; tighter on issue/recover/create
+- [ ] `api.ts`: surface 429 without breaking offline-first
+- [ ] `docs/infrastructure/README.md`: document WAF rate-limit rules
+- [ ] `npm run build` green
+- [ ] Manual: loop a write past the limit → 429; normal play never trips it
+- [ ] Commit `feat(security): per-IP rate limiting on writes`
+
+## P8 — PR
+
+- [ ] One PR to `main` (no originating issue → no `Closes`)
 - [ ] Flip roadmap row `01` to `done`
-- [ ] Companion reviews per CLAUDE.md (design-review, brand-review, web-perf, SEO)
+- [ ] Companion reviews per CLAUDE.md: design, brand, web-perf, SEO,
+      **security-review**, accessibility
