@@ -81,28 +81,29 @@
 
 ## P6 — Feature B: Turnstile
 
-- [ ] `src/lib/turnstile.ts`: `verifyTurnstile(token, ip)` (fail closed)
-- [ ] Gate `POST /api/cards`, `/api/recover`, `/api/groups`,
+- [x] `src/lib/turnstile.ts`: `verifyTurnstile(token, ip)` (fail closed)
+- [x] Gate `POST /api/cards`, `/api/recover`, `/api/groups`,
       `/api/groups/[id]/join` (403 on bad token)
-- [ ] Client widget in issue/recover (`index.astro`) + create/join (`g/[id].astro`)
-- [ ] `api.ts`: attach `cf-turnstile-response` on the 4 gated calls
-- [ ] `wrangler.jsonc`: Turnstile site key (public var); secret via
-      `wrangler secret put TURNSTILE_SECRET_KEY` + `.dev.vars`
-- [ ] `privacidad.astro` + `docs/legal/README.md`: Turnstile disclosure (cookieless)
-- [ ] `npm run build` green
+- [x] Client widget in issue/recover (`index.astro`) + create/join (`g/[id].astro`)
+- [x] `api.ts`: attach `cf-turnstile-response` on the 4 gated calls
+- [x] Site key: `PUBLIC_TURNSTILE_SITE_KEY` in `.env` (build-time, gitignored);
+      D7 explains why not `wrangler.jsonc` vars. `.dev.vars`: test secret.
+      Production: CF Workers Builds dashboard (site key) + `wrangler secret put` (secret)
+- [x] `privacidad.astro` + `docs/legal/README.md`: Turnstile disclosure (cookieless)
+- [x] `npm run build` green
 - [ ] Manual: gated endpoints reject missing/garbage token; happy path works
-- [ ] Commit `feat(security): Turnstile on creation/email endpoints`
+- [x] Commit `feat(security): Turnstile on creation/email endpoints`
 
 ## P7 — Feature B: rate-limiting
 
-- [ ] `wrangler.jsonc`: Workers Rate Limiting binding
-- [ ] `src/lib/rate-limit.ts`: per-IP (`cf-connecting-ip`) check, degrades open in dev
-- [ ] Apply to all write endpoints; 429 on exceed; tighter on issue/recover/create
-- [ ] `api.ts`: surface 429 without breaking offline-first
-- [ ] `docs/infrastructure/README.md`: document WAF rate-limit rules
-- [ ] `npm run build` green
+- [x] `wrangler.jsonc`: Workers Rate Limiting binding
+- [x] `src/lib/rate-limit.ts`: per-IP (`cf-connecting-ip`) check, degrades open in dev
+- [x] Apply to all write endpoints; 429 on exceed; tighter on issue/recover/create
+- [x] `api.ts`: surface 429 without breaking offline-first
+- [x] `docs/infrastructure/README.md`: document WAF rate-limit rules
+- [x] `npm run build` green
 - [ ] Manual: loop a write past the limit → 429; normal play never trips it
-- [ ] Commit `feat(security): per-IP rate limiting on writes`
+- [x] Commit `feat(security): per-IP rate limiting on writes`
 
 ## P8 — PR
 

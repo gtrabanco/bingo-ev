@@ -9,6 +9,7 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { hashGroupPassword } from '../../../../lib/groups';
 import { verifyTurnstile } from '../../../../lib/turnstile';
+import { checkRateLimit } from '../../../../lib/rate-limit';
 
 const ID_PATTERN = /^[0-9a-z]{8}$/;
 const CONTROL_CHARS = /[\u0000-\u001f\u007f]/g;
@@ -52,6 +53,9 @@ export const POST: APIRoute = async ({ params, request }) => {
   if (!alias) return Response.json({ error: 'alias_required' }, { status: 400 });
 
   const ip = request.headers.get('CF-Connecting-IP') ?? '';
+  if (!(await checkRateLimit('RATE_LIMITER_CREATE', ip))) {
+    return Response.json({ error: 'ratelimited' }, { status: 429 });
+  }
   if (!(await verifyTurnstile(tsToken, ip))) {
     return Response.json({ error: 'forbidden' }, { status: 403 });
   }

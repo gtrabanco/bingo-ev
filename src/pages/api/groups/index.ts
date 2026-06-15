@@ -9,6 +9,7 @@ import { env } from 'cloudflare:workers';
 import { newCardId } from '../../../lib/card';
 import { hashGroupPassword, isJoinPolicy, orphanedOwnerRepair } from '../../../lib/groups';
 import { verifyTurnstile } from '../../../lib/turnstile';
+import { checkRateLimit } from '../../../lib/rate-limit';
 
 const ID_PATTERN = /^[0-9a-z]{8}$/;
 
@@ -50,6 +51,9 @@ export const POST: APIRoute = async ({ request }) => {
   if (!name) return Response.json({ error: 'name_required' }, { status: 400 });
 
   const ip = request.headers.get('CF-Connecting-IP') ?? '';
+  if (!(await checkRateLimit('RATE_LIMITER_CREATE', ip))) {
+    return Response.json({ error: 'ratelimited' }, { status: 429 });
+  }
   if (!(await verifyTurnstile(tsToken, ip))) {
     return Response.json({ error: 'forbidden' }, { status: 403 });
   }

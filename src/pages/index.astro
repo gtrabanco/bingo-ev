@@ -984,7 +984,9 @@ import CertificateModal from '../components/CertificateModal.astro';
           ? 'Ese nombre ya está cogido. Prueba con otro.'
           : result.error === 'card_completed'
             ? 'Tu cartón ya está completo: regenera uno para crear un grupo.'
-            : 'No se pudo crear el grupo. Inténtalo más tarde.';
+            : result.error === 'ratelimited'
+              ? 'Demasiados intentos seguidos. Espera un momento.'
+              : 'No se pudo crear el grupo. Inténtalo más tarde.';
       return;
     }
 

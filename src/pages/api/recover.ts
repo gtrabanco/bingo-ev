@@ -9,6 +9,7 @@ import { env } from 'cloudflare:workers';
 import { expiryFromCreatedAt } from '../../lib/card';
 import { sendRecoveryEmail } from '../../lib/brevo';
 import { verifyTurnstile } from '../../lib/turnstile';
+import { checkRateLimit } from '../../lib/rate-limit';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -34,6 +35,7 @@ export const POST: APIRoute = async ({ request }) => {
   if (!EMAIL_PATTERN.test(email)) return new Response(null, { status: 400 });
 
   const ip = request.headers.get('CF-Connecting-IP') ?? '';
+  if (!(await checkRateLimit('RATE_LIMITER_CREATE', ip))) return new Response(null, { status: 429 });
   if (!(await verifyTurnstile(tsToken, ip))) return new Response(null, { status: 403 });
 
   const origin = new URL(request.url).origin;

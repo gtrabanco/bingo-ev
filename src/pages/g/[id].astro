@@ -664,7 +664,9 @@ Astro.response.headers.set('cache-control', 'no-store');
           ? 'Tu cartón ya juega en otra sala. Regenera el cartón para cambiar.'
           : result.error === 'cannot_join'
             ? 'No se pudo entrar: revisa que el cartón siga en juego.'
-            : 'No se pudo entrar. Inténtalo de nuevo.',
+            : result.error === 'ratelimited'
+              ? 'Demasiados intentos seguidos. Espera un momento.'
+              : 'No se pudo entrar. Inténtalo de nuevo.',
     );
   });
 

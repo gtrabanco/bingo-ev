@@ -158,6 +158,7 @@ export async function createGroup(
         'cf-turnstile-response': turnstileToken,
       }),
     );
+    if (response.status === 429) return { ok: false, error: 'ratelimited' };
     const data = (await response.json().catch(() => null)) as
       | { id?: string; error?: string }
       | null;
@@ -232,6 +233,7 @@ export async function joinGroup(
       jsonInit({ cardId, secret, alias, password, 'cf-turnstile-response': turnstileToken }),
     );
     if (response.ok || response.status === 204) return { ok: true };
+    if (response.status === 429) return { ok: false, error: 'ratelimited' };
     const data = (await response.json().catch(() => null)) as { error?: string } | null;
     return { ok: false, error: data?.error ?? 'failed' };
   } catch {

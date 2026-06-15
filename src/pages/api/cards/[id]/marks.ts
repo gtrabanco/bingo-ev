@@ -10,6 +10,7 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { CELL_COUNT, areMarksLocked, unpackMarks } from '../../../../lib/card';
 import { isFullCard } from '../../../../lib/wins';
+import { checkRateLimit } from '../../../../lib/rate-limit';
 
 const ID_PATTERN = /^[0-9a-z]{8}$/;
 // Each digit is a MarkKind: 0 clean, 1 suffered, 2 caused (sinvergüenza).
@@ -18,6 +19,9 @@ const MARKS_PATTERN = new RegExp(`^[012]{${CELL_COUNT}}$`);
 export const POST: APIRoute = async ({ params, request }) => {
   const id = params.id ?? '';
   if (!ID_PATTERN.test(id)) return new Response(null, { status: 400 });
+
+  const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
+  if (!(await checkRateLimit('RATE_LIMITER_WRITE', ip))) return new Response(null, { status: 429 });
 
   let secret = '';
   let marks = '';

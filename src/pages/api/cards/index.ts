@@ -9,6 +9,7 @@ import { env } from 'cloudflare:workers';
 import { CELL_COUNT, getSituation, newCardId } from '../../../lib/card';
 import { orphanedOwnerRepair, settleDeparture } from '../../../lib/groups';
 import { verifyTurnstile } from '../../../lib/turnstile';
+import { checkRateLimit } from '../../../lib/rate-limit';
 
 const CONTROL_CHARS = /[\u0000-\u001f\u007f]/g;
 
@@ -54,6 +55,7 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const ip = request.headers.get('CF-Connecting-IP') ?? '';
+  if (!(await checkRateLimit('RATE_LIMITER_CREATE', ip))) return new Response(null, { status: 429 });
   if (!(await verifyTurnstile(tsToken, ip))) return new Response(null, { status: 403 });
 
   const id = newCardId();
