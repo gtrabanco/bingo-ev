@@ -120,7 +120,7 @@ function drawFrame(ctx: CanvasRenderingContext2D): void {
 // Honorific seal: a rotated double-border badge echoing the `.expired-stamp`
 // component (CSS `border: 4px double`, `rotate(-12deg)`, paper background).
 // Uses a gentler rotation so it reads clearly as a diploma seal.
-function drawHonorifcSeal(
+function drawHonorificSeal(
   ctx: CanvasRenderingContext2D,
   honorific: { title: string; color: string },
 ): void {
@@ -167,7 +167,7 @@ function drawHonorifcSeal(
 // Verification QR in the bottom-right corner, framed like a seal.
 // Integer module scaling keeps modules crisp; the encoded matrix already
 // includes the quiet zone.
-function drawVerificationQr(ctx: CanvasRenderingContext2D, url: string, cardId: string): void {
+function drawVerificationQr(ctx: CanvasRenderingContext2D, url: string): void {
   const qr = encode(url, { ecc: 'M', border: 2 });
   const scale = Math.max(1, Math.floor(150 / qr.size));
   const edge = qr.size * scale;
@@ -292,7 +292,7 @@ export function drawCertificate(canvas: HTMLCanvasElement, data: CertificateData
   });
 
   // ── Honorific seal ───────────────────────────────────────────────────────────
-  drawHonorifcSeal(ctx, honorific);
+  drawHonorificSeal(ctx, honorific);
 
   // Honorific small print below the seal
   drawCentered(ctx, {
@@ -337,7 +337,7 @@ export function drawCertificate(canvas: HTMLCanvasElement, data: CertificateData
   });
 
   // ── QR seal ───────────────────────────────────────────────────────────────────
-  drawVerificationQr(ctx, `${VERIFY_BASE_URL}${data.cardId}`, data.cardId);
+  drawVerificationQr(ctx, `${VERIFY_BASE_URL}${data.cardId}`);
 }
 
 export function downloadCertificate(canvas: HTMLCanvasElement, data: CertificateData): void {

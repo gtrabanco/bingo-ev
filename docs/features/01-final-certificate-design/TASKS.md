@@ -33,16 +33,23 @@
 
 ## P3 — OG parity
 
-- [ ] Rebuild `diplomaSvg` to match the PNG at 1200×630 (incl. honorific seal)
-- [ ] Remove the `fonts.googleapis.com` `@import`; use shared `SERIF` stack
-- [ ] `og/diploma/[id].svg.ts`: select `marks`, derive honorific via
+- [x] Rebuild `diplomaSvg` to match the PNG at 1200×630 (incl. honorific seal)
+- [x] Remove the `fonts.googleapis.com` `@import`; use shared `SERIF` stack
+- [x] `og/diploma/[id].svg.ts`: select `marks`, derive honorific via
       `honorificFor`, pass to `diplomaSvg`
-- [ ] Keep `escapeXml` on nick (and any new interpolated text)
-- [ ] Decide mini-QR on OG (default: omit)
-- [ ] Visual check: `/og/diploma/<id>.svg` for each honorific matches the PNG
-- [ ] Verify no `fonts.googleapis.com` remains anywhere
-- [ ] `npm run build` green
-- [ ] Commit `feat(og): diploma share card parity with final design`
+- [x] Keep `escapeXml` on nick (and any new interpolated text)
+- [x] Decide mini-QR on OG: omit (link-preview card; URL is the action)
+- [x] Visual check: `/og/diploma/<id>.svg` returns 200 with honorific, frame,
+      corner ornaments, seal, verify URL; no Google Fonts
+- [x] Verify no `fonts.googleapis.com` remains anywhere
+- [x] `npm run build` green
+- [x] Commit `feat(og): diploma share card parity with final design`
+- [ ] Visual check per-honorific: manual browser check at `/og/diploma/<id>.svg`
+
+## P2 fixes (folded from review-change)
+
+- [x] Fix typo `drawHonorifcSeal` → `drawHonorificSeal`
+- [x] Remove unused `cardId` param from `drawVerificationQr`
 
 ## P4 — PR
 

@@ -1,5 +1,26 @@
 # 01 — final-certificate-design · Progress
 
+## P3 — OG parity (done)
+
+Rebuilt `diplomaSvg` in `src/lib/og-image.ts` to match the final PNG design
+at 1200×630:
+
+- Same palette, frame (outer 9px + inner 1.5px), corner ornaments, eyebrow,
+  ¡BINGO!, certifying block, honorific seal (rotated −3.7°), small print,
+  issued date, verify URL.
+- No QR on OG (link is the action; see SPEC).
+- Removed `@import url('fonts.googleapis.com/...')` from both `diplomaSvg`
+  and `homeSvg` (was always a no-op; see `decisions.md` D1).
+- `src/pages/og/diploma/[id].svg.ts`: now selects `marks` + `cells`, derives
+  honorific via `honorificFor`, passes it to `diplomaSvg`. Local `FALLBACK_NICK`
+  constant removed — imported from `certificate-design.ts`.
+- Folded P2 review-change fixes: typo `drawHonorifcSeal` → `drawHonorificSeal`;
+  removed unused `cardId` param from `drawVerificationQr`.
+
+Build green. OG endpoint verified at `/og/diploma/o9crkwjz.svg`: 200, correct
+honorific, frame + corner ornaments + rotated seal + verify URL present, no
+Google Fonts. Per-honorific visual check: manual browser step.
+
 ## P2 — Final PNG design (done)
 
 Elevated `drawCertificate` in `src/lib/certificate.ts`:

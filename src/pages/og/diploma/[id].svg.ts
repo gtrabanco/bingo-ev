@@ -2,16 +2,18 @@ export const prerender = false;
 
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
+import { honorificFor, unpackMarks } from '../../../lib/card';
+import { FALLBACK_NICK } from '../../../lib/certificate-design';
 import { diplomaSvg } from '../../../lib/og-image';
 
 interface CardRow {
-  created_at: string;
-  completed_at: string | null;
+  completed_at: string;
   nick: string | null;
+  marks: string | null;
+  cells: string | null;
 }
 
 const ID_PATTERN = /^[0-9a-z]{8}$/;
-const FALLBACK_NICK = 'Alguien con mucha paciencia';
 
 const longDate = new Intl.DateTimeFormat('es-ES', {
   day: 'numeric',
@@ -24,17 +26,22 @@ export const GET: APIRoute = async ({ params }) => {
   if (!ID_PATTERN.test(id)) return new Response(null, { status: 400 });
 
   const row = await env.DB.prepare(
-    'SELECT nick, completed_at FROM cards WHERE id = ?1 AND completed_at IS NOT NULL',
+    'SELECT nick, completed_at, marks, cells FROM cards WHERE id = ?1 AND completed_at IS NOT NULL',
   )
     .bind(id)
     .first<CardRow>();
 
   if (!row) return new Response(null, { status: 404 });
 
+  const marks = row.marks ? unpackMarks(row.marks) : [];
+  const cells: (string | null)[] = row.cells ? JSON.parse(row.cells) : [];
+  const honorific = honorificFor(cells, marks);
+
   const svg = diplomaSvg({
     nick: row.nick || FALLBACK_NICK,
-    date: longDate.format(new Date(row.completed_at!)),
+    date: longDate.format(new Date(row.completed_at)),
     cardId: id,
+    honorific,
   });
 
   return new Response(svg, {
