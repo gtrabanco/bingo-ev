@@ -66,13 +66,16 @@ Astro.response.headers.set('cache-control', 'no-store');
 const title = row
   ? `Cartón nº ${row.id} en directo — El Bingo del Cargador`
   : 'Este cartón no consta — El Bingo del Cargador';
-const ogImage = row?.completed_at ? `/og/diploma/${id}.svg` : '/og/home.svg';
+const isCompleted = Boolean(row?.completed_at);
+const ogImage = isCompleted ? `/og/diploma/${id}.png` : '/og/home.svg';
+const ogImageType = isCompleted ? 'image/png' : 'image/svg+xml';
 ---
 
 <Layout
   title={title}
   description="Sigue en directo un cartón del Bingo del Cargador: desgracias marcadas, líneas cantadas y bingo verificable."
   ogImage={ogImage}
+  ogImageType={ogImageType}
 >
   <main class="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pt-10 pb-6 sm:max-w-lg landscape:lg:max-w-2xl">
     <p

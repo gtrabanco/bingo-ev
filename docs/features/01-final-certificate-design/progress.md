@@ -1,0 +1,221 @@
+# 01 — final-certificate-design · Progress
+
+## Post-P8 — OG SEO fixes + Instagram Story diploma (done)
+
+Several issues found during post-PR review were folded back into the branch.
+
+**SEO meta fixes (`src/layouts/Layout.astro`):**
+- `og:image:type` is now parameterised (`ogImageType` prop, defaults to
+  `image/svg+xml`); diploma pages pass `image/png` — the `.png` endpoint was
+  inert while the type meta still declared SVG.
+- `og:url` now uses the page's own canonical URL (was hardcoded to the homepage).
+- Twitter card meta added: `summary_large_image`, title, description, image.
+- `privacidad.astro`: updated date to 16 de junio de 2026 (Turnstile addendum added).
+
+**Instagram/Story portrait diploma (see D8):**
+- `src/lib/og-image.ts` — `diplomaStorySvg()` (1080×1920) + `storyCenteredQrSvg()`
+- `src/pages/og/diploma/[id]-story.svg.ts` / `[id]-story.png.ts` — new endpoints
+- `src/pages/index.astro` — Instagram button fetches portrait PNG first (content-type
+  gated, 4 s timeout), falls back to canvas landscape PNG
+
+**Tech-debt cleaned up:**
+- `VERIFY_BASE_URL` moved from `certificate.ts` to `certificate-design.ts`; imported
+  in both `certificate.ts` and `og-image.ts` — eliminates 4 hardcoded copies of the URL.
+- `src/lib/og-diploma.ts` (new) — `loadDiplomaData(id)` collapses the D1 query,
+  mark unpacking, and date formatting shared by all four OG endpoints; endpoints
+  reduced from ~50 LOC each to ~15.
+
+Build green. Manual verification required in prod: CF Image Resizing PNG fidelity,
+Instagram share sheet on mobile, QR scan.
+
+## P7 — Feature B: per-IP rate limiting on writes (done)
+
+Workers Rate Limiting binding applied to all 12 write endpoints; two tiers.
+
+**`src/lib/rate-limit.ts`** (new):
+- `checkRateLimit(bindingName, key)` — calls `limiter.limit({ key })` on the named
+  binding; returns `true` (pass) when the binding is absent (dev) or a platform error
+  occurs (fail-open). Returns `false` when the IP has exceeded the limit.
+
+**`wrangler.jsonc`** — `unsafe.bindings` section added:
+- `RATE_LIMITER_CREATE`: 10 req / 60 s — creation + email endpoints.
+- `RATE_LIMITER_WRITE`: 120 req / 60 s — all other writes (marks sync, complete,
+  alias, email-link, delete, leave, kick).
+
+**Endpoint changes** (12 endpoints total):
+- 4 creation/join endpoints: `RATE_LIMITER_CREATE` check **before** Turnstile
+  (binding call is cheaper than the external HTTP round-trip).
+- 8 remaining write endpoints: `RATE_LIMITER_WRITE` check after ID validation.
+- All return 429 on rate limit exceeded; group endpoints include `{ error: 'ratelimited' }`
+  JSON body; card-mutation endpoints use a plain 204-style null body.
+
+**`src/lib/api.ts`**:
+- `createGroup` and `joinGroup` detect HTTP 429 and return
+  `{ ok: false, error: 'ratelimited' }` so the UI can react specifically.
+- Fire-and-forget calls (marks, alias, complete, delete) absorb 429 silently via the
+  existing `null` degradation — intentional per the offline-first contract.
+
+**UI (`index.astro`, `g/[id].astro`)**:
+- `groupForm.submit` error handler: `'ratelimited'` → "Demasiados intentos seguidos.
+  Espera un momento."
+- `joinForm.submit` hint: same message on `'ratelimited'`.
+
+**`docs/infrastructure/README.md`**: new "Anti-abuse layer" section documents both
+Turnstile and rate-limiting tiers, plus complementary WAF rule guidance.
+
+Build green. Manual verification pending (loop writes past limit → 429; normal play
+should never trip the 120/60s tier).
+
+## P6 — Feature B: Turnstile on creation/email endpoints (done)
+
+Cloudflare Turnstile guards the 4 endpoints that create resources or send email
+without a pre-existing owned card — the anonymous-spam surface.
+
+**`src/lib/turnstile.ts`** (new):
+- `verifyTurnstile(token, ip)` — calls `https://challenges.cloudflare.com/turnstile/v0/siteverify`.
+- Fail closed: rejects when `TURNSTILE_SECRET_KEY` is set but the token is missing or invalid.
+- Degrades open when the secret is not configured (local dev without `.dev.vars` entry).
+
+**4 gated endpoints** — each now extracts `'cf-turnstile-response'` from the JSON body,
+reads `CF-Connecting-IP` from the request headers, calls `verifyTurnstile`, and returns
+403 on failure:
+- `POST /api/cards` (index.ts)
+- `POST /api/recover`
+- `POST /api/groups` (index.ts)
+- `POST /api/groups/[id]/join`
+
+**`src/lib/api.ts`** — `registerCard`, `requestRecovery`, `createGroup`, `joinGroup`
+each gain an optional `turnstileToken = ''` param, forwarded in the JSON body as
+`'cf-turnstile-response'`.
+
+**Client (`index.astro`, `g/[id].astro`)**:
+- Invisible Turnstile widget (`data-size="invisible"`) loaded when
+  `PUBLIC_TURNSTILE_SITE_KEY` is set, plus a synchronous `is:inline` script that
+  pre-registers `onTsSuccess`/`onTsExpiry` callbacks before the deferred CF script loads.
+- `getTsToken(ms)` polls `window._ts.ready` for up to 2 s; `resetTs()` clears the
+  token and resets the widget after each use (Turnstile tokens are single-use).
+- `newCard()`, `recoverForm.submit`, `groupForm.submit` (index.astro) and
+  `joinForm.submit` (g/[id].astro) now await the token before the API call and reset
+  after.
+
+**Environment** (see decisions.md D7):
+- `.env` (gitignored, new): `PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000BB` (CF
+  invisible always-pass test key for local dev).
+- `.dev.vars` (gitignored, updated): `TURNSTILE_SECRET_KEY=` (empty → degrade open).
+- Production: set `PUBLIC_TURNSTILE_SITE_KEY` in CF Workers Builds dashboard;
+  `wrangler secret put TURNSTILE_SECRET_KEY` for the real secret.
+
+**`src/pages/privacidad.astro`** + **`docs/legal/README.md`**: Turnstile disclosure
+added (cookieless, CF as data processor).
+
+Build green. Manual verification pending (token rejection, happy path with test keys).
+
+## P5 — Feature A: 12-month retention GC (done)
+
+Completed cards older than 12 months are now swept by the opportunistic GC that
+already runs on each `POST /api/cards`.
+
+**`src/pages/api/cards/index.ts`:**
+- Before the main batch, SELECTs grouped completed cards older than 12 months
+  and runs `settleDeparture(group_id, id)` for each (winner vacated, owner
+  transferred, empty room dissolved).
+- The main `db.batch([...])` gains a second DELETE:
+  `DELETE FROM cards WHERE completed_at IS NOT NULL AND datetime(completed_at) < datetime('now', '-12 months')`
+- `orphanedOwnerRepair` backstop kept after both sweeps.
+
+**`src/lib/groups.ts`:** no changes — `settleDeparture` already existed.
+
+**Mirror in `groups/index.ts`:** not added (D6: the sweep in `cards/index.ts`
+is comprehensive; no correctness gain from duplicating it).
+
+**`docs/domain/README.md`:** retention rule updated with GC implementation detail.
+
+Build green. Manual verification pending (insert old completed card in local D1,
+issue a card, confirm deletion and group settlement).
+
+## P4 — Feature A: unmark invalidation + lock (done)
+
+Implemented the diploma lifecycle rules (D3). Server is authoritative; client
+mirrors the lock state for immediate UX feedback.
+
+**Domain (`src/lib/card.ts`):**
+- `MARKS_LOCK_HOURS = 24` — the constant; shared by Worker + browser.
+- `marksLockAt(completedAt)` — returns `completedAt + 24h` as a `Date`.
+- `areMarksLocked(completedAt, now?)` — `true` when past the lock threshold.
+
+**Server (`src/pages/api/cards/[id]/marks.ts`):**
+- Now SELECT-before-UPDATE: fetches `completed_at` + `cells` for the card
+  (same `WHERE id AND secret` guard).
+- 409 if `areMarksLocked(completed_at)` — enforced independently of the client.
+- Within grace + new marks not a full card → clears `completed_at` in the same
+  UPDATE; returns 204.
+
+**API client (`src/lib/api.ts`):**
+- `syncMarks` changed from fire-and-forget `void` to `Promise<'ok'|'locked'|'error'>`.
+- Uses a raw `fetch` (not `request()`) to distinguish 409 from other failures.
+
+**UI (`src/pages/index.astro`):**
+- `areMarksLocked` imported from `card.ts`.
+- `toggleCell`: blocks immediately (toast) if locked; sets `card.completedAt = null`
+  and shows "Diploma anulado" toast when a within-grace un-mark breaks the bingo.
+- `scheduleMarksSync`: awaits `syncMarks`; on `'locked'` re-fetches + restores state.
+- `renderGrid`: `button.disabled = expired || locked`.
+- `syncStatus`: shows "Cartón sellado" text when locked; correct diploma-button
+  visibility (hidden when `completedAt === null`).
+
+**Docs (`docs/domain/README.md`):**
+- Replaced "Once sung, a bingo stays sung" with the grace/lock/retention rules.
+
+Build green. Manual verification pending (in-progress at `/v/<id>`, grace
+invalidation, post-24h lock).
+
+## P3 — OG parity (done)
+
+Rebuilt `diplomaSvg` in `src/lib/og-image.ts` to match the final PNG design
+at 1200×630:
+
+- Same palette, frame (outer 9px + inner 1.5px), corner ornaments, eyebrow,
+  ¡BINGO!, certifying block, honorific seal (rotated −3.7°), small print,
+  issued date, verify URL.
+- No QR on OG (link is the action; see SPEC).
+- Removed `@import url('fonts.googleapis.com/...')` from both `diplomaSvg`
+  and `homeSvg` (was always a no-op; see `decisions.md` D1).
+- `src/pages/og/diploma/[id].svg.ts`: now selects `marks` + `cells`, derives
+  honorific via `honorificFor`, passes it to `diplomaSvg`. Local `FALLBACK_NICK`
+  constant removed — imported from `certificate-design.ts`.
+- Folded P2 review-change fixes: typo `drawHonorifcSeal` → `drawHonorificSeal`;
+  removed unused `cardId` param from `drawVerificationQr`.
+
+Build green. OG endpoint verified at `/og/diploma/o9crkwjz.svg`: 200, correct
+honorific, frame + corner ornaments + rotated seal + verify URL present, no
+Google Fonts. Per-honorific visual check: manual browser step.
+
+## P2 — Final PNG design (done)
+
+Elevated `drawCertificate` in `src/lib/certificate.ts`:
+
+- **Frame:** outer 9px + inner 1.5px border. Added `drawFrame()` that places a filled diamond + four cross-arms at each inner-frame corner.
+- **Honorific seal:** new `drawHonorifcSeal()` draws a rotated double-border rounded rectangle (outer 2px + inner 1px, gap 6px, radius 8px, rotation −3.7°) with a semi-transparent tinted background — echoing `.expired-stamp` (CSS `border: 4px double`, rotate).
+- **Type hierarchy:** ¡BINGO! bumped from 150px to 160px; eyebrow tightened; body text at 24px; added a thin rule below eyebrow and above verify URL.
+- **QR seal:** framed with a 1.5px green border + "VERIFICAR" label below.
+- **Helper:** `roundedRectPath()` for cross-browser rounded-rect paths.
+
+Build green. Visual check in preview (sinvergüenza honorific) — no JS errors, stamp renders with rotation and double border. Remaining manual checks (resignado, granujilla, empty-nick) for the user before P3.
+
+## P1 — Shared design module (done)
+
+Extracted all design constants from `certificate.ts` into a new
+`src/lib/certificate-design.ts` module.
+
+**What was created:**
+- `src/lib/certificate-design.ts` — exports `PALETTE`, `SERIF`/`SANS`/`MONO`,
+  `HONORIFICS`, `FALLBACK_NICK`, and `COPY` (shared copy helpers).
+- `src/lib/certificate.ts` — all inlined hex literals and copy strings replaced
+  with imports from the shared module. `HONORIFICS` definition removed locally.
+
+**Gate:** `npm run build` green.
+
+**Visual check:** pending manual download in browser (`npm run dev`).
+
+**Left open for P2:** the canvas renderer still renders the stub design;
+visual elevation happens in P2.

@@ -29,6 +29,12 @@
   linking to `/privacidad`; the consent checkbox starts unticked.
 - **Brevo** is used **only** for the transactional recovery email — never for the
   newsletter. Keep that boundary.
+- **Cloudflare Turnstile** guards 4 creation/email endpoints (`POST /api/cards`,
+  `/api/recover`, `/api/groups`, `/api/groups/:id/join`). Cookieless; no tracking
+  cookies. Cloudflare acts as data processor for connection signals during verification.
+  Disclosed in `/privacidad` under "Protección contra bots". Secret key via
+  `wrangler secret put TURNSTILE_SECRET_KEY`; site key via `PUBLIC_TURNSTILE_SITE_KEY`
+  build-time env var (CF Workers Builds dashboard for production).
 - **No brand names** anywhere in copy or situations (editorial/legal hygiene — avoids
   implying any real company).
 - **Tesla referral** copy must not imply unequal benefit ("ganamos los dos por igual").

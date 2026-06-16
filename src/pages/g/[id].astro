@@ -322,6 +322,18 @@ Astro.response.headers.set('cache-control', 'no-store');
       <p class="font-semibold">bingo.gruxon.com · Hecho con resignación · 2026</p>
     </footer>
   </main>
+
+  {import.meta.env.PUBLIC_TURNSTILE_SITE_KEY && (
+    <Fragment>
+      <script is:inline>
+        window._ts = {token: '', ready: false};
+        function onTsSuccess(t) { window._ts.token = t; window._ts.ready = true; }
+        function onTsExpiry() { window._ts.token = ''; window._ts.ready = false; }
+      </script>
+      <div class="cf-turnstile" data-sitekey={import.meta.env.PUBLIC_TURNSTILE_SITE_KEY} data-callback="onTsSuccess" data-expired-callback="onTsExpiry" data-size="invisible" aria-hidden="true"></div>
+      <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    </Fragment>
+  )}
 </Layout>
 
 <script>
@@ -590,6 +602,27 @@ Astro.response.headers.set('cache-control', 'no-store');
   }
   void loadPrivateBoard();
 
+  // --- Turnstile helpers --------------------------------------------------
+
+  async function getTsToken(ms = 2000): Promise<string> {
+    const ts = (window as any)._ts as { token: string; ready: boolean } | undefined;
+    if (!ts) return '';
+    const deadline = Date.now() + ms;
+    while (Date.now() < deadline) {
+      if (ts.ready) return ts.token;
+      await new Promise<void>((r) => setTimeout(r, 50));
+    }
+    return ts.token;
+  }
+
+  function resetTs(): void {
+    const ts = (window as any)._ts as { token: string; ready: boolean } | undefined;
+    if (!ts) return;
+    ts.ready = false;
+    ts.token = '';
+    (window as any).turnstile?.reset(document.querySelector('.cf-turnstile'));
+  }
+
   // --- Join ---------------------------------------------------------------
 
   joinForm?.addEventListener('submit', async (event) => {
@@ -615,7 +648,9 @@ Astro.response.headers.set('cache-control', 'no-store');
 
     setHint('Entrando…');
     saveAlias(alias);
-    const result = await joinGroup(groupId, card.id, card.secret, alias, password);
+    const tsToken = await getTsToken();
+    const result = await joinGroup(groupId, card.id, card.secret, alias, password, tsToken);
+    if (tsToken) resetTs();
     if (result.ok) {
       card.groupId = groupId;
       saveCard(card);
@@ -629,7 +664,9 @@ Astro.response.headers.set('cache-control', 'no-store');
           ? 'Tu cartón ya juega en otra sala. Regenera el cartón para cambiar.'
           : result.error === 'cannot_join'
             ? 'No se pudo entrar: revisa que el cartón siga en juego.'
-            : 'No se pudo entrar. Inténtalo de nuevo.',
+            : result.error === 'ratelimited'
+              ? 'Demasiados intentos seguidos. Espera un momento.'
+              : 'No se pudo entrar. Inténtalo de nuevo.',
     );
   });
 

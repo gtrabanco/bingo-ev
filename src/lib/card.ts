@@ -125,9 +125,23 @@ export function expiryDate(card: CardState): Date {
   return expiryFromCreatedAt(card.createdAt);
 }
 
-// A card only expires while incomplete: a bingo sung in time stays sung.
+// A card only expires while incomplete; a completed card obeys the lock/retention rules.
 export function isExpired(card: CardState, now: Date = new Date()): boolean {
   return card.completedAt === null && now.getTime() > expiryDate(card).getTime();
+}
+
+// Marks become immutable this long after the bingo (server clock is authoritative).
+export const MARKS_LOCK_HOURS = 24;
+
+// The moment from which the marks are locked: completedAt + 24 h.
+export function marksLockAt(completedAt: string): Date {
+  return new Date(new Date(completedAt).getTime() + MARKS_LOCK_HOURS * 60 * 60 * 1000);
+}
+
+// True when a completed card's marks can no longer be changed.
+// Pass `now` explicitly in tests; the default uses the real clock.
+export function areMarksLocked(completedAt: string, now: Date = new Date()): boolean {
+  return now.getTime() >= marksLockAt(completedAt).getTime();
 }
 
 // A stored card is only usable if it has the right shape AND every referenced

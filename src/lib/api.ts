@@ -39,8 +39,9 @@ function jsonInit(body: unknown, method = 'POST'): RequestInit {
 export function registerCard(
   cells: (string | null)[],
   alias = '',
+  turnstileToken = '',
 ): Promise<RegisteredCard | null> {
-  return request<RegisteredCard>('/api/cards', jsonInit({ cells, alias }));
+  return request<RegisteredCard>('/api/cards', jsonInit({ cells, alias, 'cf-turnstile-response': turnstileToken }));
 }
 
 // Updates the card's alias — a display label for standings and shared views,
@@ -62,8 +63,25 @@ export function reportCompletion(
 }
 
 // Pushes the current marks so the shared /c/<id> view stays up to date.
-export function syncMarks(cardId: string, secret: string, marks: string): void {
-  void request(`/api/cards/${cardId}/marks`, jsonInit({ secret, marks }));
+// Returns 'locked' (409) when the server rejects because the diploma is sealed;
+// 'ok' on success; 'error' on any other failure (network, 4xx, etc.).
+// Callers must handle 'locked' by reverting local state to the server's version.
+export async function syncMarks(
+  cardId: string,
+  secret: string,
+  marks: string,
+): Promise<'ok' | 'locked' | 'error'> {
+  try {
+    const response = await fetch(`/api/cards/${cardId}/marks`, {
+      signal: AbortSignal.timeout(4000),
+      ...jsonInit({ secret, marks }),
+    });
+    if (response.status === 409) return 'locked';
+    if (response.ok || response.status === 204) return 'ok';
+    return 'error';
+  } catch {
+    return 'error';
+  }
 }
 
 // Removes a never-completed card (regenerated or expired). Fire-and-forget.
@@ -102,8 +120,8 @@ export function linkEmail(
 }
 
 // Asks the server to email recovery links for every card tied to an address.
-export function requestRecovery(email: string): Promise<Response | null> {
-  return fetch('/api/recover', jsonInit({ email }))
+export function requestRecovery(email: string, turnstileToken = ''): Promise<Response | null> {
+  return fetch('/api/recover', jsonInit({ email, 'cf-turnstile-response': turnstileToken }))
     .then((r) => (r.ok || r.status === 204 ? r : null))
     .catch(() => null);
 }
@@ -125,6 +143,7 @@ export async function createGroup(
   name: string,
   settings: GroupSettings,
   owner: { cardId: string; secret: string } | null = null,
+  turnstileToken = '',
 ): Promise<GroupResult> {
   try {
     const response = await fetch(
@@ -136,8 +155,10 @@ export async function createGroup(
         publicBoard: settings.publicBoard,
         cardId: owner?.cardId,
         secret: owner?.secret,
+        'cf-turnstile-response': turnstileToken,
       }),
     );
+    if (response.status === 429) return { ok: false, error: 'ratelimited' };
     const data = (await response.json().catch(() => null)) as
       | { id?: string; error?: string }
       | null;
@@ -204,13 +225,15 @@ export async function joinGroup(
   secret: string,
   alias: string,
   password = '',
+  turnstileToken = '',
 ): Promise<JoinResult> {
   try {
     const response = await fetch(
       `/api/groups/${groupId}/join`,
-      jsonInit({ cardId, secret, alias, password }),
+      jsonInit({ cardId, secret, alias, password, 'cf-turnstile-response': turnstileToken }),
     );
     if (response.ok || response.status === 204) return { ok: true };
+    if (response.status === 429) return { ok: false, error: 'ratelimited' };
     const data = (await response.json().catch(() => null)) as { error?: string } | null;
     return { ok: false, error: data?.error ?? 'failed' };
   } catch {

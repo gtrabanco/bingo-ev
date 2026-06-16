@@ -3,7 +3,7 @@
 // basis, retention and the data subject's rights. Static page.
 import Layout from '../layouts/Layout.astro';
 
-const updated = '10 de junio de 2026';
+const updated = '16 de junio de 2026';
 ---
 
 <Layout
@@ -71,6 +71,30 @@ const updated = '10 de junio de 2026';
             rel="noopener">Brevo</a
           >, proveedor que actúa como encargado del tratamiento. No vendemos ni cedemos tus datos
           a terceros con fines comerciales.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-base font-bold text-paper-50 sm:text-lg">Protección contra bots (Cloudflare Turnstile)</h2>
+        <p class="mt-1.5">
+          Para proteger determinadas acciones (crear cartón, recuperar cuenta por email, crear o
+          unirse a un grupo) usamos
+          <a
+            href="https://www.cloudflare.com/products/turnstile/"
+            class="underline decoration-paper-300/40 hover:text-paper-50"
+            target="_blank"
+            rel="noopener">Cloudflare Turnstile</a
+          >, un sistema de verificación anti-bot. A diferencia de los captchas tradicionales,
+          Turnstile no muestra puzzles visuales ni usa cookies de seguimiento: la verificación
+          se realiza en segundo plano analizando señales del navegador y la red. Cloudflare actúa
+          como encargado del tratamiento de los datos de conexión procesados durante esa
+          verificación. Para más información sobre cómo Cloudflare trata esos datos, consulta el
+          <a
+            href="https://www.cloudflare.com/turnstile-privacy-addendum/"
+            class="underline decoration-paper-300/40 hover:text-paper-50"
+            target="_blank"
+            rel="noopener">Turnstile Privacy Addendum</a
+          >.
         </p>
       </section>
 

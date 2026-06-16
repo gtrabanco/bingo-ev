@@ -7,12 +7,18 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { settleDeparture } from '../../../../lib/groups';
+import { checkRateLimit } from '../../../../lib/rate-limit';
 
 const ID_PATTERN = /^[0-9a-z]{8}$/;
 
 export const POST: APIRoute = async ({ params, request }) => {
   const groupId = params.id ?? '';
   if (!ID_PATTERN.test(groupId)) return Response.json({ error: 'bad_request' }, { status: 400 });
+
+  const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
+  if (!(await checkRateLimit('RATE_LIMITER_WRITE', ip))) {
+    return Response.json({ error: 'ratelimited' }, { status: 429 });
+  }
 
   let cardId = '';
   let secret = '';

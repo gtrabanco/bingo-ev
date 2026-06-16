@@ -8,6 +8,7 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { CELL_COUNT, unpackMarks } from '../../../../lib/card';
 import { settleDeparture } from '../../../../lib/groups';
+import { checkRateLimit } from '../../../../lib/rate-limit';
 
 const ID_PATTERN = /^[0-9a-z]{8}$/;
 
@@ -71,6 +72,9 @@ export const GET: APIRoute = async ({ params, request }) => {
 export const DELETE: APIRoute = async ({ params, request }) => {
   const id = params.id ?? '';
   if (!ID_PATTERN.test(id)) return new Response(null, { status: 400 });
+
+  const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
+  if (!(await checkRateLimit('RATE_LIMITER_WRITE', ip))) return new Response(null, { status: 429 });
 
   let secret: string | null = null;
   try {
