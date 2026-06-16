@@ -1,5 +1,33 @@
 # 01 — final-certificate-design · Progress
 
+## Post-P8 — OG SEO fixes + Instagram Story diploma (done)
+
+Several issues found during post-PR review were folded back into the branch.
+
+**SEO meta fixes (`src/layouts/Layout.astro`):**
+- `og:image:type` is now parameterised (`ogImageType` prop, defaults to
+  `image/svg+xml`); diploma pages pass `image/png` — the `.png` endpoint was
+  inert while the type meta still declared SVG.
+- `og:url` now uses the page's own canonical URL (was hardcoded to the homepage).
+- Twitter card meta added: `summary_large_image`, title, description, image.
+- `privacidad.astro`: updated date to 16 de junio de 2026 (Turnstile addendum added).
+
+**Instagram/Story portrait diploma (see D8):**
+- `src/lib/og-image.ts` — `diplomaStorySvg()` (1080×1920) + `storyCenteredQrSvg()`
+- `src/pages/og/diploma/[id]-story.svg.ts` / `[id]-story.png.ts` — new endpoints
+- `src/pages/index.astro` — Instagram button fetches portrait PNG first (content-type
+  gated, 4 s timeout), falls back to canvas landscape PNG
+
+**Tech-debt cleaned up:**
+- `VERIFY_BASE_URL` moved from `certificate.ts` to `certificate-design.ts`; imported
+  in both `certificate.ts` and `og-image.ts` — eliminates 4 hardcoded copies of the URL.
+- `src/lib/og-diploma.ts` (new) — `loadDiplomaData(id)` collapses the D1 query,
+  mark unpacking, and date formatting shared by all four OG endpoints; endpoints
+  reduced from ~50 LOC each to ~15.
+
+Build green. Manual verification required in prod: CF Image Resizing PNG fidelity,
+Instagram share sheet on mobile, QR scan.
+
 ## P7 — Feature B: per-IP rate limiting on writes (done)
 
 Workers Rate Limiting binding applied to all 12 write endpoints; two tiers.

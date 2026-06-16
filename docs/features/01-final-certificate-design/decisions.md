@@ -67,6 +67,28 @@ SQL without additional correctness benefit. The `orphanedOwnerRepair` backstop
 covers any residual inconsistency if the sweep fires from one endpoint and not
 the other.
 
+## D8 — Instagram/Story portrait diploma added to this branch (post-P8)
+
+**Decision:** A 9:16 portrait variant of the diploma (`diplomaStorySvg`, 1080×1920)
+was added after the PR was already open, as an owner-approved extension of the
+design work.
+
+**Why:** Instagram Stories is a natural share target for the diploma; the landscape
+OG image looks letterboxed there. The implementation reuses all existing design
+tokens and the approved `uqr` dependency — no new runtime deps. Cost was
+proportionate to add it here rather than open a second PR.
+
+**What was added:**
+- `src/lib/og-image.ts` — `diplomaStorySvg()` + `storyCenteredQrSvg()` helpers
+- `src/pages/og/diploma/[id]-story.svg.ts` — SVG endpoint (1080×1920)
+- `src/pages/og/diploma/[id]-story.png.ts` — PNG via CF Image Resizing
+- `src/pages/index.astro` — Instagram share button now fetches the portrait
+  PNG first (4 s timeout, content-type gated), falls back to canvas landscape PNG
+
+**Tech-debt also cleaned up inline:**
+- `VERIFY_BASE_URL` moved to `certificate-design.ts` (was duplicated across `certificate.ts` and two `og-image.ts` functions)
+- `loadDiplomaData()` helper in `src/lib/og-diploma.ts` collapses the D1 query, mark unpacking, and date formatting shared by all four OG endpoints
+
 ## D7 — Turnstile site key in `.env`, not `wrangler.jsonc` vars (P6)
 
 **Decision:** `PUBLIC_TURNSTILE_SITE_KEY` is a Vite/Astro build-time env var (from

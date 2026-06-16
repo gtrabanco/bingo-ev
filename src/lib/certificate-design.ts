@@ -45,6 +45,10 @@ export const HONORIFICS: Record<Honorific, { title: string; color: string; line:
   },
 };
 
+// ── Domain constants ──────────────────────────────────────────────────────────
+
+export const VERIFY_BASE_URL = 'https://bingo.gruxon.com/v/';
+
 // ── Copy ─────────────────────────────────────────────────────────────────────
 
 export const FALLBACK_NICK = 'Alguien con mucha paciencia';

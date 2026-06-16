@@ -2,7 +2,7 @@
 
 import { encode } from 'uqr';
 import type { Honorific } from './card';
-import { PALETTE, SERIF, SANS, MONO, HONORIFICS, COPY } from './certificate-design';
+import { PALETTE, SERIF, SANS, MONO, HONORIFICS, COPY, VERIFY_BASE_URL } from './certificate-design';
 
 const WIDTH = 1200;
 const HEIGHT = 630;
@@ -12,7 +12,7 @@ const STORY_WIDTH = 1080;
 const STORY_HEIGHT = 1920;
 const STORY_CX = STORY_WIDTH / 2; // 540
 
-interface DiplomaSvgData {
+export interface DiplomaSvgData {
   nick: string;
   date: string;
   cardId: string;
@@ -43,7 +43,7 @@ function allCornerOrnaments(w: number, h: number): string {
 // QR verification seal in the bottom-right corner of the OG diploma.
 // Mirrors the canvas drawVerificationQr() in certificate.ts but outputs SVG rects.
 function verifyQrSvg(cardId: string): string {
-  const url = `https://bingo.gruxon.com/v/${cardId}`;
+  const url = `${VERIFY_BASE_URL}${cardId}`;
   const qr = encode(url, { ecc: 'M', border: 2 });
   const scale = Math.max(1, Math.floor(100 / qr.size));
   const edge = qr.size * scale;
@@ -138,7 +138,7 @@ export function diplomaSvg(data: DiplomaSvgData): string {
 
 // Portrait (9:16) QR, centered — for the Story variant.
 function storyCenteredQrSvg(cardId: string): string {
-  const url = `https://bingo.gruxon.com/v/${cardId}`;
+  const url = `${VERIFY_BASE_URL}${cardId}`;
   const qr = encode(url, { ecc: 'M', border: 2 });
   const scale = Math.max(1, Math.floor(280 / qr.size));
   const edge = qr.size * scale;

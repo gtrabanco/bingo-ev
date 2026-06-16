@@ -4,7 +4,7 @@
 
 import { encode } from 'uqr';
 import type { Honorific } from './card';
-import { PALETTE, SERIF, SANS, MONO, HONORIFICS, FALLBACK_NICK, COPY } from './certificate-design';
+import { PALETTE, SERIF, SANS, MONO, HONORIFICS, FALLBACK_NICK, COPY, VERIFY_BASE_URL } from './certificate-design';
 
 export type { Honorific };
 
@@ -15,9 +15,7 @@ export interface CertificateData {
   honorific: Honorific;
 }
 
-// Canonical base for the QR and the printed link: the PNG is a shareable
-// artifact, so it always points at the production domain.
-export const VERIFY_BASE_URL = 'https://bingo.gruxon.com/v/';
+export { VERIFY_BASE_URL };
 
 export const CERT_WIDTH = 1200;
 export const CERT_HEIGHT = 900;

@@ -1083,7 +1083,7 @@ import CertificateModal from '../components/CertificateModal.astro';
         const resp = await fetch(`/og/diploma/${card.id}-story.png`, {
           signal: AbortSignal.timeout(4000),
         });
-        if (!resp.ok) return null;
+        if (!resp.ok || !resp.headers.get('content-type')?.startsWith('image/png')) return null;
         const blob = await resp.blob();
         return new File([blob], `diploma-story-${card.id}.png`, { type: 'image/png' });
       } catch {
