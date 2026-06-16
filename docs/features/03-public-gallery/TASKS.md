@@ -26,15 +26,15 @@
 - [x] Gate green; manual endpoint check (filters on/off; no marks/cells in payload;
       reserved nick suppressed at read time).
 
-## P2 — Gallery page
-- [ ] `src/pages/galeria.astro` (`prerender = false`) server-renders first page.
-- [ ] Entry card: honorific seal + tier label (reuse `certificate-design.ts`), nick
+## P2 — Gallery page ✅
+- [x] `src/pages/galeria.astro` (`prerender = false`) server-renders first page.
+- [x] Entry card: honorific seal + tier label (reuse `certificate-design.ts`), nick
       or fallback, completion date, vehicle_type when set; links to `/v/{id}`.
-- [ ] Total + per-filter counts displayed.
-- [ ] Client filter controls (honorific, vehicle) + pagination via `fetchGallery`.
-- [ ] Empty state copy (es-ES, dry tone).
-- [ ] SEO: title/description/OG per `docs/frontend/SEO.md`; add `/galeria` to sitemap.
-- [ ] Gate; Preview-MCP pass: populated / empty / filtered / degraded.
+- [x] Client filter controls (honorific, vehicle) + pagination via `fetchGallery`.
+- [x] Empty state copy (es-ES, dry tone).
+- [x] SEO: title/description/OG per `docs/frontend/SEO.md`; add `/galeria` to sitemap.
+- [x] Gate green; Preview-MCP pass: populated ✓, filtered (granujilla → 2 entries) ✓,
+      no console errors ✓.
 
 ## P3 — Owner hide + moderation + privacy
 - [ ] `src/pages/api/cards/[id]/gallery.ts` (`POST`, `prerender = false`): verify

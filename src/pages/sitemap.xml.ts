@@ -11,6 +11,11 @@ export const GET: APIRoute = async () => {
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
+  <url>
+    <loc>${baseUrl}/galeria</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.8</priority>
+  </url>
 </urlset>`;
 
   return new Response(sitemap, {
