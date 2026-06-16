@@ -1,5 +1,6 @@
 // Open Graph image generation (SVG for lightness and Workers compatibility).
 
+import { encode } from 'uqr';
 import type { Honorific } from './card';
 import { PALETTE, SERIF, SANS, MONO, HONORIFICS, COPY } from './certificate-design';
 
@@ -33,6 +34,41 @@ function allCornerOrnaments(): string {
     [inset, HEIGHT - inset],
     [WIDTH - inset, HEIGHT - inset],
   ].map(([x, y]) => cornerOrnament(x, y)).join('\n  ');
+}
+
+// QR verification seal in the bottom-right corner of the OG diploma.
+// Mirrors the canvas drawVerificationQr() in certificate.ts but outputs SVG rects.
+function verifyQrSvg(cardId: string): string {
+  const url = `https://bingo.gruxon.com/v/${cardId}`;
+  const qr = encode(url, { ecc: 'M', border: 2 });
+  const scale = Math.max(1, Math.floor(100 / qr.size));
+  const edge = qr.size * scale;
+
+  // Place in bottom-right corner, inside the inner frame (right=1160, bottom=590).
+  const gutter = 20;
+  const labelGap = 15;
+  const x0 = WIDTH - 40 - gutter - edge;
+  const y0 = HEIGHT - 40 - gutter - labelGap - edge;
+  const labelX = x0 + edge / 2;
+  const labelY = y0 + edge + labelGap;
+
+  const rects: string[] = [];
+  for (let row = 0; row < qr.size; row++) {
+    for (let col = 0; col < qr.size; col++) {
+      if (qr.data[row]![col]) {
+        rects.push(
+          `<rect x="${x0 + col * scale}" y="${y0 + row * scale}" width="${scale}" height="${scale}" fill="${PALETTE.ink}"/>`,
+        );
+      }
+    }
+  }
+
+  return `
+  <!-- QR verification seal -->
+  <rect x="${x0}" y="${y0}" width="${edge}" height="${edge}" fill="#ffffff"/>
+  ${rects.join('\n  ')}
+  <rect x="${x0 - 3}" y="${y0 - 3}" width="${edge + 6}" height="${edge + 6}" fill="none" stroke="${PALETTE.frameGreen}" stroke-width="1.5"/>
+  <text x="${labelX}" y="${labelY}" font-family="${SANS}" font-size="11" font-weight="600" fill="${PALETTE.frameGreen}" text-anchor="middle" letter-spacing="2">VERIFICAR</text>`;
 }
 
 export function diplomaSvg(data: DiplomaSvgData): string {
@@ -89,8 +125,9 @@ export function diplomaSvg(data: DiplomaSvgData): string {
   <!-- Rule above verify URL -->
   <line x1="200" y1="542" x2="${WIDTH - 200}" y2="542" stroke="${PALETTE.rule}" stroke-width="1"/>
 
-  <!-- Verify URL -->
+  <!-- Verify URL (text for legibility at small sizes) -->
   <text x="${CX}" y="572" font-family="${MONO}" font-size="17" font-weight="700" fill="${PALETTE.frameGreen}" text-anchor="middle">${escapeXml(COPY.verifyLabel(data.cardId))}</text>
+  ${verifyQrSvg(data.cardId)}
 
 </svg>`;
 }
