@@ -21,9 +21,9 @@ export const PALETTE = {
 
 // ── Font stacks ───────────────────────────────────────────────────────────────
 
-export const SERIF = 'Georgia, "Times New Roman", serif';
+export const SERIF = "Georgia, 'Times New Roman', serif";
 export const SANS = 'system-ui, sans-serif';
-export const MONO = 'ui-monospace, "Courier New", monospace';
+export const MONO = "ui-monospace, 'Courier New', monospace";
 
 // ── Honorifics ────────────────────────────────────────────────────────────────
 
