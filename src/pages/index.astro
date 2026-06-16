@@ -94,9 +94,10 @@ import CertificateModal from '../components/CertificateModal.astro';
         <div id="vehicle-type-row">
           <select
             id="vehicle-type-select"
+            aria-label="Tipo de vehículo (opcional)"
             class="w-full rounded-lg border-2 border-paper-50/25 bg-felt-950/60 px-3 py-2 text-sm text-paper-50 outline-none focus:border-amber-300 sm:text-base"
           >
-            <option value="">¿Qué tipo de vehículo tienes? (opcional)</option>
+            <option value="">Prefiero no decirlo</option>
             <optgroup label="Eléctrico puro (BEV)">
               <option value="bev_tesla">Tesla</option>
               <option value="bev_renault">Renault</option>
@@ -442,12 +443,14 @@ import CertificateModal from '../components/CertificateModal.astro';
   import { echarConfetti } from '../lib/confetti';
   import {
     isNewsletterSubscribed,
+    isVehicleTypeSeen,
     loadAlias,
     loadCurrentCard,
     loadMarkMode,
     loadNick,
     loadVehicleType,
     markNewsletterSubscribed,
+    markVehicleTypeSeen,
     saveAlias,
     saveCard,
     saveMarkMode,
@@ -903,27 +906,28 @@ import CertificateModal from '../components/CertificateModal.astro';
   // travels with the card. Set once above the card (no group needed); once
   // set, it renders as text with an edit button instead of an input.
 
+  function vehicleSelectDone(): boolean {
+    return isVehicleTypeSeen() || loadVehicleType() !== null;
+  }
+
   function renderAlias(): void {
     const alias = loadAlias();
     aliasLabel.textContent = `«${alias}»`;
     aliasDisplay.classList.toggle('hidden', alias === '');
     aliasForm.classList.toggle('hidden', alias !== '');
-    // Vehicle select only appears when the type hasn't been set yet.
-    vehicleTypeRow.classList.toggle('hidden', loadVehicleType() !== null);
+    vehicleTypeRow.classList.toggle('hidden', vehicleSelectDone());
   }
 
   function editAlias(): void {
     aliasInput.value = loadAlias();
     aliasDisplay.classList.add('hidden');
     aliasForm.classList.remove('hidden');
-    // Vehicle select only when type is not yet known.
-    vehicleTypeRow.classList.toggle('hidden', loadVehicleType() !== null);
+    vehicleTypeRow.classList.toggle('hidden', vehicleSelectDone());
     aliasInput.focus();
   }
 
-  // Tesla UA hint: pre-select bev_tesla if the browser identifies as Tesla
-  // and the player hasn't answered yet.
-  if (navigator.userAgent.includes('Tesla') && !loadVehicleType()) {
+  // Tesla UA hint: pre-select bev_tesla if the player hasn't answered yet.
+  if (navigator.userAgent.includes('Tesla') && !vehicleSelectDone()) {
     vehicleTypeSelect.value = 'bev_tesla';
   }
 
@@ -934,13 +938,16 @@ import CertificateModal from '../components/CertificateModal.astro';
     const alias = aliasInput.value.trim().slice(0, 32);
     if (!alias) return;
     saveAlias(alias);
-    // Collect vehicle type on first submission only; empty string = skip (null).
-    const selectedVehicle = vehicleTypeSelect.value || null;
-    if (selectedVehicle && !loadVehicleType()) saveVehicleType(selectedVehicle);
-    const vehicleToSync = loadVehicleType();
+    // First submission: record the selection (empty string = "Prefiero no decirlo" = null)
+    // and mark as seen so the selector never reappears.
+    if (!vehicleSelectDone()) {
+      const selected = vehicleTypeSelect.value || null;
+      if (selected) saveVehicleType(selected);
+      markVehicleTypeSeen();
+    }
     // The server copy follows when the card is registered, so standings and
     // shared views pick the new label up.
-    if (card.secret) syncAlias(card.id, card.secret, alias, vehicleToSync);
+    if (card.secret) syncAlias(card.id, card.secret, alias, loadVehicleType());
     renderAlias();
   });
 

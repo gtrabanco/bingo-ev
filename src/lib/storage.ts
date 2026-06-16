@@ -111,6 +111,7 @@ export function loadAlias(): string {
 }
 
 const VEHICLE_TYPE_KEY = `${PREFIX}.vehicleType`;
+const VEHICLE_TYPE_SEEN_KEY = `${PREFIX}.vehicleTypeSeen`;
 
 export function saveVehicleType(type: string): void {
   write(VEHICLE_TYPE_KEY, type);
@@ -118,4 +119,12 @@ export function saveVehicleType(type: string): void {
 
 export function loadVehicleType(): string | null {
   return read(VEHICLE_TYPE_KEY);
+}
+
+export function markVehicleTypeSeen(): void {
+  write(VEHICLE_TYPE_SEEN_KEY, '1');
+}
+
+export function isVehicleTypeSeen(): boolean {
+  return read(VEHICLE_TYPE_SEEN_KEY) === '1';
 }
