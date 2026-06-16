@@ -20,6 +20,14 @@ export interface Situation {
 // 2 = caused it (sinvergüenza). Any mark > 0 counts towards línea/bingo.
 export type MarkKind = 0 | 1 | 2;
 
+export const VEHICLE_TYPES = [
+  'bev_tesla', 'bev_renault', 'bev_vw', 'bev_hyundai', 'bev_kia', 'bev_byd',
+  'bev_cupra', 'bev_peugeot', 'bev_nissan', 'bev_bmw', 'bev_audi',
+  'bev_mercedes', 'bev_volvo', 'bev_other',
+  'phev', 'ice',
+] as const;
+export type VehicleType = typeof VEHICLE_TYPES[number];
+
 export interface CardState {
   id: string;
   createdAt: string; // ISO timestamp

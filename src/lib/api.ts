@@ -40,14 +40,15 @@ export function registerCard(
   cells: (string | null)[],
   alias = '',
   turnstileToken = '',
+  vehicleType: string | null = null,
 ): Promise<RegisteredCard | null> {
-  return request<RegisteredCard>('/api/cards', jsonInit({ cells, alias, 'cf-turnstile-response': turnstileToken }));
+  return request<RegisteredCard>('/api/cards', jsonInit({ cells, alias, 'cf-turnstile-response': turnstileToken, vehicle_type: vehicleType }));
 }
 
 // Updates the card's alias — a display label for standings and shared views,
 // never an identifier. Fire-and-forget, like the marks sync.
-export function syncAlias(cardId: string, secret: string, alias: string): void {
-  void request(`/api/cards/${cardId}/alias`, jsonInit({ secret, alias }));
+export function syncAlias(cardId: string, secret: string, alias: string, vehicleType: string | null = null): void {
+  void request(`/api/cards/${cardId}/alias`, jsonInit({ secret, alias, vehicle_type: vehicleType }));
 }
 
 // Reports a completion (or updates the nick of an already-completed card).
@@ -102,6 +103,7 @@ export function fetchOwnedCard(
   marks: MarkKind[];
   secret: string;
   alias: string | null;
+  vehicleType: string | null;
   groupId: string | null;
 } | null> {
   return request(`/api/cards/${cardId}?k=${encodeURIComponent(secret)}`);

@@ -73,22 +73,50 @@ import CertificateModal from '../components/CertificateModal.astro';
           class="ml-1 underline decoration-paper-300/40 underline-offset-2 transition-colors hover:text-paper-50"
         >editar</button>
       </p>
-      <form id="alias-form" class="mx-auto flex hidden w-full max-w-xs items-center gap-2">
-        <input
-          id="alias-input"
-          type="text"
-          required
-          maxlength="32"
-          placeholder="Tu alias (se verá en los grupos)"
-          autocomplete="nickname"
-          class="min-w-0 flex-1 rounded-lg border-2 border-paper-50/25 bg-felt-950/60 px-3 py-2 text-sm text-paper-50 outline-none placeholder:text-paper-300/40 focus:border-amber-300 sm:text-base"
-        />
-        <button
-          type="submit"
-          class="shrink-0 rounded-lg border-2 border-paper-50/30 px-3 py-2 text-xs font-black uppercase tracking-widest transition-colors hover:bg-paper-50/10 sm:text-sm"
-        >
-          Guardar
-        </button>
+      <form id="alias-form" class="mx-auto hidden w-full max-w-xs space-y-2">
+        <div class="flex items-center gap-2">
+          <input
+            id="alias-input"
+            type="text"
+            required
+            maxlength="32"
+            placeholder="Tu alias (se verá en los grupos)"
+            autocomplete="nickname"
+            class="min-w-0 flex-1 rounded-lg border-2 border-paper-50/25 bg-felt-950/60 px-3 py-2 text-sm text-paper-50 outline-none placeholder:text-paper-300/40 focus:border-amber-300 sm:text-base"
+          />
+          <button
+            type="submit"
+            class="shrink-0 rounded-lg border-2 border-paper-50/30 px-3 py-2 text-xs font-black uppercase tracking-widest transition-colors hover:bg-paper-50/10 sm:text-sm"
+          >
+            Guardar
+          </button>
+        </div>
+        <div id="vehicle-type-row">
+          <select
+            id="vehicle-type-select"
+            class="w-full rounded-lg border-2 border-paper-50/25 bg-felt-950/60 px-3 py-2 text-sm text-paper-50 outline-none focus:border-amber-300 sm:text-base"
+          >
+            <option value="">¿Qué tipo de vehículo tienes? (opcional)</option>
+            <optgroup label="Eléctrico puro (BEV)">
+              <option value="bev_tesla">Tesla</option>
+              <option value="bev_renault">Renault</option>
+              <option value="bev_vw">Volkswagen</option>
+              <option value="bev_hyundai">Hyundai</option>
+              <option value="bev_kia">Kia</option>
+              <option value="bev_byd">BYD</option>
+              <option value="bev_cupra">SEAT / Cupra</option>
+              <option value="bev_peugeot">Peugeot / Citroën / Opel</option>
+              <option value="bev_nissan">Nissan</option>
+              <option value="bev_bmw">BMW / MINI</option>
+              <option value="bev_audi">Audi</option>
+              <option value="bev_mercedes">Mercedes</option>
+              <option value="bev_volvo">Volvo</option>
+              <option value="bev_other">Otra marca eléctrica</option>
+            </optgroup>
+            <option value="phev">Híbrido enchufable (PHEV)</option>
+            <option value="ice">Combustión / No uso VE</option>
+          </select>
+        </div>
       </form>
     </div>
 
@@ -418,11 +446,13 @@ import CertificateModal from '../components/CertificateModal.astro';
     loadCurrentCard,
     loadMarkMode,
     loadNick,
+    loadVehicleType,
     markNewsletterSubscribed,
     saveAlias,
     saveCard,
     saveMarkMode,
     saveNick,
+    saveVehicleType,
     type MarkMode,
   } from '../lib/storage';
   import { cellsInCompletedRows, completedRows, isFullCard, markedCount } from '../lib/wins';
@@ -484,6 +514,8 @@ import CertificateModal from '../components/CertificateModal.astro';
   const aliasEditButton = $<HTMLButtonElement>('#alias-edit');
   const aliasForm = $<HTMLFormElement>('#alias-form');
   const aliasInput = $<HTMLInputElement>('#alias-input');
+  const vehicleTypeRow = $<HTMLDivElement>('#vehicle-type-row');
+  const vehicleTypeSelect = $<HTMLSelectElement>('#vehicle-type-select');
 
   const shortDate = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' });
   const longDate = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long' });
@@ -526,7 +558,7 @@ import CertificateModal from '../components/CertificateModal.astro';
     // be verifiable or watchable). The alias rides along so the card is
     // born labelled.
     const tsToken = await getTsToken();
-    const registered = await registerCard(fresh.cells, loadAlias(), tsToken);
+    const registered = await registerCard(fresh.cells, loadAlias(), tsToken, loadVehicleType());
     if (tsToken) resetTs();
     if (registered) {
       fresh.id = registered.id;
@@ -547,10 +579,11 @@ import CertificateModal from '../components/CertificateModal.astro';
     const owned = await fetchOwnedCard(cardId, secret);
     history.replaceState(null, '', location.pathname);
     if (!owned) return null;
-    // The alias rides along with the recovery; adopt it unless this device
-    // already has one of its own (the local label wins).
-    const { alias, ...state } = owned;
+    // The alias and vehicle type ride along with the recovery; adopt them
+    // unless this device already has its own values (local wins).
+    const { alias, vehicleType, ...state } = owned;
     if (alias && !loadAlias()) saveAlias(alias);
+    if (vehicleType && !loadVehicleType()) saveVehicleType(vehicleType);
     const recovered: CardState = { ...state };
     saveCard(recovered);
     return recovered;
@@ -875,13 +908,23 @@ import CertificateModal from '../components/CertificateModal.astro';
     aliasLabel.textContent = `«${alias}»`;
     aliasDisplay.classList.toggle('hidden', alias === '');
     aliasForm.classList.toggle('hidden', alias !== '');
+    // Vehicle select only appears when the type hasn't been set yet.
+    vehicleTypeRow.classList.toggle('hidden', loadVehicleType() !== null);
   }
 
   function editAlias(): void {
     aliasInput.value = loadAlias();
     aliasDisplay.classList.add('hidden');
     aliasForm.classList.remove('hidden');
+    // Vehicle select only when type is not yet known.
+    vehicleTypeRow.classList.toggle('hidden', loadVehicleType() !== null);
     aliasInput.focus();
+  }
+
+  // Tesla UA hint: pre-select bev_tesla if the browser identifies as Tesla
+  // and the player hasn't answered yet.
+  if (navigator.userAgent.includes('Tesla') && !loadVehicleType()) {
+    vehicleTypeSelect.value = 'bev_tesla';
   }
 
   aliasEditButton.addEventListener('click', editAlias);
@@ -891,9 +934,13 @@ import CertificateModal from '../components/CertificateModal.astro';
     const alias = aliasInput.value.trim().slice(0, 32);
     if (!alias) return;
     saveAlias(alias);
+    // Collect vehicle type on first submission only; empty string = skip (null).
+    const selectedVehicle = vehicleTypeSelect.value || null;
+    if (selectedVehicle && !loadVehicleType()) saveVehicleType(selectedVehicle);
+    const vehicleToSync = loadVehicleType();
     // The server copy follows when the card is registered, so standings and
     // shared views pick the new label up.
-    if (card.secret) syncAlias(card.id, card.secret, alias);
+    if (card.secret) syncAlias(card.id, card.secret, alias, vehicleToSync);
     renderAlias();
   });
 

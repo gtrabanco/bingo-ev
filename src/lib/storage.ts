@@ -109,3 +109,13 @@ export function saveAlias(alias: string): void {
 export function loadAlias(): string {
   return read(ALIAS_KEY) ?? '';
 }
+
+const VEHICLE_TYPE_KEY = `${PREFIX}.vehicleType`;
+
+export function saveVehicleType(type: string): void {
+  write(VEHICLE_TYPE_KEY, type);
+}
+
+export function loadVehicleType(): string | null {
+  return read(VEHICLE_TYPE_KEY);
+}

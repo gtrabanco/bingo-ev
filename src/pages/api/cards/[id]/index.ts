@@ -19,6 +19,7 @@ interface FullRow {
   marks: string | null;
   alias: string | null;
   group_id: string | null;
+  vehicle_type: string | null;
 }
 
 export const GET: APIRoute = async ({ params, request }) => {
@@ -31,7 +32,7 @@ export const GET: APIRoute = async ({ params, request }) => {
   // group_id is validated against a live room: a membership left dangling by
   // a room deletion reads as NULL, so clients self-heal back to grouplessness.
   const row = await env.DB.prepare(
-    `SELECT created_at, completed_at, cells, marks, alias,
+    `SELECT created_at, completed_at, cells, marks, alias, vehicle_type,
             (SELECT g.id FROM groups g WHERE g.id = cards.group_id) AS group_id
      FROM cards WHERE id = ?1 AND secret = ?2`,
   )
@@ -63,6 +64,7 @@ export const GET: APIRoute = async ({ params, request }) => {
     // The alias travels with the recovery so the new device greets the
     // player by their label. It is display-only, never an identifier.
     alias: row.alias,
+    vehicleType: row.vehicle_type,
     // Authoritative group membership: the index page uses it to self-heal
     // after an admin kick or a join made from another device.
     groupId: row.group_id,
