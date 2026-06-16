@@ -3,22 +3,28 @@
 > Concrete checklist per phase. Check off as completed during `execute-phase`.
 > Gate = `npm run build` green before each commit.
 
-## P1 — Schema + read API
-- [ ] `migrations/0010_gallery.sql` adds `gallery_hidden INTEGER NOT NULL DEFAULT 0`.
-- [ ] Apply locally: `npx wrangler d1 migrations apply ev-bingo --local`.
-- [ ] `src/pages/api/gallery.ts`: `export const prerender = false`, `import { env }
+## P1 — Schema + read API ✅
+- [x] `migrations/0010_gallery.sql` adds `gallery_hidden INTEGER NOT NULL DEFAULT 0`.
+- [x] Apply locally: `npx wrangler d1 migrations apply ev-bingo --local`.
+- [x] `src/pages/api/gallery.ts`: `export const prerender = false`, `import { env }
       from 'cloudflare:workers'`.
-- [ ] SQL: `completed_at IS NOT NULL AND gallery_hidden = 0`, optional `vehicle_type
+- [x] SQL: `completed_at IS NOT NULL AND gallery_hidden = 0`, optional `vehicle_type
       = ?`, `ORDER BY completed_at DESC`, bounded `LIMIT/OFFSET` over-fetch.
-- [ ] Worker computes honorific per row via `honorificFor(cells, marks)`; applies
+- [x] Worker computes honorific per row via `honorificFor(cells, marks)`; applies
       honorific filter; suppresses wordlist-matching nicks; builds total + counts.
-- [ ] Response shape `{ items, total, counts: { honorific, vehicle }, hasMore }`;
+- [x] Response shape `{ items, total, counts: { honorific, vehicle }, hasMore }`;
       `GalleryEntry = { id, nick, completedAt, honorific, vehicleType }` — **no
       marks/cells**.
-- [ ] Validate/clamp `page`, `honorific`, `vehicle` query params; cap limit/offset.
-- [ ] `src/lib/api.ts`: `fetchGallery(params)` + types; degrade to empty on
+- [x] Validate/clamp `page`, `honorific`, `vehicle` query params; cap limit/offset.
+- [x] `src/lib/api.ts`: `fetchGallery(params)` + types; degrade to empty on
       timeout/failure (4 s `AbortSignal.timeout`).
-- [ ] Gate; manual endpoint check (filters on/off; payload has no marks/cells).
+- [x] `src/data/blocklist.json` (two categories: `reserved` + `nsfw`) — created in
+      P1 since the gallery endpoint needs it for read-time suppression (write-time
+      enforcement wired in P3).
+- [x] `src/lib/blocklist.ts`: `checkNick()` with pattern checks (social `@`, domain)
+      then wordlist checks (`reserved`/`nsfw`); `BLOCK_MESSAGES` exported for P3.
+- [x] Gate green; manual endpoint check (filters on/off; no marks/cells in payload;
+      reserved nick suppressed at read time).
 
 ## P2 — Gallery page
 - [ ] `src/pages/galeria.astro` (`prerender = false`) server-renders first page.

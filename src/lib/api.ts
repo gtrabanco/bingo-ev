@@ -277,3 +277,47 @@ export function verificationUrl(cardId: string): string {
 export function cardShareUrl(cardId: string): string {
   return `${location.origin}/c/${cardId}`;
 }
+
+export type { GalleryEntry } from '../pages/api/gallery';
+
+export interface GalleryResponse {
+  items: GalleryEntry[];
+  total: number;
+  counts: {
+    honorific: Record<string, number>;
+    vehicle: Record<string, number>;
+  };
+  hasMore: boolean;
+  page: number;
+}
+
+export interface GalleryParams {
+  page?: number;
+  honorific?: string;
+  vehicle?: string;
+}
+
+const GALLERY_EMPTY: GalleryResponse = {
+  items: [],
+  total: 0,
+  counts: { honorific: {}, vehicle: {} },
+  hasMore: false,
+  page: 1,
+};
+
+// Fetches a page of publicly-listed diplomas. Degrades to an empty result
+// when the Worker is unreachable — the gallery disappears, the game doesn't.
+export async function fetchGallery(params: GalleryParams = {}): Promise<GalleryResponse> {
+  try {
+    const qs = new URLSearchParams();
+    if (params.page && params.page > 1) qs.set('page', String(params.page));
+    if (params.honorific) qs.set('honorific', params.honorific);
+    if (params.vehicle) qs.set('vehicle', params.vehicle);
+    const path = `/api/gallery${qs.size ? `?${qs}` : ''}`;
+    const response = await fetch(path, { signal: AbortSignal.timeout(4000) });
+    if (!response.ok) return GALLERY_EMPTY;
+    return (await response.json()) as GalleryResponse;
+  } catch {
+    return GALLERY_EMPTY;
+  }
+}
