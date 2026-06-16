@@ -1074,10 +1074,24 @@ import CertificateModal from '../components/CertificateModal.astro';
   });
 
   shareInstagramButton.addEventListener('click', async () => {
-    // Instagram has no web compose intent. On mobile, hand the PNG to the
-    // system share sheet (Instagram shows up there); elsewhere, copy the
-    // caption and open the profile.
-    const file = await diplomaFile();
+    // Instagram has no web compose intent. Prefer the portrait (9:16) Story
+    // PNG from the server — better for Stories than the landscape canvas PNG.
+    // On mobile the system share sheet picks up Instagram from the file share;
+    // otherwise copy the caption and open the profile as a last resort.
+    async function storyFile(): Promise<File | null> {
+      try {
+        const resp = await fetch(`/og/diploma/${card.id}-story.png`, {
+          signal: AbortSignal.timeout(4000),
+        });
+        if (!resp.ok) return null;
+        const blob = await resp.blob();
+        return new File([blob], `diploma-story-${card.id}.png`, { type: 'image/png' });
+      } catch {
+        return null;
+      }
+    }
+
+    const file = (await storyFile()) ?? (await diplomaFile());
     if (file && navigator.canShare?.({ files: [file] })) {
       try {
         await navigator.share({ files: [file], text: shareText() });
