@@ -36,7 +36,9 @@
   `wrangler secret put TURNSTILE_SECRET_KEY`; site key via `PUBLIC_TURNSTILE_SITE_KEY`
   build-time env var (CF Workers Builds dashboard for production).
 - **No brand names** anywhere in copy or situations (editorial/legal hygiene — avoids
-  implying any real company).
+  implying any real company). **Exception:** the vehicle-type selector lists car maker names
+  as user-submitted self-identification data (not editorial copy); this is legally distinct
+  from endorsing or naming a brand in game content.
 - **Tesla referral** copy must not imply unequal benefit ("ganamos los dos por igual").
 - Any new field that stores personal data must be reflected in `/privacidad` (purpose,
   basis, retention) before shipping.

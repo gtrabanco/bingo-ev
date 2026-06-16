@@ -6,7 +6,7 @@ export const prerender = false;
 
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import { CELL_COUNT, getSituation, newCardId } from '../../../lib/card';
+import { CELL_COUNT, getSituation, newCardId, VEHICLE_TYPES } from '../../../lib/card';
 import { orphanedOwnerRepair, settleDeparture } from '../../../lib/groups';
 import { verifyTurnstile } from '../../../lib/turnstile';
 import { checkRateLimit } from '../../../lib/rate-limit';
@@ -39,15 +39,19 @@ export const POST: APIRoute = async ({ request }) => {
 
   let cells: (string | null)[] | null = null;
   let alias: string | null = null;
+  let vehicleType: string | null = null;
   let tsToken = '';
   try {
     const body: unknown = await request.json();
-    const data = body as { cells?: unknown; alias?: unknown; 'cf-turnstile-response'?: unknown };
+    const data = body as { cells?: unknown; alias?: unknown; vehicle_type?: unknown; 'cf-turnstile-response'?: unknown };
     cells = parseCells(data?.cells);
     // Optional alias: a display label carried by the card from birth, so the
     // player shows up named in group standings without re-typing it.
     if (typeof data?.alias === 'string') {
       alias = data.alias.replace(CONTROL_CHARS, '').trim().slice(0, 32) || null;
+    }
+    if (typeof data?.vehicle_type === 'string' && (VEHICLE_TYPES as readonly string[]).includes(data.vehicle_type)) {
+      vehicleType = data.vehicle_type;
     }
     if (typeof data?.['cf-turnstile-response'] === 'string') tsToken = data['cf-turnstile-response'];
   } catch {
@@ -96,7 +100,7 @@ export const POST: APIRoute = async ({ request }) => {
     orphanedOwnerRepair(),
     db
       .prepare(
-        'INSERT INTO cards (id, created_at, secret, cells, marks, alias) VALUES (?1, ?2, ?3, ?4, ?5, ?6)',
+        'INSERT INTO cards (id, created_at, secret, cells, marks, alias, vehicle_type) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)',
       )
       .bind(
         id,
@@ -105,6 +109,7 @@ export const POST: APIRoute = async ({ request }) => {
         cells ? JSON.stringify(cells) : null,
         '0'.repeat(CELL_COUNT),
         alias,
+        vehicleType,
       ),
   ]);
 

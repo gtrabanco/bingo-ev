@@ -26,6 +26,7 @@ Closes #
 - [ ] No secrets committed
 - [ ] Docs updated where the documentation map requires it
 - [ ] User-facing limitations disclosed (no hidden restrictions)
+- [ ] **Migrations** — if `migrations/` has new files: run `npm run db:migrate` against remote D1 before or immediately after merge
 
 ## Notes for the reviewer
 

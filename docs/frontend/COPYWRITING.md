@@ -8,6 +8,9 @@
   situation, never a person or a company.
 - **No brand names anywhere** — no charger networks, no car makers — in situations or
   copy. Situations are 100% generic ("aquí no se señala a nadie").
+  **Exception:** the vehicle-type selector (feature 08) lists car maker names as user-submitted
+  self-identification data, not editorial copy. This is intentional and documented in
+  `docs/legal/README.md`.
 - Person/voice: speak to the player directly and informally (tú). Short, punchy lines.
 - Sentence case for body; the title/section eyebrows use uppercase as a stylistic device
   (e.g. "GRAN SORTEO NACIONAL DE LA RECARGA").
