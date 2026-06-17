@@ -102,6 +102,23 @@ chosen by the owner for the lowest-friction sign-in.
 - `/privacidad` + `docs/legal/README.md` updates (new processors, session cookie,
   account deletion right).
 
+- Migration `0012_device_codes.sql`: table `device_codes` (ephemeral, 5-min TTL).
+- Device-code transfer flow (account-free cross-device card handoff):
+  - `POST /api/cards/:id/device-code {secret}` — proves ownership via secret,
+    creates a single-use 6-char code (`ABC-DEF` format, 32-char unambiguous alphabet),
+    returns `{code, expiresIn: 300}`. GCs expired codes in the same batch.
+  - `POST /api/device-code/claim {code}` — validates code (not consumed, not expired),
+    marks it consumed (`consumed_at`), returns `{id, secret}`. Rate-limited via
+    `RATE_LIMITER_CREATE`.
+  - `/activar` SSR page (`prerender = false`): accepts `?code=CODE` (QR path —
+    auto-claims and redirects to `/?card=ID&k=SECRET`) or shows a form to type the
+    code manually (Tesla path). No account required.
+  - In `index.astro`: "Abrir en otro dispositivo" affordance (button visible once a
+    card exists, regardless of login state) → shows a panel with the short code +
+    a QR (`uqr`) pointing to `/activar?code=CODE`.
+  - `src/lib/api.ts` client method `requestDeviceCode(cardId, secret)` → `{code, expiresIn} | null`.
+  - Resolves the open question "cross-device linking of old cards without an account".
+
 ### Out of scope / non-goals
 
 - **Private "mis diplomas" aggregation screen / dashboard** — deferred (a future
@@ -327,6 +344,9 @@ inspection:
 - **P5** — `/privacidad` + `legal/README.md` updates; hardening + mandatory
   security review of the auth surface.
 - **P6** — PR against `main`.
+- **P7** — device-code cross-device transfer: migration `0012`, endpoints
+  `POST /api/cards/:id/device-code` + `POST /api/device-code/claim`, `/activar` page,
+  `index.astro` affordance (button + QR), `api.ts` client method.
 
 ## Deploy & rollback
 
@@ -346,10 +366,9 @@ inspection:
 
 - **X email absence** — accepted: `email` nullable; identity rests on
   `provider_user_id`. (RESOLVED by design.)
-- **Cross-device linking of *old* cards** — on a fresh device with no
-  `localStorage` secrets, pre-existing cards can't be linked in 05 (no
-  auto-adopt-by-email). Acceptable for the substrate; email-recovery still works to
-  regain the secret, after which linking applies. (DEFERRED enhancement.)
+- **Cross-device linking of *old* cards** — resolved by the P7 device-code flow:
+  any device that holds the card secret can generate a short code; the new device
+  enters the code and receives the secret directly, no account or email required.
 - **Brand-name hygiene** — "Continuar con Google/X" is functional auth UI, not
   editorial game copy; legally analogous to the vehicle-brand selector exception
   (`docs/legal/README.md`). Note for `brand-review`.
@@ -359,12 +378,14 @@ inspection:
 
 ## Deliverables
 
-- `migrations/0011_accounts.sql`
+- `migrations/0011_accounts.sql`, `migrations/0012_device_codes.sql`
 - `src/lib/auth.ts`
 - `src/pages/api/auth/[provider]/start.ts`, `…/callback.ts`, `src/pages/api/auth/logout.ts`
 - `src/pages/api/account/index.ts` (GET/DELETE), `src/pages/api/account/link-card.ts`
 - `POST /api/cards` change (stamp `account_id`)
-- `src/lib/api.ts` client methods + minimal `index.astro` login affordance
+- `src/pages/api/cards/[id]/device-code.ts`, `src/pages/api/device-code/claim.ts`
+- `src/pages/activar.astro`
+- `src/lib/api.ts` client methods + minimal `index.astro` login + device-code affordance
 - `/privacidad` + `docs/legal/README.md` updates
 - `PLAN.md`, `TASKS.md`, and (during execution) `progress.md` / `decisions.md` /
   `testing.md` / `known-issues.md`

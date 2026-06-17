@@ -73,6 +73,35 @@
       (`GOOGLE_OAUTH_*`, `X_OAUTH_*`) + redirect-URI registration for the deployer.
 - [x] Gate green.
 
+## P7 — Device-code cross-device transfer
+- [ ] `migrations/0012_device_codes.sql`: `device_codes` table (code PK, card_id,
+      created_at, expires_at TEXT, consumed_at TEXT nullable).
+- [ ] Apply locally: `npx wrangler d1 migrations apply ev-bingo --local`.
+- [ ] `src/lib/auth.ts`: `generateDeviceCode()` — 6 chars from `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`,
+      formatted `XXX-XXX` for readability.
+- [ ] `POST /api/cards/[id]/device-code.ts` (`prerender = false`): validate secret vs
+      `cards.secret`; INSERT device_code (TTL 5 min); GC expired codes in batch;
+      return `{code, expiresIn: 300}`. Rate-limit via `RATE_LIMITER_CREATE`.
+- [ ] `POST /api/device-code/claim.ts` (`prerender = false`): atomic claim — UPDATE
+      `device_codes SET consumed_at = ? WHERE code = ? AND consumed_at IS NULL
+      AND expires_at > ?` RETURNING `card_id`; SELECT `id, secret` from `cards` WHERE
+      `id = card_id`; return `{id, secret}`. Return 404/410 on missing/expired/consumed.
+- [ ] `src/pages/activar.astro` (`prerender = false`): reads `?code`; if present,
+      fetch-POSTs `/api/device-code/claim` server-side and 302s to `/?card=ID&k=SECRET`;
+      otherwise renders a form (input + submit). On form submit (client script), calls
+      claim and redirects. Copy in Spanish, accessible.
+- [ ] `index.astro`: "Abrir en otro dispositivo" button (visible when card has id + secret,
+      anywhere in session). On click: calls `requestDeviceCode`, shows dismissable panel
+      with `XXX-XXX` code + QR via `uqr` pointing to `/activar?code=CODE`. Accessible.
+- [ ] `src/lib/api.ts`: `requestDeviceCode(cardId, secret)` → `{code: string, expiresIn: number} | null`.
+- [ ] No new runtime dependency (`uqr` already approved).
+- [ ] Gate green.
+- [ ] Manual: `device:send` (button appears, code + QR shown),
+      `device:receive-qr` (scan QR → auto-redirect to game),
+      `device:receive-manual` (type code at /activar → redirect to game),
+      `device:expired` (wait 5 min, claim returns error),
+      `device:replay` (claim same code twice → 404/410).
+
 ## Tracking
 - [x] Create the GitHub issue for this feature; issue #9, PR #10.
 - [x] Confirm `09 gallery-profiles` still lists `05` as a dependency (it does).

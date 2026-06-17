@@ -65,6 +65,26 @@ gate-green; nothing requires a session until it exists.
 - One PR against `main`; English body; flag the migration + the required provider
   secrets/redirect-URI setup for reviewers/deployer. Closes the tracking issue.
 
+## P7 — Device-code cross-device transfer
+
+- `migrations/0012_device_codes.sql`: table `device_codes` (code PK, card_id, created_at,
+  expires_at, consumed_at). Apply `--local`.
+- `src/lib/auth.ts` additions: `generateDeviceCode()` — 6 random chars from a
+  32-char unambiguous alphabet (A-Z minus I/O + 2-9), formatted as `ABC-DEF`.
+- `POST /api/cards/:id/device-code {secret}` — validates ownership, inserts code
+  (TTL 5 min), GCs expired rows in batch, returns `{code, expiresIn: 300}`.
+- `POST /api/device-code/claim {code}` — atomic single-use claim (check consumed_at IS NULL
+  and expires_at > now in the UPDATE RETURNING, mark consumed_at); returns `{id, secret}`.
+  Rate-limited via `RATE_LIMITER_CREATE`.
+- `/activar` SSR page: reads `?code`; if present auto-POSTs claim and redirects to
+  `/?card=ID&k=SECRET`; otherwise renders a text input form for manual code entry (Tesla path).
+- `index.astro`: "Abrir en otro dispositivo" button — visible when a registered card exists
+  (has id + secret); on click: calls `requestDeviceCode`, shows code + QR (`uqr`) in a
+  dismissable panel. QR encodes `https://bingo.gruxon.com/activar?code=CODE`.
+- `src/lib/api.ts`: `requestDeviceCode(cardId, secret)` → `{code, expiresIn} | null`.
+- **Gate + manual:** `device:send`, `device:receive-qr`, `device:receive-manual`,
+  `device:expired` (wait 5 min), `device:replay` (claim same code twice → 204/error).
+
 ## Review checkpoints
 
 Per `execute-phase`: hand off to `/review-change` after P2 and P4, and once more
