@@ -4,18 +4,18 @@
 > Gate = `npm run build` green before each commit.
 
 ## P1 — Schema + session primitive
-- [ ] `migrations/0011_accounts.sql`: `accounts` (UNIQUE provider+provider_user_id),
+- [x] `migrations/0011_accounts.sql`: `accounts` (UNIQUE provider+provider_user_id),
       `sessions` (token_hash PK), `oauth_state` (state PK), `cards.account_id` nullable.
-- [ ] Apply locally: `npx wrangler d1 migrations apply ev-bingo --local`.
-- [ ] `src/lib/auth.ts`: `generatePkce()` (verifier + S256 challenge via Web Crypto),
+- [x] Apply locally: `npx wrangler d1 migrations apply ev-bingo --local`.
+- [x] `src/lib/auth.ts`: `generatePkce()` (verifier + S256 challenge via Web Crypto),
       `randomToken()`, `sha256(token)`.
-- [ ] `src/lib/auth.ts`: `issueSession(accountId)` → token + DB row (expires +90d);
+- [x] `src/lib/auth.ts`: `issueSession(accountId)` → token + DB row (expires +90d);
       `getSession(request)` → `{ accountId } | null` (hash + expiry check);
       `revokeSession(token)`.
-- [ ] Opportunistic GC: delete expired `sessions` + `oauth_state` rows, batched into
+- [x] Opportunistic GC: delete expired `sessions` + `oauth_state` rows, batched into
       auth writes (mirror the card/group GC pattern).
-- [ ] No new runtime dependency added to `package.json`.
-- [ ] Gate green.
+- [x] No new runtime dependency added to `package.json`.
+- [x] Gate green.
 
 ## P2 — Google flow end-to-end
 - [ ] Provider config in `lib/auth.ts`: google authorize/token/userinfo URLs,
