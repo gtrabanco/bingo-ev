@@ -68,13 +68,13 @@
 - [x] Gate.
 
 ## P6 — PR
-- [ ] Branch `feat/05-accounts`; one PR against `main`.
-- [ ] English body; `Closes #<issue>`; flag migration `0011` + required secrets
+- [x] Branch `feat/05-accounts`; one PR against `main`.
+- [x] English body; `Closes #9`; flag migration `0011` + required secrets
       (`GOOGLE_OAUTH_*`, `X_OAUTH_*`) + redirect-URI registration for the deployer.
-- [ ] Gate green.
+- [x] Gate green.
 
 ## Tracking
-- [ ] Create the GitHub issue for this feature; record its number in the PR body.
-- [ ] Confirm `09 gallery-profiles` still lists `05` as a dependency (it does).
-- [ ] Note the deferred "mis diplomas" dashboard as a candidate fast-follow / new
+- [x] Create the GitHub issue for this feature; issue #9, PR #10.
+- [x] Confirm `09 gallery-profiles` still lists `05` as a dependency (it does).
+- [x] Note the deferred "mis diplomas" dashboard as a candidate fast-follow / new
       roadmap row after merge.
