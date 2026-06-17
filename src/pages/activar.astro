@@ -44,6 +44,7 @@ if (codeParam) {
 <Layout
   title="Activar cartón — El Bingo del Cargador"
   description="Introduce el código que aparece en tu otro dispositivo para continuar la partida aquí."
+  noIndex={true}
 >
   <main
     class="mx-auto flex min-h-dvh w-full max-w-sm flex-col items-center justify-center gap-6 px-4 pb-10"
@@ -80,7 +81,7 @@ if (codeParam) {
       >
         Activar
       </button>
-      <p id="form-error" class="hidden text-center text-sm text-red-300"></p>
+      <p id="form-error" class="hidden text-center text-sm text-red-300" aria-live="polite"></p>
     </form>
 
     <a

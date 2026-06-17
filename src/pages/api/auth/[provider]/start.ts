@@ -47,5 +47,14 @@ export const GET: APIRoute = async ({ params, request }) => {
   authorizeUrl.searchParams.set('code_challenge', challenge);
   authorizeUrl.searchParams.set('code_challenge_method', 'S256');
 
-  return Response.redirect(authorizeUrl.toString(), 302);
+  // Bind state to this browser via a short-lived HttpOnly cookie so a third
+  // party cannot complete an OAuth flow initiated by a different browser
+  // (login-CSRF / session-fixation guard).
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: authorizeUrl.toString(),
+      'Set-Cookie': `evbingo_oauth=${state}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=600`,
+    },
+  });
 };

@@ -7,6 +7,7 @@ interface Props {
   description?: string;
   ogImage?: string;
   ogImageType?: string;
+  noIndex?: boolean;
 }
 
 const {
@@ -14,6 +15,7 @@ const {
   description = 'El juego de azar favorito de quien conduce un eléctrico por España. Marca las desgracias del cargador público que hayas vivido y canta bingo.',
   ogImage = '/og/home.svg',
   ogImageType = 'image/svg+xml',
+  noIndex = false,
 } = Astro.props;
 
 const canonicalUrl = `https://bingo.gruxon.com${Astro.url.pathname}`;
@@ -43,6 +45,7 @@ const ogImageUrl = new URL(ogImage, 'https://bingo.gruxon.com').href;
     <meta name="twitter:image" content={ogImageUrl} />
     <meta name="keywords" content="bingo, juego online, cargador eléctrico, EV, desgracias, españa, gratuito, cartón, recarga" />
     <meta name="author" content="Gabriel Trabanco" />
+    {noIndex && <meta name="robots" content="noindex" />}
     <link rel="canonical" href={canonicalUrl} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="sitemap" href="/sitemap.xml" />

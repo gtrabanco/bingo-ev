@@ -17,6 +17,17 @@ import {
 } from '../../../../lib/auth';
 import { checkRateLimit } from '../../../../lib/rate-limit';
 
+function parseCookie(header: string | null, name: string): string | null {
+  if (!header) return null;
+  for (const part of header.split(';')) {
+    const [k, ...vs] = part.trim().split('=');
+    if (k?.trim() === name) return vs.join('=').trim() || null;
+  }
+  return null;
+}
+
+const CLEAR_OAUTH_COOKIE = 'evbingo_oauth=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0';
+
 export const GET: APIRoute = async ({ params, request }) => {
   const provider = params.provider ?? '';
   if (!isValidProvider(provider)) {
@@ -36,7 +47,14 @@ export const GET: APIRoute = async ({ params, request }) => {
     return new Response('Missing code or state', { status: 400 });
   }
 
-  // Single-use state check — also guards CSRF and replay.
+  // Verify state matches the cookie set at /start — prevents login-CSRF where an
+  // attacker tricks a victim into completing a flow initiated by another browser.
+  const cookieState = parseCookie(request.headers.get('Cookie'), 'evbingo_oauth');
+  if (!cookieState || cookieState !== state) {
+    return new Response('State mismatch', { status: 400 });
+  }
+
+  // Single-use state check — also guards replay.
   const stateRow = await consumeOauthState(env.DB, state, provider);
   if (!stateRow) {
     return new Response('Invalid or expired state', { status: 400 });
@@ -84,11 +102,10 @@ export const GET: APIRoute = async ({ params, request }) => {
   expiresAt.setDate(expiresAt.getDate() + SESSION_TTL_DAYS);
 
   // Always redirect to / — never use a request-supplied target (open-redirect guard).
-  return new Response(null, {
-    status: 302,
-    headers: {
-      Location: '/',
-      'Set-Cookie': buildSessionCookieHeader(token, expiresAt),
-    },
+  const headers = new Headers({
+    Location: '/',
+    'Set-Cookie': buildSessionCookieHeader(token, expiresAt),
   });
+  headers.append('Set-Cookie', CLEAR_OAUTH_COOKIE);
+  return new Response(null, { status: 302, headers });
 };
