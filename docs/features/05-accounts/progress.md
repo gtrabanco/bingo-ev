@@ -28,3 +28,16 @@
 - Manual verification (`auth:google-login`, `auth:csrf`, `auth:open-redirect`,
   `auth:x-login`) requires provider test apps + `.dev.vars` — deferred to deployer.
 - Gate green.
+
+## P4 — Account/card plumbing + minimal UI ✅
+
+- `POST /api/account/link-card`: atomic guarded `UPDATE ... RETURNING` (secret in SQL).
+- `GET /api/account`: identity summary + `cardCount` aggregated via subquery.
+- `DELETE /api/account`: batch nulls `account_id` on cards, deletes sessions, deletes account.
+- `POST /api/cards` extended: reads `getSession`; stamps `account_id` if logged in.
+- `src/lib/api.ts`: `startLogin`, `logout`, `fetchAccount`, `linkCard`, `deleteAccount`
+  client methods; fixed `GALLERY_EMPTY.count` (was `total`).
+- `index.astro` account bar: hidden until JS resolves; shows login buttons (logged out)
+  or identity chip + logout (logged in); auto-links `localStorage` cards on sign-in.
+- Gate green. Manual scenarios (link-card, create-logged-in, etc.) require provider
+  credentials — deferred to deployer.

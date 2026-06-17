@@ -25,6 +25,39 @@ import CertificateModal from '../components/CertificateModal.astro';
       </p>
     </header>
 
+    <!-- Account / login affordance (feature 05-accounts).
+         Shown as a compact row under the tagline:
+         - logged-out → two social login buttons.
+         - logged-in  → brief identity chip + logout link.
+         Hidden until JS resolves the session to avoid layout flash. -->
+    <div id="account-bar" class="mt-3 flex items-center justify-center gap-2 text-xs sm:text-sm hidden" aria-live="polite">
+      <!-- Logged-out state -->
+      <div id="account-loggedout" class="hidden flex items-center gap-2">
+        <span class="text-paper-300/60">Guardar mis diplomas:</span>
+        <button
+          id="btn-login-google"
+          type="button"
+          class="rounded-lg border border-paper-50/25 bg-felt-950/40 px-2.5 py-1 font-semibold text-paper-50 transition-colors hover:bg-paper-50/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+          aria-label="Continuar con Google"
+        >Continuar con Google</button>
+        <button
+          id="btn-login-x"
+          type="button"
+          class="rounded-lg border border-paper-50/25 bg-felt-950/40 px-2.5 py-1 font-semibold text-paper-50 transition-colors hover:bg-paper-50/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+          aria-label="Continuar con X"
+        >Continuar con X</button>
+      </div>
+      <!-- Logged-in state -->
+      <div id="account-loggedin" class="hidden flex items-center gap-2">
+        <span id="account-label" class="text-paper-300/75"></span>
+        <button
+          id="btn-logout"
+          type="button"
+          class="underline decoration-paper-300/40 underline-offset-2 transition-colors hover:text-paper-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+        >Cerrar sesión</button>
+      </div>
+    </div>
+
     <!-- Wide screens (Tesla, laptop): two columns — the cartón on the left,
          the paperwork (save, groups, ads) on the right. One column on mobile. -->
     <div class="lg:mt-2 lg:grid lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-start lg:gap-x-10">
@@ -438,14 +471,19 @@ import CertificateModal from '../components/CertificateModal.astro';
   import {
     cardShareUrl,
     createGroup,
+    deleteAccount,
     discardCard,
+    fetchAccount,
     fetchOwnedCard,
     joinGroup,
+    linkCard,
     linkEmail,
+    logout,
     registerCard,
     reportCompletion,
     requestRecovery,
     setGalleryHidden,
+    startLogin,
     syncAlias,
     syncMarks,
     verificationUrl,
@@ -1225,4 +1263,48 @@ import CertificateModal from '../components/CertificateModal.astro';
   renderGrid();
   syncStatus();
   void refreshGroupMembership();
+
+  // -------------------------------------------------------------------------
+  // Account bar (feature 05-accounts)
+  // -------------------------------------------------------------------------
+
+  const accountBar = $<HTMLDivElement>('#account-bar');
+  const accountLoggedOut = $<HTMLDivElement>('#account-loggedout');
+  const accountLoggedIn = $<HTMLDivElement>('#account-loggedin');
+  const accountLabel = $<HTMLSpanElement>('#account-label');
+  const btnLoginGoogle = $<HTMLButtonElement>('#btn-login-google');
+  const btnLoginX = $<HTMLButtonElement>('#btn-login-x');
+  const btnLogout = $<HTMLButtonElement>('#btn-logout');
+
+  async function initAccountBar(): Promise<void> {
+    if (!accountBar) return;
+    const account = await fetchAccount();
+    accountBar.classList.remove('hidden');
+
+    if (account) {
+      const name = account.displayName ?? account.email ?? account.provider;
+      if (accountLabel) accountLabel.textContent = `Cuenta: ${name}`;
+      accountLoggedOut?.classList.add('hidden');
+      accountLoggedIn?.classList.remove('hidden');
+
+      // Link any localStorage cards to the account (best-effort, fire-and-forget).
+      const cards = loadCurrentCard() ? [loadCurrentCard()!] : [];
+      for (const c of cards) {
+        if (c.id && c.secret) void linkCard(c.id, c.secret);
+      }
+    } else {
+      accountLoggedIn?.classList.add('hidden');
+      accountLoggedOut?.classList.remove('hidden');
+    }
+  }
+
+  btnLoginGoogle?.addEventListener('click', () => startLogin('google'));
+  btnLoginX?.addEventListener('click', () => startLogin('x'));
+  btnLogout?.addEventListener('click', async () => {
+    await logout();
+    // Reload to reflect logged-out state — the server-side redirect handles /.
+    window.location.reload();
+  });
+
+  void initAccountBar();
 </script>

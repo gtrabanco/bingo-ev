@@ -10,6 +10,7 @@ import { CELL_COUNT, getSituation, newCardId, VEHICLE_TYPES } from '../../../lib
 import { orphanedOwnerRepair, settleDeparture } from '../../../lib/groups';
 import { verifyTurnstile } from '../../../lib/turnstile';
 import { checkRateLimit } from '../../../lib/rate-limit';
+import { getSession } from '../../../lib/auth';
 
 const CONTROL_CHARS = /[\u0000-\u001f\u007f]/g;
 
@@ -62,6 +63,10 @@ export const POST: APIRoute = async ({ request }) => {
   if (!(await checkRateLimit('RATE_LIMITER_CREATE', ip))) return new Response(null, { status: 429 });
   if (!(await verifyTurnstile(tsToken, ip))) return new Response(null, { status: 403 });
 
+  // If the request carries a valid session, stamp the new card's account_id so
+  // cards created while logged in are linked without a separate link-card call.
+  const session = await getSession(request, db);
+
   const id = newCardId();
   const secret = newSecret();
   const createdAt = new Date().toISOString();
@@ -100,7 +105,7 @@ export const POST: APIRoute = async ({ request }) => {
     orphanedOwnerRepair(),
     db
       .prepare(
-        'INSERT INTO cards (id, created_at, secret, cells, marks, alias, vehicle_type) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)',
+        'INSERT INTO cards (id, created_at, secret, cells, marks, alias, vehicle_type, account_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)',
       )
       .bind(
         id,
@@ -110,6 +115,7 @@ export const POST: APIRoute = async ({ request }) => {
         '0'.repeat(CELL_COUNT),
         alias,
         vehicleType,
+        session?.accountId ?? null,
       ),
   ]);
 

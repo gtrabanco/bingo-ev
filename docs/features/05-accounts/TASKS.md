@@ -41,18 +41,18 @@
       `auth:returning`).
 
 ## P4 — Account/card plumbing + minimal UI
-- [ ] `POST /api/account/link-card` `{cardId, secret}` (session-auth): atomic
+- [x] `POST /api/account/link-card` `{cardId, secret}` (session-auth): atomic
       `UPDATE cards SET account_id=? WHERE id=? AND (secret=? OR secret IS NULL)`.
-- [ ] `POST /api/cards`: when `getSession` present, set `account_id` at creation.
-- [ ] `GET /api/account` (session-auth): `{ provider, displayName, email, cardCount }`.
-- [ ] `DELETE /api/account` (session-auth): delete account + its sessions; null
+- [x] `POST /api/cards`: when `getSession` present, set `account_id` at creation.
+- [x] `GET /api/account` (session-auth): `{ provider, displayName, email, cardCount }`.
+- [x] `DELETE /api/account` (session-auth): delete account + its sessions; null
       `account_id` on its cards (cards survive). No `settleDeparture` impact.
-- [ ] `src/lib/api.ts`: `startLogin(provider)` (full redirect), `logout()`,
+- [x] `src/lib/api.ts`: `startLogin(provider)` (full redirect), `logout()`,
       `fetchAccount()`, `linkCard(id, secret)`, `deleteAccount()` — degrade to
       `null`/`false`.
-- [ ] `index.astro` menu: logged-out → "Continuar con Google" / "Continuar con X";
+- [x] `index.astro` menu: logged-out → "Continuar con Google" / "Continuar con X";
       logged-in → account indicator + "Cerrar sesión". Accessible (aria, focus).
-- [ ] Post-login: client links `localStorage` cards via `linkCard`.
+- [x] Post-login: client links `localStorage` cards via `linkCard`.
 - [ ] Gate; manual `auth:link-card`, `auth:create-logged-in`, `auth:account-delete`,
       `auth:degraded`.
 
