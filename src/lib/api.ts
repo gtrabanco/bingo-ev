@@ -299,7 +299,7 @@ export function cardShareUrl(cardId: string): string {
   return `${location.origin}/c/${cardId}`;
 }
 
-export type { GalleryEntry } from '../pages/api/gallery';
+export type { GalleryEntry } from './gallery';
 
 export interface GalleryResponse {
   items: GalleryEntry[];

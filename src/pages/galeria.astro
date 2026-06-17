@@ -3,18 +3,9 @@ export const prerender = false;
 
 import Layout from '../layouts/Layout.astro';
 import { env } from 'cloudflare:workers';
-import {
-  honorificFor,
-  unpackMarks,
-  CELL_COUNT,
-  VEHICLE_TYPES,
-  type VehicleType,
-  type Honorific,
-} from '../lib/card';
-import { checkNick } from '../lib/blocklist';
+import { VEHICLE_TYPES, type VehicleType, type Honorific } from '../lib/card';
+import { queryGallery, HONORIFIC_KEYS, type GalleryEntry } from '../lib/gallery';
 import { HONORIFICS, FALLBACK_NICK } from '../lib/certificate-design';
-
-const HONORIFIC_OPTIONS: Honorific[] = ['resignado', 'granujilla', 'sinverguenza'];
 
 const VEHICLE_LABELS: Record<string, string> = {
   bev_tesla: 'Tesla',
@@ -41,32 +32,12 @@ const HONORIFIC_COLORS: Record<Honorific, string> = {
   sinverguenza: '#b02e22',
 };
 
-interface GalleryEntry {
-  id: string;
-  nick: string | null;
-  completedAt: string;
-  honorific: Honorific;
-  vehicleType: VehicleType | null;
-}
-
-interface GalleryRow {
-  id: string;
-  nick: string | null;
-  completed_at: string;
-  marks: string | null;
-  cells: string | null;
-  vehicle_type: string | null;
-}
-
-const PAGE_SIZE = 24;
-const OVER_FETCH = 3;
-
 // Read URL filter params — used for both server render and no-JS fallback.
 const urlParams = Astro.url.searchParams;
 const rawHonorific = urlParams.get('honorific');
 const rawVehicle = urlParams.get('vehicle');
 const validHonorific: Honorific | null =
-  rawHonorific && HONORIFIC_OPTIONS.includes(rawHonorific as Honorific)
+  rawHonorific && (HONORIFIC_KEYS as string[]).includes(rawHonorific)
     ? (rawHonorific as Honorific)
     : null;
 const validVehicle: VehicleType | null =
@@ -78,68 +49,10 @@ let items: GalleryEntry[] = [];
 let hasMore = false;
 
 try {
-  const db = env.DB;
-  const limit = PAGE_SIZE * OVER_FETCH;
-
-  let query = `
-    SELECT id, nick, completed_at, marks, cells, vehicle_type
-    FROM cards
-    WHERE completed_at IS NOT NULL AND gallery_hidden = 0
-  `;
-  const bindings: (string | number)[] = [];
-  let bindIdx = 1;
-
-  if (validVehicle) {
-    query += ` AND vehicle_type = ?${bindIdx++}`;
-    bindings.push(validVehicle);
-  }
-
-  query += ` ORDER BY completed_at DESC LIMIT ?${bindIdx++} OFFSET ?${bindIdx++}`;
-  bindings.push(limit, 0);
-
-  const result = await db
-    .prepare(query)
-    .bind(...bindings)
-    .all<GalleryRow>();
-
-  const entries: GalleryEntry[] = [];
-  for (const row of result.results ?? []) {
-    if (row.nick !== null && checkNick(row.nick).blocked) continue;
-
-    let cells: (string | null)[];
-    try {
-      const parsed: unknown = JSON.parse(row.cells ?? 'null');
-      if (!Array.isArray(parsed) || parsed.length !== CELL_COUNT) continue;
-      cells = parsed.map((c) => (typeof c === 'string' ? c : null));
-    } catch {
-      continue;
-    }
-
-    const marks =
-      row.marks && row.marks.length === CELL_COUNT
-        ? unpackMarks(row.marks)
-        : (Array(CELL_COUNT).fill(0) as ReturnType<typeof unpackMarks>);
-
-    const honorific = honorificFor(cells, marks);
-    if (validHonorific && honorific !== validHonorific) continue;
-
-    const vehicleType =
-      row.vehicle_type && (VEHICLE_TYPES as readonly string[]).includes(row.vehicle_type)
-        ? (row.vehicle_type as VehicleType)
-        : null;
-
-    entries.push({
-      id: row.id,
-      nick: row.nick,
-      completedAt: row.completed_at,
-      honorific,
-      vehicleType,
-    });
-    if (entries.length >= PAGE_SIZE + 1) break;
-  }
-
-  hasMore = entries.length > PAGE_SIZE;
-  items = entries.slice(0, PAGE_SIZE);
+  ({ items, hasMore } = await queryGallery(env.DB, {
+    honorific: validHonorific,
+    vehicle: validVehicle,
+  }));
 } catch {
   // D1 unreachable: degrade to empty gallery — the game remains unaffected.
 }
@@ -198,7 +111,7 @@ function filterUrl(honorific: string | null, vehicle: string | null): string {
           aria-pressed={!validHonorific ? 'true' : 'false'}
         >Todos</a>
         {
-          HONORIFIC_OPTIONS.map((h) => (
+          HONORIFIC_KEYS.map((h) => (
             <a
               href={filterUrl(h, validVehicle)}
               data-filter-honorific={h}
