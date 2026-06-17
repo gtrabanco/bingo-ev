@@ -131,5 +131,5 @@ export const GET: APIRoute = async ({ request }) => {
     if (item.vehicleType) counts.vehicle[item.vehicleType]++;
   }
 
-  return Response.json({ items, total: items.length, counts, hasMore, page });
+  return Response.json({ items, count: items.length, counts, hasMore, page });
 };

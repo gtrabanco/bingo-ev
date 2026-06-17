@@ -303,7 +303,7 @@ export type { GalleryEntry } from '../pages/api/gallery';
 
 export interface GalleryResponse {
   items: GalleryEntry[];
-  total: number;
+  count: number;
   counts: {
     honorific: Record<string, number>;
     vehicle: Record<string, number>;

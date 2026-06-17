@@ -359,10 +359,14 @@ function filterUrl(honorific: string | null, vehicle: string | null): string {
     }).format(new Date(iso));
   }
 
+  function escapeHtml(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
   function entryHtml(entry: GalleryEntry): string {
     const color = HONORIFIC_COLORS[entry.honorific] ?? '#11503c';
     const title = HONORIFIC_TITLES[entry.honorific] ?? entry.honorific;
-    const nick = entry.nick ?? FALLBACK_NICK;
+    const nick = escapeHtml(entry.nick ?? FALLBACK_NICK);
     const vehicle = entry.vehicleType ? ` · ${VEHICLE_LABELS[entry.vehicleType] ?? entry.vehicleType}` : '';
     return `<a href="/v/${entry.id}"
       class="gallery-card group block rounded-lg border border-paper-300/10 bg-felt-950/40 p-4 transition-colors hover:border-paper-300/25 hover:bg-felt-950/60"

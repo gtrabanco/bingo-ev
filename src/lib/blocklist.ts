@@ -38,7 +38,7 @@ export function checkNick(nick: string): CheckNickResult {
 }
 
 // Error messages keyed by reason — used at write time (nick rejection) and
-// surfaced to the client as the `error` field in a 422 response.
+// returned in the `nickError` field of the 200 completion receipt.
 export const BLOCK_MESSAGES: Record<BlockReason, string> = {
   reserved: 'Nombre reservado',
   nsfw: 'Nombre inapropiado',
