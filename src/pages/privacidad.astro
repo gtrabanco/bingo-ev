@@ -3,7 +3,7 @@
 // basis, retention and the data subject's rights. Static page.
 import Layout from '../layouts/Layout.astro';
 
-const updated = '17 de junio de 2026';
+const updated = '18 de junio de 2026';
 ---
 
 <Layout
@@ -43,7 +43,10 @@ const updated = '17 de junio de 2026';
           <li>
             <strong>Para jugar no pedimos nada.</strong> El estado de tu cartón se guarda en tu
             navegador (localStorage), no en un servidor de seguimiento. No usamos cookies de
-            analítica ni de publicidad. El sitio usa
+            analítica ni de publicidad; si no has iniciado sesión, no hay ninguna cookie activa.
+            Si inicias sesión (ver «Cuentas e inicio de sesión»), se establece una cookie de
+            sesión estrictamente necesaria para la autenticación — detalles en esa sección.
+            El sitio usa
             <a
               href="https://umami.is"
               class="underline decoration-paper-300/40 hover:text-paper-50"
@@ -124,6 +127,46 @@ const updated = '17 de junio de 2026';
             target="_blank"
             rel="noopener">Turnstile Privacy Addendum</a
           >.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-base font-bold text-paper-50 sm:text-lg">Cuentas e inicio de sesión</h2>
+        <p class="mt-1.5">
+          Puedes crear una cuenta de forma voluntaria usando tu perfil de Google o X (Twitter).
+          No es necesaria para jugar: el juego funciona completamente sin cuenta. La cuenta
+          sirve únicamente para agrupar tus diplomas completados bajo una identidad duradera
+          entre dispositivos.
+        </p>
+        <p class="mt-1.5">
+          Al iniciar sesión, recibimos de Google o X los siguientes datos: un identificador
+          estable de usuario (el <em>id</em> del proveedor), tu nombre para mostrar y, si
+          el proveedor lo facilita, tu dirección de correo (X habitualmente no la incluye). Estos
+          datos se almacenan en nuestro servidor para identificarte en sesiones futuras. Los
+          <strong>tokens de acceso no se guardan</strong>: se usan una sola vez para obtener tu
+          identidad y se descartan de inmediato.
+        </p>
+        <p class="mt-1.5">
+          <strong>Base jurídica:</strong> tu consentimiento (art. 6.1.a RGPD), prestado al pulsar
+          «Continuar con Google» o «Continuar con X». <strong>Retención:</strong> hasta que
+          elimines tu cuenta desde los ajustes (opción «Eliminar cuenta»). Al eliminar la cuenta
+          se borran tus sesiones y se desvinculan tus diplomas — los diplomas en sí no se eliminan
+          y siguen verificables.
+        </p>
+        <p class="mt-1.5">
+          <strong>Procesadores:</strong> Google LLC y X Corp. actúan como procesadores durante
+          el proceso de autenticación (intercambio de tokens OAuth). Consulta sus respectivas
+          políticas de privacidad para más información sobre cómo tratan tus datos durante ese
+          proceso.
+        </p>
+        <p class="mt-1.5">
+          <strong>Cookie de sesión.</strong> Al iniciar sesión se establece una cookie
+          (<code class="text-xs">evbingo_session</code>) con los atributos
+          <code class="text-xs">HttpOnly; Secure; SameSite=Lax</code>. Es estrictamente
+          necesaria para mantener la sesión y no contiene datos de seguimiento. Solo está activa
+          mientras has iniciado sesión; al cerrar sesión o transcurridos 90 días se elimina
+          automáticamente. En nuestra base de datos solo se almacena el <em>hash</em>
+          SHA-256 del token, no el token en sí.
         </p>
       </section>
 

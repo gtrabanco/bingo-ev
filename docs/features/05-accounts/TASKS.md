@@ -57,15 +57,15 @@
       `auth:degraded`.
 
 ## P5 — Legal + hardening
-- [ ] `/privacidad`: new "Cuentas e inicio de sesión" section — processors (Google,
+- [x] `/privacidad`: new "Cuentas e inicio de sesión" section — processors (Google,
       X), data received (provider id, nombre, email si lo hay), purpose (identidad
       duradera para agrupar tus diplomas), basis (consentimiento), retention (hasta
       borrado de cuenta), deletion right. Correct "no usamos cookies" → cookie de
       sesión estrictamente necesaria solo al iniciar sesión.
-- [ ] `docs/legal/README.md`: add Google + X processors + session-cookie touchpoint.
-- [ ] Bump `/privacidad` `updated` date.
+- [x] `docs/legal/README.md`: add Google + X processors + session-cookie touchpoint.
+- [x] Bump `/privacidad` `updated` date.
 - [ ] Mandatory `security-review` of the auth surface; resolve/track findings.
-- [ ] Gate.
+- [x] Gate.
 
 ## P6 — PR
 - [ ] Branch `feat/05-accounts`; one PR against `main`.

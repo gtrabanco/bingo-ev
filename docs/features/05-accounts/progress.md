@@ -41,3 +41,15 @@
   or identity chip + logout (logged in); auto-links `localStorage` cards on sign-in.
 - Gate green. Manual scenarios (link-card, create-logged-in, etc.) require provider
   credentials — deferred to deployer.
+
+## P5 — Legal + hardening ✅
+
+- `/privacidad`: new "Cuentas e inicio de sesión" section added (processors Google + X,
+  data received, purpose, basis, retention, deletion right, session cookie explanation).
+  "Para jugar no pedimos nada" bullet corrected: no cookie active when not logged in;
+  session cookie strictly necessary only while logged in. `updated` bumped to 2026-06-18.
+- `docs/legal/README.md`: Google + X as processors, session-cookie touchpoint, and
+  "Continuar con Google/X" brand-name exception documented.
+- Rate-limit uses binding `RATE_LIMITER_AUTH` (must be configured in `wrangler.jsonc`).
+- `testing.md` created with manual scenario checklist + security-review surface list.
+- **Mandatory security review (`/security-review`) still pending** — must run before P6 PR.
