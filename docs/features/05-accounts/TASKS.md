@@ -18,25 +18,25 @@
 - [x] Gate green.
 
 ## P2 — Google flow end-to-end
-- [ ] Provider config in `lib/auth.ts`: google authorize/token/userinfo URLs,
+- [x] Provider config in `lib/auth.ts`: google authorize/token/userinfo URLs,
       scopes (`openid email profile`), env var names.
-- [ ] `GET /api/auth/google/start` (`prerender = false`): make state + PKCE, insert
+- [x] `GET /api/auth/google/start` (`prerender = false`): make state + PKCE, insert
       `oauth_state`, GC, 302 to authorize URL.
-- [ ] `GET /api/auth/google/callback`: consume (DELETE) `oauth_state` single-use;
+- [x] `GET /api/auth/google/callback`: consume (DELETE) `oauth_state` single-use;
       reject missing/expired/provider-mismatch; exchange code (+verifier); fetch
       userinfo; upsert account; issue session cookie; 302 to `/` (hardcoded origin).
-- [ ] `POST /api/auth/logout`: revoke session + clear cookie.
-- [ ] Session cookie: `HttpOnly; Secure; SameSite=Lax; Path=/`.
-- [ ] Tokens used once then discarded (not stored).
-- [ ] Rate-limit `start` + `callback` (`lib/rate-limit.ts`).
+- [x] `POST /api/auth/logout`: revoke session + clear cookie.
+- [x] Session cookie: `HttpOnly; Secure; SameSite=Lax; Path=/`.
+- [x] Tokens used once then discarded (not stored).
+- [x] Rate-limit `start` + `callback` (`lib/rate-limit.ts`).
 - [ ] Gate; manual `auth:google-login`, `auth:returning`, `auth:logout`,
       `auth:csrf`, `auth:open-redirect` (Google test app + `.dev.vars`).
 
 ## P3 — X provider
-- [ ] X config: authorize/token URLs, `users.read tweet.read` scope, `users/me`
+- [x] X config: authorize/token URLs, `users.read tweet.read` scope, `users/me`
       userinfo; PKCE mandatory.
-- [ ] `:provider` routing covers `x`; reject unknown providers.
-- [ ] Tolerate absent email (store null); identity = `data.id`.
+- [x] `:provider` routing covers `x`; reject unknown providers.
+- [x] Tolerate absent email (store null); identity = `data.id`.
 - [ ] Gate; manual `auth:x-login` (verify null-email path + no duplicate on
       `auth:returning`).
 

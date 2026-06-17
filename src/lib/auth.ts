@@ -54,7 +54,7 @@ export async function generatePkce(): Promise<PkceChallenge> {
 // ---------------------------------------------------------------------------
 
 const SESSION_COOKIE = 'evbingo_session';
-const SESSION_TTL_DAYS = 90;
+export const SESSION_TTL_DAYS = 90;
 
 /** Generates a random opaque session token (raw; stored hashed in DB). */
 export function randomToken(): string {
@@ -257,10 +257,13 @@ function parseCookieValue(cookieHeader: string, name: string): string | null {
 export interface ProviderConfig {
   authorizeUrl: string;
   tokenUrl: string;
+  /** Full URL including any required query params (e.g. X's user.fields). */
   userinfoUrl: string;
   scopes: string;
   clientIdEnv: string;
   clientSecretEnv: string;
+  /** X uses HTTP Basic auth (client_id:secret) for the token exchange. */
+  useBasicAuth: boolean;
 }
 
 export const PROVIDERS: Record<string, ProviderConfig> = {
@@ -271,14 +274,16 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
     scopes: 'openid email profile',
     clientIdEnv: 'GOOGLE_OAUTH_CLIENT_ID',
     clientSecretEnv: 'GOOGLE_OAUTH_CLIENT_SECRET',
+    useBasicAuth: false,
   },
   x: {
     authorizeUrl: 'https://twitter.com/i/oauth2/authorize',
     tokenUrl: 'https://api.twitter.com/2/oauth2/token',
-    userinfoUrl: 'https://api.twitter.com/2/users/me',
+    userinfoUrl: 'https://api.twitter.com/2/users/me?user.fields=name,username',
     scopes: 'users.read tweet.read',
     clientIdEnv: 'X_OAUTH_CLIENT_ID',
     clientSecretEnv: 'X_OAUTH_CLIENT_SECRET',
+    useBasicAuth: true,
   },
 };
 
@@ -286,6 +291,98 @@ export type Provider = keyof typeof PROVIDERS;
 
 export function isValidProvider(p: string): p is Provider {
   return p in PROVIDERS;
+}
+
+// ---------------------------------------------------------------------------
+// OAuth flow helpers (code exchange + userinfo parsing)
+// ---------------------------------------------------------------------------
+
+/**
+ * Exchanges the authorization code for an access token.
+ * Returns the access token string, or throws on provider error.
+ */
+export async function exchangeCode(
+  provider: string,
+  code: string,
+  codeVerifier: string,
+  redirectUri: string,
+  clientId: string,
+  clientSecret: string
+): Promise<string> {
+  const config = PROVIDERS[provider];
+  if (!config) throw new Error(`Unknown provider: ${provider}`);
+
+  const body = new URLSearchParams({
+    grant_type: 'authorization_code',
+    code,
+    redirect_uri: redirectUri,
+    code_verifier: codeVerifier,
+    client_id: clientId,
+  });
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/x-www-form-urlencoded',
+  };
+
+  if (config.useBasicAuth) {
+    headers['Authorization'] = 'Basic ' + btoa(`${clientId}:${clientSecret}`);
+  } else {
+    body.set('client_secret', clientSecret);
+  }
+
+  const res = await fetch(config.tokenUrl, {
+    method: 'POST',
+    headers,
+    body: body.toString(),
+    signal: AbortSignal.timeout(8000),
+  });
+
+  if (!res.ok) throw new Error(`Token exchange failed: ${res.status}`);
+  const data = await res.json() as { access_token?: string };
+  if (!data.access_token) throw new Error('No access_token in response');
+  return data.access_token;
+}
+
+/**
+ * Fetches the provider's userinfo using the access token.
+ * Returns normalized AccountInfo (email nullable, especially for X).
+ */
+export async function fetchProviderUserInfo(
+  provider: string,
+  accessToken: string
+): Promise<AccountInfo> {
+  const config = PROVIDERS[provider];
+  if (!config) throw new Error(`Unknown provider: ${provider}`);
+
+  const res = await fetch(config.userinfoUrl, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) throw new Error(`Userinfo fetch failed: ${res.status}`);
+  const data = await res.json() as Record<string, unknown>;
+
+  if (provider === 'google') {
+    return {
+      provider: 'google',
+      providerUserId: String(data.sub ?? ''),
+      email: typeof data.email === 'string' ? data.email : null,
+      displayName: typeof data.name === 'string' ? data.name : null,
+    };
+  }
+
+  if (provider === 'x') {
+    // X returns { data: { id, name, username } }; email is not available
+    // under users.read + tweet.read scopes — stored as null.
+    const xData = (data.data ?? {}) as Record<string, unknown>;
+    return {
+      provider: 'x',
+      providerUserId: String(xData.id ?? ''),
+      email: null,
+      displayName: typeof xData.name === 'string' ? xData.name : null,
+    };
+  }
+
+  throw new Error(`No userinfo parser for provider: ${provider}`);
 }
 
 // ---------------------------------------------------------------------------
