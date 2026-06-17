@@ -7,6 +7,33 @@ import type { D1Database } from '@cloudflare/workers-types';
 // Crypto helpers
 // ---------------------------------------------------------------------------
 
+// Unambiguous alphabet: A-Z minus I and O; digits 2-9 (removes 0 and 1).
+// 32 symbols → 32^6 ≈ 1 billion combinations for a 5-minute single-use code.
+const DEVICE_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const DEVICE_CODE_LEN = 6;
+export const DEVICE_CODE_TTL_SECONDS = 300; // 5 minutes
+
+/**
+ * Generates a short human-readable device code formatted as "XXX-XXX".
+ * Uses only unambiguous characters (no I, O, 0, 1).
+ */
+export function generateDeviceCode(): string {
+  const buf = new Uint8Array(DEVICE_CODE_LEN);
+  crypto.getRandomValues(buf);
+  const chars = Array.from(buf, b => DEVICE_CODE_ALPHABET[b % DEVICE_CODE_ALPHABET.length]!).join('');
+  return `${chars.slice(0, 3)}-${chars.slice(3)}`;
+}
+
+/** Normalizes a user-entered code: uppercase, strip dashes/spaces. */
+export function normalizeDeviceCode(raw: string): string {
+  return raw.toUpperCase().replace(/[^A-Z2-9]/g, '');
+}
+
+/** Returns true if a normalized (dash-stripped) code looks structurally valid. */
+export function isValidDeviceCodeFormat(normalized: string): boolean {
+  return normalized.length === DEVICE_CODE_LEN && /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/.test(normalized);
+}
+
 /** Returns a cryptographically random hex string of `byteLen * 2` chars. */
 export function randomHex(byteLen = 32): string {
   const buf = new Uint8Array(byteLen);

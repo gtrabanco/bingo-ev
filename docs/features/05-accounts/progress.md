@@ -53,3 +53,18 @@
 - Rate-limit uses binding `RATE_LIMITER_AUTH` (must be configured in `wrangler.jsonc`).
 - `testing.md` created with manual scenario checklist + security-review surface list.
 - **Mandatory security review (`/security-review`) still pending** — must run before P6 PR.
+
+## P7 — Device-code cross-device transfer ✅
+
+- `migrations/0012_device_codes.sql`: `device_codes` table (code PK, card_id, created/expires/consumed timestamps).
+  Applied locally. Opportunistic GC batched into code creation.
+- `src/lib/auth.ts`: `generateDeviceCode()` (6 chars, unambiguous 32-char alphabet, formatted `XXX-XXX`),
+  `normalizeDeviceCode`, `isValidDeviceCodeFormat`, `DEVICE_CODE_TTL_SECONDS = 300`.
+- `POST /api/cards/[id]/device-code`: ownership-gated (secret match), inserts code, returns `{code, expiresIn}`.
+- `POST /api/device-code/claim`: atomic `UPDATE ... RETURNING` single-use claim; 410 on any failure mode.
+- `src/pages/activar.astro`: server-side auto-claim on `?code=` (QR path → 302 to game);
+  manual form with auto-format input (Tesla path, no JS dependency for the form itself).
+- `index.astro`: "Abrir en otro dispositivo" button (visible when card has id + secret);
+  dismissable panel with code + inline SVG QR (uqr) + countdown timer. No new runtime deps.
+- `src/lib/api.ts`: `requestDeviceCode` client method.
+- Gate green (`npm run build`). Manual device scenarios require a running Worker — deferred.

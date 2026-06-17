@@ -1,0 +1,139 @@
+---
+// /activar — device-code claim page.
+// Two paths:
+//   ?code=ABC-DEF  (QR scan) → auto-claim server-side → 302 to game with secret.
+//   no code        (manual)  → show form; client script calls claim API on submit.
+export const prerender = false;
+
+import Layout from '../layouts/Layout.astro';
+import { env } from 'cloudflare:workers';
+import { normalizeDeviceCode, isValidDeviceCodeFormat } from '../lib/auth';
+
+const codeParam = Astro.url.searchParams.get('code') ?? '';
+
+// Auto-claim: if the URL already carries a code (QR scan or link share), try to
+// consume it server-side and redirect immediately — no JS required.
+if (codeParam) {
+  const code = normalizeDeviceCode(codeParam);
+  if (isValidDeviceCodeFormat(code)) {
+    const now = new Date().toISOString();
+    const claimed = await env.DB
+      .prepare(
+        `UPDATE device_codes SET consumed_at = ?
+         WHERE code = ? AND consumed_at IS NULL AND expires_at > ?
+         RETURNING card_id`
+      )
+      .bind(now, code, now)
+      .first<{ card_id: string }>();
+
+    if (claimed) {
+      const card = await env.DB
+        .prepare('SELECT id, secret FROM cards WHERE id = ?')
+        .bind(claimed.card_id)
+        .first<{ id: string; secret: string | null }>();
+
+      if (card?.secret) {
+        return Astro.redirect(`/?card=${encodeURIComponent(card.id)}&k=${encodeURIComponent(card.secret)}`, 302);
+      }
+    }
+  }
+  // Code invalid/expired/consumed — fall through to the form with an error hint.
+}
+---
+
+<Layout
+  title="Activar cartón — El Bingo del Cargador"
+  description="Introduce el código que aparece en tu otro dispositivo para continuar la partida aquí."
+>
+  <main
+    class="mx-auto flex min-h-dvh w-full max-w-sm flex-col items-center justify-center gap-6 px-4 pb-10"
+  >
+    <h1 class="text-2xl font-black uppercase tracking-tight text-amber-300">
+      Activar cartón
+    </h1>
+    <p class="text-center text-sm/relaxed text-paper-300/80">
+      Introduce el código de 6 letras que aparece en el otro dispositivo
+      para continuar tu partida aquí.
+    </p>
+
+    {codeParam && (
+      <p id="error-msg" class="rounded-lg bg-red-900/40 px-4 py-2 text-center text-sm text-red-300">
+        El código ha caducado o ya fue usado. Genera uno nuevo desde el otro dispositivo.
+      </p>
+    )}
+
+    <form id="claim-form" class="w-full space-y-4">
+      <input
+        id="code-input"
+        type="text"
+        inputmode="text"
+        autocomplete="one-time-code"
+        maxlength="7"
+        placeholder="ABC-DEF"
+        required
+        class="w-full rounded-xl border-2 border-paper-50/25 bg-felt-950/60 px-4 py-3 text-center text-2xl font-black uppercase tracking-[0.3em] text-paper-50 outline-none placeholder:text-paper-300/30 focus:border-amber-300"
+        aria-label="Código de activación"
+      />
+      <button
+        type="submit"
+        class="w-full rounded-xl border-2 border-amber-300/60 bg-amber-300/10 px-4 py-3 text-base font-black uppercase tracking-widest text-amber-300 transition-colors hover:bg-amber-300/20"
+      >
+        Activar
+      </button>
+      <p id="form-error" class="hidden text-center text-sm text-red-300"></p>
+    </form>
+
+    <a
+      href="/"
+      class="text-sm text-paper-300/60 underline decoration-paper-300/30 underline-offset-2 hover:text-paper-50"
+    >
+      Volver al bingo
+    </a>
+  </main>
+</Layout>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>('#claim-form')!;
+  const input = document.querySelector<HTMLInputElement>('#code-input')!;
+  const formError = document.querySelector<HTMLParagraphElement>('#form-error')!;
+
+  // Auto-format: insert dash after 3rd character as the user types.
+  input.addEventListener('input', () => {
+    const raw = input.value.toUpperCase().replace(/[^A-Z2-9]/g, '');
+    if (raw.length > 3) {
+      input.value = `${raw.slice(0, 3)}-${raw.slice(3, 6)}`;
+    } else {
+      input.value = raw;
+    }
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const code = input.value.trim();
+    formError.classList.add('hidden');
+
+    try {
+      const res = await fetch('/api/device-code/claim', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ code }),
+        signal: AbortSignal.timeout(6000),
+      });
+
+      if (res.ok) {
+        const { id, secret } = await res.json() as { id: string; secret: string };
+        window.location.href = `/?card=${encodeURIComponent(id)}&k=${encodeURIComponent(secret)}`;
+        return;
+      }
+
+      formError.textContent =
+        res.status === 410
+          ? 'El código ha caducado o ya fue usado. Genera uno nuevo.'
+          : 'Código incorrecto. Comprueba que lo has escrito bien.';
+      formError.classList.remove('hidden');
+    } catch {
+      formError.textContent = 'Error de conexión. Inténtalo de nuevo.';
+      formError.classList.remove('hidden');
+    }
+  });
+</script>

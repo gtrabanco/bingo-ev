@@ -402,3 +402,24 @@ export async function deleteAccount(): Promise<boolean> {
     return false;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Device-code cross-device card transfer (feature 05-accounts P7)
+// ---------------------------------------------------------------------------
+
+export interface DeviceCodeResult {
+  code: string;
+  expiresIn: number;
+}
+
+// Generates a short single-use code (format "ABC-DEF") that another device can
+// enter at /activar to receive this card's id + secret. Requires the owner secret.
+export async function requestDeviceCode(
+  cardId: string,
+  secret: string,
+): Promise<DeviceCodeResult | null> {
+  return request<DeviceCodeResult>(
+    `/api/cards/${cardId}/device-code`,
+    jsonInit({ secret }),
+  );
+}

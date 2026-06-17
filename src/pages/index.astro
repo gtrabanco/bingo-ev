@@ -186,6 +186,38 @@ import CertificateModal from '../components/CertificateModal.astro';
       Ocultar de la galería pública
     </button>
 
+    <!-- Device-code transfer panel: hidden until the button is clicked.
+         Shown whenever a card exists (has id + secret), logged in or not. -->
+    <button
+      id="device-code-btn"
+      type="button"
+      class="mt-2 hidden w-full rounded-xl border border-paper-300/20 px-4 py-2 text-xs text-paper-300/60 transition-colors hover:border-paper-300/35 hover:text-paper-300/80"
+      aria-expanded="false"
+      aria-controls="device-code-panel"
+    >
+      Abrir en otro dispositivo
+    </button>
+
+    <div
+      id="device-code-panel"
+      class="hidden mt-3 rounded-xl border border-paper-50/15 bg-felt-950/40 p-4 text-center space-y-3"
+      role="region"
+      aria-label="Código para otro dispositivo"
+    >
+      <p class="text-xs text-paper-300/70">
+        En el otro dispositivo ve a <strong class="text-paper-50">bingo.gruxon.com/activar</strong>
+        e introduce este código, o escanea el QR.
+      </p>
+      <p
+        id="device-code-value"
+        class="text-3xl font-black tracking-[0.25em] text-amber-300"
+        aria-live="polite"
+      ></p>
+      <div id="device-code-qr" class="flex justify-center" aria-hidden="true"></div>
+      <p id="device-code-expiry" class="text-[0.6875rem] text-paper-300/50"></p>
+      <p id="device-code-error" class="hidden text-xs text-red-300"></p>
+    </div>
+
     <noscript>
       <p
         class="mt-4 rounded-xl border border-amber-300/40 bg-amber-300/10 px-4 py-3 text-center text-sm text-amber-200"
@@ -481,6 +513,7 @@ import CertificateModal from '../components/CertificateModal.astro';
     logout,
     registerCard,
     reportCompletion,
+    requestDeviceCode,
     requestRecovery,
     setGalleryHidden,
     startLogin,
@@ -488,6 +521,7 @@ import CertificateModal from '../components/CertificateModal.astro';
     syncMarks,
     verificationUrl,
   } from '../lib/api';
+  import { encode as encodeQr } from 'uqr';
   import { echarConfetti } from '../lib/confetti';
   import {
     isNewsletterSubscribed,
@@ -546,6 +580,12 @@ import CertificateModal from '../components/CertificateModal.astro';
   const shareWhatsappButton = $<HTMLButtonElement>('#share-whatsapp');
   const shareCardButton = $<HTMLButtonElement>('#share-card');
   const galleryToggleBtn = $<HTMLButtonElement>('#gallery-toggle');
+  const deviceCodeBtn = $<HTMLButtonElement>('#device-code-btn');
+  const deviceCodePanel = $<HTMLDivElement>('#device-code-panel');
+  const deviceCodeValue = $<HTMLParagraphElement>('#device-code-value');
+  const deviceCodeQr = $<HTMLDivElement>('#device-code-qr');
+  const deviceCodeExpiry = $<HTMLParagraphElement>('#device-code-expiry');
+  const deviceCodeError = $<HTMLParagraphElement>('#device-code-error');
   let galleryHidden = false;
   const emailForm = $<HTMLFormElement>('#email-form');
   const emailInput = $<HTMLInputElement>('#email-input');
@@ -841,6 +881,9 @@ import CertificateModal from '../components/CertificateModal.astro';
     // Gallery toggle: only shown for completed cards with a secret (owned).
     const isCompleted = card.completedAt !== null;
     galleryToggleBtn.classList.toggle('hidden', !isCompleted || card.secret === null);
+
+    // Device-code button: shown whenever a registered card exists (has id + secret).
+    deviceCodeBtn?.classList.toggle('hidden', !card.id || card.secret === null);
     if (isCompleted) {
       galleryToggleBtn.setAttribute('aria-pressed', String(galleryHidden));
       galleryToggleBtn.textContent = galleryHidden
@@ -1307,4 +1350,78 @@ import CertificateModal from '../components/CertificateModal.astro';
   });
 
   void initAccountBar();
+
+  // -------------------------------------------------------------------------
+  // Device-code cross-device transfer (feature 05-accounts P7)
+  // -------------------------------------------------------------------------
+
+  function renderDeviceCodeQr(code: string): void {
+    if (!deviceCodeQr) return;
+    const url = `${location.origin}/activar?code=${encodeURIComponent(code)}`;
+    const qr = encodeQr(url, { ecc: 'M', border: 2 });
+    const scale = 5;
+    const size = qr.size * scale;
+    let cells = '';
+    for (let row = 0; row < qr.size; row++) {
+      for (let col = 0; col < qr.size; col++) {
+        if (qr.data[row]![col]) {
+          cells += `<rect x="${col * scale}" y="${row * scale}" width="${scale}" height="${scale}" fill="currentColor"/>`;
+        }
+      }
+    }
+    deviceCodeQr.innerHTML =
+      `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" class="text-paper-50" xmlns="http://www.w3.org/2000/svg">${cells}</svg>`;
+  }
+
+  let deviceCodeExpirerId: ReturnType<typeof setInterval> | null = null;
+
+  function startExpiryCountdown(expiresIn: number): void {
+    if (deviceCodeExpirerId) clearInterval(deviceCodeExpirerId);
+    let remaining = expiresIn;
+    function tick(): void {
+      if (!deviceCodeExpiry) return;
+      if (remaining <= 0) {
+        deviceCodeExpiry.textContent = 'Código caducado. Genera uno nuevo.';
+        if (deviceCodeExpirerId) clearInterval(deviceCodeExpirerId);
+        return;
+      }
+      const m = Math.floor(remaining / 60);
+      const s = String(remaining % 60).padStart(2, '0');
+      deviceCodeExpiry.textContent = `Caduca en ${m}:${s}`;
+      remaining--;
+    }
+    tick();
+    deviceCodeExpirerId = setInterval(tick, 1000);
+  }
+
+  deviceCodeBtn?.addEventListener('click', async () => {
+    const isOpen = deviceCodeBtn.getAttribute('aria-expanded') === 'true';
+    if (isOpen) {
+      deviceCodePanel?.classList.add('hidden');
+      deviceCodeBtn.setAttribute('aria-expanded', 'false');
+      if (deviceCodeExpirerId) clearInterval(deviceCodeExpirerId);
+      return;
+    }
+
+    if (!card.id || !card.secret) return;
+
+    if (deviceCodeError) deviceCodeError.classList.add('hidden');
+    if (deviceCodeValue) deviceCodeValue.textContent = '…';
+    deviceCodePanel?.classList.remove('hidden');
+    deviceCodeBtn.setAttribute('aria-expanded', 'true');
+
+    const result = await requestDeviceCode(card.id, card.secret);
+    if (!result) {
+      if (deviceCodeError) {
+        deviceCodeError.textContent = 'No se pudo generar el código. Inténtalo de nuevo.';
+        deviceCodeError.classList.remove('hidden');
+      }
+      if (deviceCodeValue) deviceCodeValue.textContent = '';
+      return;
+    }
+
+    if (deviceCodeValue) deviceCodeValue.textContent = result.code;
+    renderDeviceCodeQr(result.code);
+    startExpiryCountdown(result.expiresIn);
+  });
 </script>
