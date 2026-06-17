@@ -47,7 +47,7 @@ const ogImageUrl = new URL(ogImage, 'https://bingo.gruxon.com').href;
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="sitemap" href="/sitemap.xml" />
     <title>{title}</title>
-    <script defer src="https://gabi.pw/script.js" data-website-id="15b24371-a7c1-4039-a2ae-6a43213cc8ff"></script>
+    {import.meta.env.PROD && <script defer src="https://gabi.pw/script.js" data-website-id="15b24371-a7c1-4039-a2ae-6a43213cc8ff"></script>}
   </head>
   <body class="min-h-dvh bg-felt-900 text-paper-50 antialiased">
     <slot />
