@@ -144,6 +144,15 @@ import CertificateModal from '../components/CertificateModal.astro';
       Compartir cómo voy
     </button>
 
+    <button
+      id="gallery-toggle"
+      type="button"
+      aria-pressed="false"
+      class="mt-2 hidden w-full rounded-xl border border-paper-300/20 px-4 py-2 text-xs text-paper-300/60 transition-colors hover:border-paper-300/35 hover:text-paper-300/80"
+    >
+      Ocultar de la galería pública
+    </button>
+
     <noscript>
       <p
         class="mt-4 rounded-xl border border-amber-300/40 bg-amber-300/10 px-4 py-3 text-center text-sm text-amber-200"
@@ -436,6 +445,7 @@ import CertificateModal from '../components/CertificateModal.astro';
     registerCard,
     reportCompletion,
     requestRecovery,
+    setGalleryHidden,
     syncAlias,
     syncMarks,
     verificationUrl,
@@ -497,6 +507,8 @@ import CertificateModal from '../components/CertificateModal.astro';
   const shareHint = $<HTMLParagraphElement>('#share-hint');
   const shareWhatsappButton = $<HTMLButtonElement>('#share-whatsapp');
   const shareCardButton = $<HTMLButtonElement>('#share-card');
+  const galleryToggleBtn = $<HTMLButtonElement>('#gallery-toggle');
+  let galleryHidden = false;
   const emailForm = $<HTMLFormElement>('#email-form');
   const emailInput = $<HTMLInputElement>('#email-input');
   const newsletterCheck = $<HTMLInputElement>('#newsletter-check');
@@ -733,6 +745,9 @@ import CertificateModal from '../components/CertificateModal.astro';
         card.completedAt = receipt.completedAt;
         saveCard(card);
         refreshCertificate();
+        if (receipt.nickError) {
+          showToast(`${receipt.nickError}. Elige otro nombre para el diploma.`);
+        }
       });
     } else if (wasInvalidated) {
       // Un-marked within grace window, bingo no longer holds: revoke diploma.
@@ -784,6 +799,16 @@ import CertificateModal from '../components/CertificateModal.astro';
 
     // Diploma shown while completedAt is set (revoked on un-mark within grace, sealed after lock).
     showCertButton.classList.toggle('hidden', card.completedAt === null);
+
+    // Gallery toggle: only shown for completed cards with a secret (owned).
+    const isCompleted = card.completedAt !== null;
+    galleryToggleBtn.classList.toggle('hidden', !isCompleted || card.secret === null);
+    if (isCompleted) {
+      galleryToggleBtn.setAttribute('aria-pressed', String(galleryHidden));
+      galleryToggleBtn.textContent = galleryHidden
+        ? 'Mostrar en la galería pública'
+        : 'Ocultar de la galería pública';
+    }
 
     // Live sharing needs a registered card (owner secret in hand).
     shareCardButton.classList.toggle('hidden', card.secret === null);
@@ -855,6 +880,20 @@ import CertificateModal from '../components/CertificateModal.astro';
       showToast('Enlace copiado. Que sufran contigo.');
     } catch {
       showToast(url);
+    }
+  });
+
+  // Gallery visibility toggle: hide/show this diploma in the public gallery.
+  galleryToggleBtn.addEventListener('click', async () => {
+    if (!card.secret || !card.completedAt) return;
+    const next = !galleryHidden;
+    const ok = await setGalleryHidden(card.id, card.secret, next);
+    if (ok) {
+      galleryHidden = next;
+      syncStatus();
+      showToast(next ? 'Diploma oculto de la galería.' : 'Diploma visible en la galería.');
+    } else {
+      showToast('No se pudo cambiar la visibilidad. Inténtalo de nuevo.');
     }
   });
 

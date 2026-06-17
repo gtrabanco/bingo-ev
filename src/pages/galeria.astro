@@ -1,0 +1,392 @@
+---
+export const prerender = false;
+
+import Layout from '../layouts/Layout.astro';
+import { env } from 'cloudflare:workers';
+import { VEHICLE_TYPES, type VehicleType, type Honorific } from '../lib/card';
+import { queryGallery, HONORIFIC_KEYS, type GalleryEntry } from '../lib/gallery';
+import { HONORIFICS, FALLBACK_NICK } from '../lib/certificate-design';
+
+const VEHICLE_LABELS: Record<string, string> = {
+  bev_tesla: 'Tesla',
+  bev_renault: 'Renault',
+  bev_vw: 'Volkswagen',
+  bev_hyundai: 'Hyundai',
+  bev_kia: 'Kia',
+  bev_byd: 'BYD',
+  bev_cupra: 'SEAT / Cupra',
+  bev_peugeot: 'Peugeot / Citroën / Opel',
+  bev_nissan: 'Nissan',
+  bev_bmw: 'BMW / MINI',
+  bev_audi: 'Audi',
+  bev_mercedes: 'Mercedes',
+  bev_volvo: 'Volvo',
+  bev_other: 'Otra eléctrica',
+  phev: 'Híbrido enchufable',
+  ice: 'Combustión',
+};
+
+const HONORIFIC_COLORS: Record<Honorific, string> = {
+  resignado: '#11503c',
+  granujilla: '#c07820',
+  sinverguenza: '#b02e22',
+};
+
+// Read URL filter params — used for both server render and no-JS fallback.
+const urlParams = Astro.url.searchParams;
+const rawHonorific = urlParams.get('honorific');
+const rawVehicle = urlParams.get('vehicle');
+const validHonorific: Honorific | null =
+  rawHonorific && (HONORIFIC_KEYS as string[]).includes(rawHonorific)
+    ? (rawHonorific as Honorific)
+    : null;
+const validVehicle: VehicleType | null =
+  rawVehicle && (VEHICLE_TYPES as readonly string[]).includes(rawVehicle)
+    ? (rawVehicle as VehicleType)
+    : null;
+
+let items: GalleryEntry[] = [];
+let hasMore = false;
+
+try {
+  ({ items, hasMore } = await queryGallery(env.DB, {
+    honorific: validHonorific,
+    vehicle: validVehicle,
+  }));
+} catch {
+  // D1 unreachable: degrade to empty gallery — the game remains unaffected.
+}
+
+function formatDate(iso: string): string {
+  return new Intl.DateTimeFormat('es-ES', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(iso));
+}
+
+// Build filter links (used in no-JS fallback and initial render).
+function filterUrl(honorific: string | null, vehicle: string | null): string {
+  const p = new URLSearchParams();
+  if (honorific) p.set('honorific', honorific);
+  if (vehicle) p.set('vehicle', vehicle);
+  const qs = p.toString();
+  return `/galeria${qs ? `?${qs}` : ''}`;
+}
+---
+
+<Layout
+  title="Galería de diplomas — El Bingo del Cargador"
+  description="Muro de la vergüenza ajena (y propia): diplomas completados de El Bingo del Cargador, ordenados del más reciente al más antiguo."
+>
+  <main class="mx-auto w-full max-w-5xl px-4 pt-10 pb-16 sm:pt-14">
+    <!-- Header -->
+    <div class="mb-8">
+      <a
+        href="/"
+        class="mb-4 inline-block text-xs text-paper-300/50 hover:text-paper-300/80 transition-colors"
+        >← Volver al juego</a
+      >
+      <h1 class="text-2xl font-black uppercase tracking-tight text-amber-300 sm:text-3xl">
+        Galería de diplomas
+      </h1>
+      <p class="mt-1 text-sm text-paper-300/60">
+        Los que lo lograron. Algunos con más dignidad que otros.
+      </p>
+    </div>
+
+    <!-- Filters -->
+    <form
+      id="gallery-filters"
+      method="get"
+      action="/galeria"
+      class="mb-8 flex flex-wrap items-center gap-3"
+    >
+      <!-- Honorific filter -->
+      <div class="flex flex-wrap gap-2" role="group" aria-label="Filtrar por comportamiento">
+        <a
+          href={filterUrl(null, validVehicle)}
+          data-filter-honorific=""
+          class={`filter-btn ${!validHonorific ? 'filter-btn-active' : ''}`}
+          aria-pressed={!validHonorific ? 'true' : 'false'}
+        >Todos</a>
+        {
+          HONORIFIC_KEYS.map((h) => (
+            <a
+              href={filterUrl(h, validVehicle)}
+              data-filter-honorific={h}
+              class={`filter-btn ${validHonorific === h ? 'filter-btn-active' : ''}`}
+              aria-pressed={validHonorific === h ? 'true' : 'false'}
+              style={validHonorific === h ? `color: ${HONORIFIC_COLORS[h]}; border-color: ${HONORIFIC_COLORS[h]};` : ''}
+            >
+              {HONORIFICS[h].title}
+            </a>
+          ))
+        }
+      </div>
+
+      <!-- Vehicle filter -->
+      <select
+        name="vehicle"
+        id="vehicle-filter"
+        class="rounded border border-paper-300/20 bg-felt-950/60 px-3 py-1.5 text-xs text-paper-300/80 focus:outline-none focus:ring-1 focus:ring-amber-300/50"
+        aria-label="Filtrar por tipo de vehículo"
+      >
+        <option value="">Todos los vehículos</option>
+        {
+          VEHICLE_TYPES.map((v) => (
+            <option value={v} selected={validVehicle === v}>
+              {VEHICLE_LABELS[v] ?? v}
+            </option>
+          ))
+        }
+      </select>
+
+      <noscript>
+        <button
+          type="submit"
+          class="rounded border border-paper-300/30 bg-felt-800/60 px-3 py-1.5 text-xs text-paper-300/80"
+          >Aplicar</button
+        >
+      </noscript>
+    </form>
+
+    <!-- Entry grid -->
+    <div
+      id="gallery-grid"
+      class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+      aria-live="polite"
+      aria-label="Diplomas"
+    >
+      {
+        items.length === 0 ? (
+          <p
+            id="gallery-empty"
+            class="col-span-full py-16 text-center text-sm text-paper-300/50"
+          >
+            {validHonorific || validVehicle
+              ? 'Ningún diploma cumple ese filtro todavía. Toca esperar más víctimas.'
+              : 'Aún no hay diplomas. Sé el primero en completar tu cartón.'}
+          </p>
+        ) : (
+          items.map((entry) => (
+            <a
+              href={`/v/${entry.id}`}
+              class="gallery-card group block rounded-lg border border-paper-300/10 bg-felt-950/40 p-4 transition-colors hover:border-paper-300/25 hover:bg-felt-950/60"
+              style={`border-left: 3px solid ${HONORIFIC_COLORS[entry.honorific]};`}
+              data-entry-id={entry.id}
+            >
+              <p
+                class="text-xs font-semibold uppercase tracking-widest"
+                style={`color: ${HONORIFIC_COLORS[entry.honorific]};`}
+              >
+                {HONORIFICS[entry.honorific].title}
+              </p>
+              <p class="mt-1.5 truncate font-bold text-paper-50">
+                {entry.nick ?? FALLBACK_NICK}
+              </p>
+              <p class="mt-1 text-xs text-paper-300/50">
+                {formatDate(entry.completedAt)}
+                {entry.vehicleType ? ` · ${VEHICLE_LABELS[entry.vehicleType] ?? entry.vehicleType}` : ''}
+              </p>
+            </a>
+          ))
+        )
+      }
+    </div>
+
+    <!-- Load more -->
+    {
+      hasMore && (
+        <div class="mt-8 flex justify-center">
+          <button
+            id="load-more"
+            data-page="2"
+            class="rounded border border-paper-300/25 bg-felt-800/40 px-6 py-2.5 text-sm text-paper-300/80 transition-colors hover:bg-felt-800/70 disabled:opacity-40"
+          >
+            Cargar más
+          </button>
+        </div>
+      )
+    }
+    {!hasMore && items.length > 0 && (
+      <p class="mt-10 text-center text-xs text-paper-300/30">
+        Todos los diplomas mostrados. Nada más que ver aquí.
+      </p>
+    )}
+  </main>
+</Layout>
+
+<style>
+  .filter-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    border: 1px solid rgb(221 207 169 / 0.2);
+    font-size: 0.75rem;
+    color: rgb(221 207 169 / 0.7);
+    text-decoration: none;
+    transition: border-color 150ms, color 150ms;
+    white-space: nowrap;
+  }
+  .filter-btn:hover {
+    border-color: rgb(221 207 169 / 0.4);
+    color: rgb(221 207 169 / 0.9);
+  }
+  .filter-btn-active {
+    border-color: rgb(251 191 36 / 0.5);
+    color: rgb(251 191 36);
+  }
+</style>
+
+<script>
+  import { fetchGallery, type GalleryEntry } from '../lib/api';
+
+  const HONORIFIC_COLORS: Record<string, string> = {
+    resignado: '#11503c',
+    granujilla: '#c07820',
+    sinverguenza: '#b02e22',
+  };
+
+  const HONORIFIC_TITLES: Record<string, string> = {
+    resignado: '«Resignado Sufridor»',
+    granujilla: '«Granujilla»',
+    sinverguenza: '«Sinvergüenza»',
+  };
+
+  const VEHICLE_LABELS: Record<string, string> = {
+    bev_tesla: 'Tesla', bev_renault: 'Renault', bev_vw: 'Volkswagen',
+    bev_hyundai: 'Hyundai', bev_kia: 'Kia', bev_byd: 'BYD',
+    bev_cupra: 'SEAT / Cupra', bev_peugeot: 'Peugeot / Citroën / Opel',
+    bev_nissan: 'Nissan', bev_bmw: 'BMW / MINI', bev_audi: 'Audi',
+    bev_mercedes: 'Mercedes', bev_volvo: 'Volvo', bev_other: 'Otra eléctrica',
+    phev: 'Híbrido enchufable', ice: 'Combustión',
+  };
+
+  const FALLBACK_NICK = 'Alguien con mucha paciencia';
+
+  function formatDate(iso: string): string {
+    return new Intl.DateTimeFormat('es-ES', {
+      day: 'numeric', month: 'short', year: 'numeric',
+    }).format(new Date(iso));
+  }
+
+  function escapeHtml(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function entryHtml(entry: GalleryEntry): string {
+    const color = HONORIFIC_COLORS[entry.honorific] ?? '#11503c';
+    const title = HONORIFIC_TITLES[entry.honorific] ?? entry.honorific;
+    const nick = escapeHtml(entry.nick ?? FALLBACK_NICK);
+    const vehicle = entry.vehicleType ? ` · ${VEHICLE_LABELS[entry.vehicleType] ?? entry.vehicleType}` : '';
+    return `<a href="/v/${entry.id}"
+      class="gallery-card group block rounded-lg border border-paper-300/10 bg-felt-950/40 p-4 transition-colors hover:border-paper-300/25 hover:bg-felt-950/60"
+      style="border-left: 3px solid ${color};"
+      data-entry-id="${entry.id}">
+      <p class="text-xs font-semibold uppercase tracking-widest" style="color: ${color};">${title}</p>
+      <p class="mt-1.5 truncate font-bold text-paper-50">${nick}</p>
+      <p class="mt-1 text-xs text-paper-300/50">${formatDate(entry.completedAt)}${vehicle}</p>
+    </a>`;
+  }
+
+  function emptyHtml(filtered: boolean): string {
+    const msg = filtered
+      ? 'Ningún diploma cumple ese filtro todavía. Toca esperar más víctimas.'
+      : 'Aún no hay diplomas. Sé el primero en completar tu cartón.';
+    return `<p id="gallery-empty" class="col-span-full py-16 text-center text-sm text-paper-300/50">${msg}</p>`;
+  }
+
+  const grid = document.getElementById('gallery-grid')!;
+  const loadMoreBtn = document.getElementById('load-more') as HTMLButtonElement | null;
+  const vehicleSelect = document.getElementById('vehicle-filter') as HTMLSelectElement;
+  const filterBtns = document.querySelectorAll<HTMLAnchorElement>('[data-filter-honorific]');
+
+  // Current filter state (synced from URL on init).
+  const params = new URLSearchParams(location.search);
+  let currentHonorific = params.get('honorific') ?? '';
+  let currentVehicle = params.get('vehicle') ?? '';
+
+  // Apply honorific filter client-side (intercept link clicks).
+  filterBtns.forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      currentHonorific = btn.dataset.filterHonorific ?? '';
+      applyFilters(true);
+    });
+  });
+
+  // Apply vehicle filter on change.
+  vehicleSelect.addEventListener('change', () => {
+    currentVehicle = vehicleSelect.value;
+    applyFilters(true);
+  });
+
+  async function applyFilters(resetPage: boolean): Promise<void> {
+    if (resetPage) {
+      if (loadMoreBtn) {
+        loadMoreBtn.dataset.page = '2';
+        loadMoreBtn.style.display = 'none';
+      }
+    }
+
+    // Update URL without reload.
+    const qs = new URLSearchParams();
+    if (currentHonorific) qs.set('honorific', currentHonorific);
+    if (currentVehicle) qs.set('vehicle', currentVehicle);
+    history.replaceState(null, '', `/galeria${qs.size ? `?${qs}` : ''}`);
+
+    // Update active filter button styles.
+    filterBtns.forEach((btn) => {
+      const isActive = btn.dataset.filterHonorific === currentHonorific;
+      btn.classList.toggle('filter-btn-active', isActive);
+      btn.setAttribute('aria-pressed', String(isActive));
+      if (isActive && currentHonorific) {
+        const color = HONORIFIC_COLORS[currentHonorific];
+        btn.style.color = color ?? '';
+        btn.style.borderColor = color ?? '';
+      } else {
+        btn.style.color = '';
+        btn.style.borderColor = '';
+      }
+    });
+
+    const data = await fetchGallery({
+      honorific: currentHonorific || undefined,
+      vehicle: currentVehicle || undefined,
+    });
+
+    grid.innerHTML = data.items.length === 0
+      ? emptyHtml(!!(currentHonorific || currentVehicle))
+      : data.items.map(entryHtml).join('');
+
+    if (loadMoreBtn) {
+      loadMoreBtn.style.display = data.hasMore ? '' : 'none';
+      loadMoreBtn.dataset.page = '2';
+    }
+  }
+
+  // Load more (append next page).
+  loadMoreBtn?.addEventListener('click', async () => {
+    const page = parseInt(loadMoreBtn.dataset.page ?? '2', 10);
+    loadMoreBtn.disabled = true;
+
+    const data = await fetchGallery({
+      page,
+      honorific: currentHonorific || undefined,
+      vehicle: currentVehicle || undefined,
+    });
+
+    const empty = grid.querySelector('#gallery-empty');
+    if (empty) empty.remove();
+
+    data.items.forEach((entry) => {
+      grid.insertAdjacentHTML('beforeend', entryHtml(entry));
+    });
+
+    loadMoreBtn.dataset.page = String(page + 1);
+    loadMoreBtn.disabled = false;
+    if (!data.hasMore) loadMoreBtn.style.display = 'none';
+  });
+</script>

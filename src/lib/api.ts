@@ -11,6 +11,9 @@ export interface RegisteredCard {
 
 export interface CompletionReceipt {
   completedAt: string;
+  // Set when the submitted nick was blocked (reserved/nsfw/pattern) and nulled
+  // server-side. The win is still recorded; prompt the player to choose a new nick.
+  nickError?: string;
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T | null> {
@@ -270,10 +273,72 @@ export function fetchGroupStandings(
   );
 }
 
+// Toggles the owner's diploma visibility in the public gallery.
+// Returns true on success, false on any failure (offline-first: the game keeps working).
+export async function setGalleryHidden(
+  cardId: string,
+  secret: string,
+  hidden: boolean,
+): Promise<boolean> {
+  try {
+    const res = await fetch(
+      `/api/cards/${cardId}/gallery`,
+      { ...jsonInit({ secret, hidden }), signal: AbortSignal.timeout(4000) },
+    );
+    return res.ok || res.status === 204;
+  } catch {
+    return false;
+  }
+}
+
 export function verificationUrl(cardId: string): string {
   return `${location.origin}/v/${cardId}`;
 }
 
 export function cardShareUrl(cardId: string): string {
   return `${location.origin}/c/${cardId}`;
+}
+
+export type { GalleryEntry } from './gallery';
+
+export interface GalleryResponse {
+  items: GalleryEntry[];
+  count: number;
+  counts: {
+    honorific: Record<string, number>;
+    vehicle: Record<string, number>;
+  };
+  hasMore: boolean;
+  page: number;
+}
+
+export interface GalleryParams {
+  page?: number;
+  honorific?: string;
+  vehicle?: string;
+}
+
+const GALLERY_EMPTY: GalleryResponse = {
+  items: [],
+  total: 0,
+  counts: { honorific: {}, vehicle: {} },
+  hasMore: false,
+  page: 1,
+};
+
+// Fetches a page of publicly-listed diplomas. Degrades to an empty result
+// when the Worker is unreachable — the gallery disappears, the game doesn't.
+export async function fetchGallery(params: GalleryParams = {}): Promise<GalleryResponse> {
+  try {
+    const qs = new URLSearchParams();
+    if (params.page && params.page > 1) qs.set('page', String(params.page));
+    if (params.honorific) qs.set('honorific', params.honorific);
+    if (params.vehicle) qs.set('vehicle', params.vehicle);
+    const path = `/api/gallery${qs.size ? `?${qs}` : ''}`;
+    const response = await fetch(path, { signal: AbortSignal.timeout(4000) });
+    if (!response.ok) return GALLERY_EMPTY;
+    return (await response.json()) as GalleryResponse;
+  } catch {
+    return GALLERY_EMPTY;
+  }
 }

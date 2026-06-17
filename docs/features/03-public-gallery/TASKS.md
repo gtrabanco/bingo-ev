@@ -1,0 +1,83 @@
+# 03 — public-gallery · TASKS
+
+> Concrete checklist per phase. Check off as completed during `execute-phase`.
+> Gate = `npm run build` green before each commit.
+
+## P1 — Schema + read API ✅
+- [x] `migrations/0010_gallery.sql` adds `gallery_hidden INTEGER NOT NULL DEFAULT 0`.
+- [x] Apply locally: `npx wrangler d1 migrations apply ev-bingo --local`.
+- [x] `src/pages/api/gallery.ts`: `export const prerender = false`, `import { env }
+      from 'cloudflare:workers'`.
+- [x] SQL: `completed_at IS NOT NULL AND gallery_hidden = 0`, optional `vehicle_type
+      = ?`, `ORDER BY completed_at DESC`, bounded `LIMIT/OFFSET` over-fetch.
+- [x] Worker computes honorific per row via `honorificFor(cells, marks)`; applies
+      honorific filter; suppresses wordlist-matching nicks; builds total + counts.
+- [x] Response shape `{ items, total, counts: { honorific, vehicle }, hasMore }`;
+      `GalleryEntry = { id, nick, completedAt, honorific, vehicleType }` — **no
+      marks/cells**.
+- [x] Validate/clamp `page`, `honorific`, `vehicle` query params; cap limit/offset.
+- [x] `src/lib/api.ts`: `fetchGallery(params)` + types; degrade to empty on
+      timeout/failure (4 s `AbortSignal.timeout`).
+- [x] `src/data/blocklist.json` (two categories: `reserved` + `nsfw`) — created in
+      P1 since the gallery endpoint needs it for read-time suppression (write-time
+      enforcement wired in P3).
+- [x] `src/lib/blocklist.ts`: `checkNick()` with pattern checks (social `@`, domain)
+      then wordlist checks (`reserved`/`nsfw`); `BLOCK_MESSAGES` exported for P3.
+- [x] Gate green; manual endpoint check (filters on/off; no marks/cells in payload;
+      reserved nick suppressed at read time).
+
+## P2 — Gallery page ✅
+- [x] `src/pages/galeria.astro` (`prerender = false`) server-renders first page.
+- [x] Entry card: honorific seal + tier label (reuse `certificate-design.ts`), nick
+      or fallback, completion date, vehicle_type when set; links to `/v/{id}`.
+- [x] Client filter controls (honorific, vehicle) + pagination via `fetchGallery`.
+- [x] Empty state copy (es-ES, dry tone).
+- [x] SEO: title/description/OG per `docs/frontend/SEO.md`; add `/galeria` to sitemap.
+- [x] Gate green; Preview-MCP pass: populated ✓, filtered (granujilla → 2 entries) ✓,
+      no console errors ✓.
+
+## P3 — Owner hide + moderation + privacy ✅
+- [x] `src/pages/api/cards/[id]/gallery.ts` (`POST`, `prerender = false`): verify
+      exists + completed + secret matches; set `gallery_hidden` from `{hidden}`.
+- [x] `src/lib/api.ts`: `setGalleryHidden(id, secret, hidden)` → `false` on failure.
+- [x] `index.astro`: accessible hide/unhide toggle on owner's completed-card view,
+      reflecting current state, using stored secret.
+- [x] `src/data/blocklist.json` with two categories: `reserved` (owner-name-similar:
+      "gabriel", "trabanco", "gtrabanco", "gruxon", …) and `nsfw` (es-ES slurs/profanity).
+- [x] `src/lib/blocklist.ts`: `checkNick(nick)` returns
+      `{ blocked: false } | { blocked: true, reason: 'reserved' | 'nsfw' | 'pattern' }`.
+      Evaluation order:
+      1. Pattern checks (on raw nick, no normalization):
+         - `/@/` → `reason: 'pattern'` (`"Nombre no permitido"`)
+         - `/\.[a-z]{2,}(\/|$)/i` → `reason: 'pattern'` (`"Nombre no permitido"`)
+      2. Wordlist checks (on normalized nick: trim → lowercase → NFD → strip diacritics):
+         - `reserved` terms → `reason: 'reserved'` (`"Nombre reservado"`)
+         - `nsfw` terms → `reason: 'nsfw'` (`"Nombre inapropiado"`)
+- [x] Verify the domain regex does NOT reject innocent dots: "Sr. Sufridor", "J.A.",
+      "Señor.Triste" (dot not followed by ≥2 letters + boundary).
+- [x] Apply blocklist at write time in `POST /api/cards/[id]/complete`: returns 200
+      with `{ nickError }` instead of 422 — see decisions.md for rationale.
+- [x] Confirm P1 gallery endpoint consumes the same check at read time (fallback
+      suppression for pre-existing matching nicks).
+- [x] `src/pages/privacidad.astro`: gallery section — purpose (discoverability of
+      completed diplomas), opt-out, how to hide, blocklist reason ("reservamos
+      algunos nombres para garantizar la integridad del sitio"), takedown contact
+      `hola@gtrabanco.com`.
+- [x] Gate; manual hide/unhide round-trip + blocked-nick suppression.
+
+## P4 — Hardening + review
+- [ ] `code-review`, `security-review`, `verify`, `tech-debt`.
+- [ ] `design-review`, `accessibility-review`, `brand-review` (tone + no-brand-names).
+- [ ] `web-perf` + SEO skill.
+- [ ] Walk all `Dev scenarios` (`gallery:populated|empty|hidden|blocked-nick|degraded|
+      filtered`).
+- [ ] Resolve or track every finding (no silent skips).
+
+## P5 — PR
+- [ ] Branch `feat/03-public-gallery`; one PR against `main`.
+- [ ] English PR body; `Closes #<issue>`; flag the migration for reviewers.
+- [ ] Gate green; merge when standalone-valuable and reviewed.
+
+## Tracking
+- [ ] Create the GitHub issue for this feature; record its number in the PR body.
+- [ ] Confirm roadmap entry `09 gallery-profiles` exists (deferred profile/counter).
