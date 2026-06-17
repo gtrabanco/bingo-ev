@@ -20,7 +20,7 @@ export const GET: APIRoute = async ({ params, request }) => {
   }
 
   const ip = request.headers.get('CF-Connecting-IP') ?? '';
-  if (!(await checkRateLimit('RATE_LIMITER_AUTH', ip))) {
+  if (!(await checkRateLimit('RATE_LIMITER_CREATE', ip))) {
     return new Response(null, { status: 429 });
   }
 
