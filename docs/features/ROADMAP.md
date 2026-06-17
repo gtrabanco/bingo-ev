@@ -23,6 +23,7 @@ every row must have a folder (or be `planned` with no folder yet).
 | 07 | `situations-total-count` | planned | — | XS: surface how many distinct desgracias exist in total (currently **43**, `src/data/situations.json`). Transparency + the denominator for the "X distinct" badge in `06`. |
 | 08 | `vehicle-brand` | done | — | XS: optional vehicle-type selector at alias registration (BEV brand / PHEV / ICE / skip). Stored as nullable enum in `cards.vehicle_type`. Feeds future analytics (04) and brand-partner positioning. Tesla UA → auto pre-select as convenience hint. |
 | 09 | `gallery-profiles` | planned | 03, 05 | Per-person public profile aggregating all of a player's completed diplomas, plus the "N bingos by the same player" counter on `03`'s gallery entries. Split out of `03` because it needs a durable cross-card identity the current model lacks (no accounts; alias/nick is never an identifier) — gated on `05 accounts`. |
+| 10 | `multi-card-conflict` | planned | 05 | **S.** Conflict resolution when a logged-in account already has an active card and a second one is being linked (e.g. mobile card + Tesla card both linked to the same Google account). Shows a dialog asking the player which card to keep; warns if either card is in a group; escalates to a confirmation screen if the card being discarded is the group owner (ownership auto-passes via settleDeparture). One active card per account; completed cards (diplomas) are exempt. SPEC: `10-multi-card-conflict/` |
 
 ## Status legend
 
