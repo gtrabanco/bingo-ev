@@ -11,6 +11,9 @@ export interface RegisteredCard {
 
 export interface CompletionReceipt {
   completedAt: string;
+  // Set when the submitted nick was blocked (reserved/nsfw/pattern) and nulled
+  // server-side. The win is still recorded; prompt the player to choose a new nick.
+  nickError?: string;
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T | null> {
@@ -268,6 +271,24 @@ export function fetchGroupStandings(
     `/api/groups/${groupId}/standings`,
     jsonInit({ cardId, secret }),
   );
+}
+
+// Toggles the owner's diploma visibility in the public gallery.
+// Returns true on success, false on any failure (offline-first: the game keeps working).
+export async function setGalleryHidden(
+  cardId: string,
+  secret: string,
+  hidden: boolean,
+): Promise<boolean> {
+  try {
+    const res = await fetch(
+      `/api/cards/${cardId}/gallery`,
+      { ...jsonInit({ secret, hidden }), signal: AbortSignal.timeout(4000) },
+    );
+    return res.ok || res.status === 204;
+  } catch {
+    return false;
+  }
 }
 
 export function verificationUrl(cardId: string): string {

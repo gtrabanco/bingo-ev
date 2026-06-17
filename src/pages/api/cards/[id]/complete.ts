@@ -8,6 +8,7 @@ import { env } from 'cloudflare:workers';
 import { expiryFromCreatedAt } from '../../../../lib/card';
 import { settleDeparture } from '../../../../lib/groups';
 import { checkRateLimit } from '../../../../lib/rate-limit';
+import { checkNick, BLOCK_MESSAGES } from '../../../../lib/blocklist';
 
 const ID_PATTERN = /^[0-9a-z]{8}$/;
 const CONTROL_CHARS = /[\u0000-\u001f\u007f]/g;
@@ -35,6 +36,7 @@ export const POST: APIRoute = async ({ params, request }) => {
 
   let nick: string | null = null;
   let secret: string | null = null;
+  let nickError: string | undefined;
   try {
     const body: unknown = await request.json();
     const data = body as { nick?: unknown; secret?: unknown };
@@ -46,6 +48,20 @@ export const POST: APIRoute = async ({ params, request }) => {
     // Nick is optional; a body-less or malformed request still completes.
   }
 
+  // Nick blocklist: check after sanitization. A blocked nick is nulled — the
+  // win is still recorded — and the error reason is returned so the client can
+  // prompt the player to choose a different name. Returns 200 (not 422) so the
+  // client's request() helper receives the completedAt and knows the win landed.
+  // (Diverges from SPEC which prescribed 422; 200+nickError avoids client changes
+  // to request() and keeps the offline-first receipt flow intact. See decisions.md.)
+  if (nick !== null) {
+    const check = checkNick(nick);
+    if (check.blocked) {
+      nickError = BLOCK_MESSAGES[check.reason];
+      nick = null;
+    }
+  }
+
   // Owner-only: rows issued with a secret require it. Legacy rows pass.
   if (row.secret !== null && row.secret !== secret) {
     return new Response(null, { status: 403 });
@@ -53,7 +69,7 @@ export const POST: APIRoute = async ({ params, request }) => {
 
   if (row.completed_at) {
     await db.prepare('UPDATE cards SET nick = ?2 WHERE id = ?1').bind(id, nick).run();
-    return Response.json({ completedAt: row.completed_at });
+    return Response.json({ completedAt: row.completed_at, ...(nickError ? { nickError } : {}) });
   }
 
   const now = new Date();
@@ -93,5 +109,5 @@ export const POST: APIRoute = async ({ params, request }) => {
     groupWinner = claim.meta.changes > 0;
   }
 
-  return Response.json({ completedAt, groupWinner });
+  return Response.json({ completedAt, groupWinner, ...(nickError ? { nickError } : {}) });
 };

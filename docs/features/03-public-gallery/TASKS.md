@@ -36,15 +36,15 @@
 - [x] Gate green; Preview-MCP pass: populated ✓, filtered (granujilla → 2 entries) ✓,
       no console errors ✓.
 
-## P3 — Owner hide + moderation + privacy
-- [ ] `src/pages/api/cards/[id]/gallery.ts` (`POST`, `prerender = false`): verify
+## P3 — Owner hide + moderation + privacy ✅
+- [x] `src/pages/api/cards/[id]/gallery.ts` (`POST`, `prerender = false`): verify
       exists + completed + secret matches; set `gallery_hidden` from `{hidden}`.
-- [ ] `src/lib/api.ts`: `setGalleryHidden(id, secret, hidden)` → `false` on failure.
-- [ ] `index.astro`: accessible hide/unhide toggle on owner's completed-card view,
+- [x] `src/lib/api.ts`: `setGalleryHidden(id, secret, hidden)` → `false` on failure.
+- [x] `index.astro`: accessible hide/unhide toggle on owner's completed-card view,
       reflecting current state, using stored secret.
-- [ ] `src/data/blocklist.json` with two categories: `reserved` (owner-name-similar:
+- [x] `src/data/blocklist.json` with two categories: `reserved` (owner-name-similar:
       "gabriel", "trabanco", "gtrabanco", "gruxon", …) and `nsfw` (es-ES slurs/profanity).
-- [ ] `src/lib/blocklist.ts`: `checkNick(nick)` returns
+- [x] `src/lib/blocklist.ts`: `checkNick(nick)` returns
       `{ blocked: false } | { blocked: true, reason: 'reserved' | 'nsfw' | 'pattern' }`.
       Evaluation order:
       1. Pattern checks (on raw nick, no normalization):
@@ -53,19 +53,17 @@
       2. Wordlist checks (on normalized nick: trim → lowercase → NFD → strip diacritics):
          - `reserved` terms → `reason: 'reserved'` (`"Nombre reservado"`)
          - `nsfw` terms → `reason: 'nsfw'` (`"Nombre inapropiado"`)
-- [ ] Verify the domain regex does NOT reject innocent dots: "Sr. Sufridor", "J.A.",
+- [x] Verify the domain regex does NOT reject innocent dots: "Sr. Sufridor", "J.A.",
       "Señor.Triste" (dot not followed by ≥2 letters + boundary).
-- [ ] Apply blocklist at write time in `POST /api/cards/[id]/complete`: test nick
-      before `UPDATE`; return 422 `{ error: "Nombre reservado" }` or
-      `{ error: "Nombre inapropiado" }` without saving the nick and without
-      blocking the win (`completed_at` is still set).
-- [ ] Confirm P1 gallery endpoint consumes the same check at read time (fallback
+- [x] Apply blocklist at write time in `POST /api/cards/[id]/complete`: returns 200
+      with `{ nickError }` instead of 422 — see decisions.md for rationale.
+- [x] Confirm P1 gallery endpoint consumes the same check at read time (fallback
       suppression for pre-existing matching nicks).
-- [ ] `src/pages/privacidad.astro`: gallery section — purpose (discoverability of
+- [x] `src/pages/privacidad.astro`: gallery section — purpose (discoverability of
       completed diplomas), opt-out, how to hide, blocklist reason ("reservamos
       algunos nombres para garantizar la integridad del sitio"), takedown contact
       `hola@gtrabanco.com`.
-- [ ] Gate; manual hide/unhide round-trip + blocked-nick suppression.
+- [x] Gate; manual hide/unhide round-trip + blocked-nick suppression.
 
 ## P4 — Hardening + review
 - [ ] `code-review`, `security-review`, `verify`, `tech-debt`.
