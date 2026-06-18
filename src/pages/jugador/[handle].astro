@@ -6,7 +6,7 @@ export const prerender = false;
 import { env } from 'cloudflare:workers';
 import Layout from '../../layouts/Layout.astro';
 import { type Honorific, VEHICLE_TYPES, type VehicleType } from '../../lib/card';
-import { HONORIFICS, FALLBACK_NICK } from '../../lib/certificate-design';
+import { HONORIFICS, HONORIFIC_COLORS, FALLBACK_NICK } from '../../lib/certificate-design';
 import { rowToEntry, HONORIFIC_KEYS, type GalleryRow, type GalleryEntry } from '../../lib/gallery';
 import { checkNick } from '../../lib/blocklist';
 
@@ -59,12 +59,6 @@ if (Astro.response.status !== 404) {
     // D1 unreachable — degrade to empty profile; game unaffected.
   }
 }
-
-const HONORIFIC_COLORS: Record<Honorific, string> = {
-  resignado: '#11503c',
-  granujilla: '#c07820',
-  sinverguenza: '#b02e22',
-};
 
 const honorificCounts: Record<Honorific, number> = {
   resignado: 0,

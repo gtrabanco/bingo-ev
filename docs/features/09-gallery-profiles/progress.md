@@ -35,6 +35,18 @@
 
 **Left open for P3:** gallery counter + opt-in UI in `index.astro` + `/privacidad` update.
 
+## P3 — Gallery counter + opt-in UI + privacy ✅
+
+- `src/lib/certificate-design.ts` — `HONORIFIC_COLORS` exported (derived from PALETTE; single source of truth).
+- `src/lib/gallery.ts` — `GalleryEntry` extended with `profileHandle`/`siblingCount`; `GalleryRow` gets optional `profile_handle?`/`sibling_count?` (profile page's unjoined query stays valid); `queryGallery` LEFT JOINs `accounts`, CASE-guarded correlated subquery for sibling count.
+- `src/pages/galeria.astro` — card restructured to `<div>` + inner `<a>` + profile-link footer (no nested `<a>`). Counter text logic: `>1` → "N bingos del mismo jugador", `=1` → `@handle`. Client `entryHtml` template updated to match. `HONORIFIC_COLORS` now imported from lib.
+- `src/pages/jugador/[handle].astro` — `HONORIFIC_COLORS` import switched to lib; local definition removed.
+- `src/pages/index.astro` — profile control added to logged-in account bar: three JS-toggled sub-states (none / active / form), `aria-live` error, `sr-only` label, focus management, Enter key, typed-error mapping. `setProfile` added to API import.
+- `src/pages/privacidad.astro` — "Perfil público de jugador" section added between accounts and gallery sections. Updated date.
+- Gate green.
+
+**Left open for P4:** hardening + companion review pass.
+
 ## P2 — Profile page ⏳
 
 _not started_

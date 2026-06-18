@@ -3,7 +3,7 @@
 // basis, retention and the data subject's rights. Static page.
 import Layout from '../layouts/Layout.astro';
 
-const updated = '18 de junio de 2026';
+const updated = '19 de junio de 2026';
 ---
 
 <Layout
@@ -167,6 +167,35 @@ const updated = '18 de junio de 2026';
           mientras has iniciado sesión; al cerrar sesión o transcurridos 90 días se elimina
           automáticamente. En nuestra base de datos solo se almacena el <em>hash</em>
           SHA-256 del token, no el token en sí.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-base font-bold text-paper-50 sm:text-lg">Perfil público de jugador</h2>
+        <p class="mt-1.5">
+          Si tienes una cuenta, puedes activar de forma <strong>totalmente voluntaria</strong> un
+          perfil público en <code class="text-xs">/jugador/&lt;tu-nombre&gt;</code> que agrupa
+          todos tus diplomas completados bajo el nombre que tú elijas. El perfil <strong>no se
+          crea automáticamente</strong>: tienes que activarlo expresamente y elegir un nombre de
+          perfil (un <em>handle</em>).
+        </p>
+        <p class="mt-1.5">
+          El nombre de perfil que ves en la página pública es <strong>el que tú eliges</strong>,
+          no tu nombre real de Google o X. Tu nombre de proveedor (<em>display name</em>) y tu
+          dirección de correo <strong>nunca aparecen en ninguna superficie pública</strong>.
+        </p>
+        <p class="mt-1.5">
+          Puedes desactivar el perfil en cualquier momento desde la barra de cuenta de la pantalla
+          principal (opción «desactivar»). Al desactivarlo, la URL del perfil devuelve un error 404
+          de inmediato y deja de aparecer en la galería; el nombre de perfil queda reservado para
+          ti hasta que elimines la cuenta. Un diploma que hayas ocultado de la galería tampoco
+          aparece en el perfil: la visibilidad es coherente en ambas superficies.
+        </p>
+        <p class="mt-1.5">
+          <strong>Base jurídica:</strong> tu consentimiento (art. 6.1.a RGPD), prestado al activar
+          el perfil. <strong>Finalidad:</strong> agregar tus diplomas bajo una identidad pública
+          de tu elección. <strong>Retención:</strong> hasta que desactives el perfil o elimines
+          tu cuenta.
         </p>
       </section>
 

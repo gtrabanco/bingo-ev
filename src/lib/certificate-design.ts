@@ -27,6 +27,13 @@ export const MONO = "ui-monospace, 'Courier New', monospace";
 
 // ── Honorifics ────────────────────────────────────────────────────────────────
 
+// Seal colors keyed by honorific — shared across gallery, profile page, and certificate renderers.
+export const HONORIFIC_COLORS: Record<Honorific, string> = {
+  resignado: PALETTE.frameGreen,
+  granujilla: PALETTE.honorificGranujilla,
+  sinverguenza: PALETTE.dauberRed,
+};
+
 export const HONORIFICS: Record<Honorific, { title: string; color: string; line: string }> = {
   resignado: {
     title: '«Resignado Sufridor»',

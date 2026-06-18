@@ -37,24 +37,28 @@
       No `display_name`/`email` anywhere in the template.
 - [x] Gate green.
 
-## P3 — Gallery counter + opt-in UI + privacy
-- [ ] Extend `GalleryEntry` (`src/lib/gallery.ts`) with `profileHandle: string|null`
-      and `siblingCount: number`.
-- [ ] `queryGallery`: LEFT JOIN `accounts` on `cards.account_id`; set
-      `profileHandle` only when `profile_public=1 AND public_handle IS NOT NULL`;
-      compute the account's listed-completed count.
-- [ ] `/galeria` entry UI: when `profileHandle` set, show "N bingos del mismo jugador"
-      → `/jugador/{handle}` (link without inflated counter when `siblingCount===1`).
-- [ ] `index.astro` account bar: "Perfil público" control — create (handle input +
-      activar), edit, disable toggle; inline typed-error copy; a11y (`aria-live`,
-      labelled input, focus).
-- [ ] `/privacidad`: opt-in public-profile subsection (handle not real name, how to
-      disable, consent basis, hidden-diploma note).
-- [ ] Centralize `HONORIFIC_COLORS` into `src/lib/certificate-design.ts` (export
-      alongside `HONORIFICS`) and import it in `galeria.astro` + `galeria.astro`
-      client `<script>` + `jugador/[handle].astro` — eliminates three duplicates.
-      Issue #12 closed; folded here because P3 already edits both files.
-- [ ] Gate green.
+## P3 — Gallery counter + opt-in UI + privacy ✅
+- [x] Extend `GalleryEntry` (`src/lib/gallery.ts`) with `profileHandle: string|null`
+      and `siblingCount: number`. `GalleryRow` gets optional `profile_handle?` and
+      `sibling_count?` so the profile page's query (no JOIN) keeps working unchanged.
+- [x] `queryGallery`: LEFT JOIN `accounts` on `cards.account_id`; `profile_handle`
+      set only when `profile_public=1 AND public_handle IS NOT NULL`; correlated
+      subquery for sibling count (CASE-guarded, only runs for public-profile rows).
+- [x] `/galeria` entry UI: restructured from `<a>` to `<div>` + inner `<a>` + profile
+      link footer (no nested `<a>`). Counter "N bingos del mismo jugador" when
+      `siblingCount > 1`; bare `@handle` link when `siblingCount === 1`.
+      Client-script `entryHtml` updated to match.
+- [x] `index.astro` account bar: profile control with three sub-states (none /
+      active / form); `aria-live="polite"` error paragraph; `sr-only` label; focus
+      management on form open; Enter key submits; disable/re-enable button during
+      save; typed-error mapping per D-exec-2.
+- [x] `/privacidad`: "Perfil público de jugador" section added (opt-in, handle ≠ real
+      name, how to disable, hidden-diploma note, consent basis, retention).
+      Updated `updated` date.
+- [x] `HONORIFIC_COLORS` exported from `certificate-design.ts` (derived from PALETTE
+      — single source of truth). Removed from `galeria.astro` frontmatter, galeria
+      client `<script>`, and `jugador/[handle].astro` (now imported from lib).
+- [x] Gate green.
 
 ## P4 — Hardening + review
 - [ ] Companion reviews: code-review, security-review, verify, tech-debt; design-review,
