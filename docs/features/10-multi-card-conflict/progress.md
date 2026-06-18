@@ -7,6 +7,10 @@
 - Updated `src/lib/api.ts`: `linkCard` return type changed `boolean` → `LinkCardResult` (exposes conflict payload); new `deleteAccountCard` helper.
 - Gate green.
 
-## P2 — UI (pending)
+## P2 — UI (done)
 
-Conflict dialog in `index.astro` (HTML + client script). Owner-confirmation second screen. Wire both resolution paths.
+- `src/pages/index.astro`: new `<dialog id="conflict-dialog">` with two sub-screens (main choice + owner confirmation). Client script: `ConflictCardInfo`/`ConflictPayload`/`ConflictState` types; `showConflictDialog`, `showOwnerConfirmation`, `resolveKeepIncoming`, `resolveKeepExisting` functions; element refs + event wiring for all four buttons.
+- `initAccountBar` updated: `linkCard` call now awaited; on `{ ok: false, conflict }` result → `showConflictDialog` is called and the function returns early (account-bar setup is paused until resolution).
+- Resolution paths: "Conservar este" → `deleteAccountCard(existing)` → re-`linkCard(incoming)` → reload. "Conservar el anterior" → `fetch DELETE /api/cards/:id` (with secret) → reload. Both paths degrade: errors shown inline, dialog stays open for retry.
+- Owner confirmation: shown before DELETE fires if `isGroupOwner: true` on the card being discarded. Cancel returns to main screen.
+- Gate green.
