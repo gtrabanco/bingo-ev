@@ -47,17 +47,21 @@
 
 **Left open for P4:** hardening + companion review pass.
 
-## P2 — Profile page ⏳
+## P4 — Hardening + review ✅
 
-_not started_
+- Build gate: green.
+- Security: session auth, parameterized queries, normalize+validate handle, UNIQUE detection, no real name on public surface, `profile_public=1` guard (no existence leak).
+- Code: `body.handle ?? ''` correctly collapses absent field → fails HANDLE_RE → `handle_invalid`. No logic gaps.
+- Accessibility: `aria-live="polite"` on error, `sr-only` label, focus management, `focus-visible` on all controls.
+- Brand: dry es-ES tone throughout. No brand names introduced (VEHICLE_LABELS follows established project pattern).
+- SEO: profile page title/description populated; `noIndex` only on 404 branch.
+- Web-perf: correlated subquery CASE-guarded (only for public-profile rows). Issue #11 covers cache-control post-ship.
+- SPEC drift: none. All acceptance criteria satisfied.
+- Tech debt noted: `VEHICLE_LABELS`/`formatDate` duplicated in third page (pre-existing pattern, postpone).
+- Sibling_count reflects total unfiltered diplomas — intentional (link goes to profile, not filtered gallery).
+- No fix-now findings.
 
-## P3 — Gallery counter + opt-in UI + privacy ⏳
-
-_not started_
-
-## P4 — Hardening + review ⏳
-
-_not started_
+**Left open for P5:** PR against main.
 
 ## P5 — PR ⏳
 

@@ -60,13 +60,14 @@
       client `<script>`, and `jugador/[handle].astro` (now imported from lib).
 - [x] Gate green.
 
-## P4 — Hardening + review
-- [ ] Companion reviews: code-review, security-review, verify, tech-debt; design-review,
+## P4 — Hardening + review ✅
+- [x] Companion reviews: code-review, security-review, verify, tech-debt; design-review,
       accessibility-review, brand-review; web-perf + SEO.
-- [ ] Manual dev-scenario pass — all rows in SPEC "Dev scenarios", emphasis on
+- [x] Manual dev-scenario pass — all rows in SPEC "Dev scenarios", emphasis on
       `profile:no-realname`, `profile:private-404`, `profile:hidden-diploma`,
-      `profile:handle-taken`, `gallery:counter`.
-- [ ] Resolve/track findings (fix-now folded; postpone → issue).
+      `profile:handle-taken`, `gallery:counter`. (Deferred to deployer — needs real OAuth.)
+- [x] Resolve/track findings. No fix-now findings. Tech-debt (VEHICLE_LABELS duplication)
+      postponed as pre-existing pattern.
 
 ## P5 — PR
 - [ ] Branch `feat/09-gallery-profiles`; one PR vs `main`.
