@@ -13,9 +13,16 @@
 
 **Left open for P1:** schema migration + profile write/read API.
 
-## P1 — Schema + profile API ⏳
+## P1 — Schema + profile API ✅
 
-_not started_
+- Migration `0013_profiles.sql`: `public_handle` (unique, nullable) + `profile_public` (default 0). Applied locally.
+- `POST /api/account/profile` — session-auth, normalize handle, slug regex, blocklist, unique-index → typed errors (`401`/`422 handle_invalid`/`422 <block-msg>`/`409 handle_taken`/`204`).
+- `GET /api/account` extended to return `publicHandle` + `profilePublic`.
+- `AccountInfo` extended; `setProfile(handle, isPublic)` added to `src/lib/api.ts`; degrades to `{ ok: false, error: 'offline' }`.
+- Handle validation inlined in the endpoint (no separate helper file needed — the logic is 4 lines).
+- Gate green.
+
+**Left open for P2:** profile page `/jugador/[handle].astro`.
 
 ## P2 — Profile page ⏳
 

@@ -12,12 +12,19 @@ export const GET: APIRoute = async ({ request }) => {
 
   const row = await env.DB
     .prepare(
-      `SELECT a.provider, a.display_name, a.email,
+      `SELECT a.provider, a.display_name, a.email, a.public_handle, a.profile_public,
               (SELECT COUNT(*) FROM cards WHERE account_id = a.id) AS card_count
        FROM accounts a WHERE a.id = ?`
     )
     .bind(session.accountId)
-    .first<{ provider: string; display_name: string | null; email: string | null; card_count: number }>();
+    .first<{
+      provider: string;
+      display_name: string | null;
+      email: string | null;
+      public_handle: string | null;
+      profile_public: number;
+      card_count: number;
+    }>();
 
   if (!row) return new Response(null, { status: 404 });
 
@@ -26,6 +33,8 @@ export const GET: APIRoute = async ({ request }) => {
     displayName: row.display_name,
     email: row.email,
     cardCount: row.card_count,
+    publicHandle: row.public_handle,
+    profilePublic: row.profile_public === 1,
   });
 };
 

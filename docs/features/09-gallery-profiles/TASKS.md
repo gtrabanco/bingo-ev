@@ -3,22 +3,22 @@
 > Concrete checklist per phase. Check off during `execute-phase`.
 > Gate = `npm run build` green before each commit.
 
-## P1 — Schema + profile API
-- [ ] `migrations/0013_profiles.sql`: `ALTER TABLE accounts ADD COLUMN public_handle TEXT;`
+## P1 — Schema + profile API ✅
+- [x] `migrations/0013_profiles.sql`: `ALTER TABLE accounts ADD COLUMN public_handle TEXT;`
       `ALTER TABLE accounts ADD COLUMN profile_public INTEGER NOT NULL DEFAULT 0;`
       `CREATE UNIQUE INDEX idx_accounts_public_handle ON accounts (public_handle);`
-- [ ] Apply locally: `npx wrangler d1 migrations apply ev-bingo --local`.
-- [ ] Handle validation helper (in `src/lib/gallery.ts` or a small `src/lib/profile.ts`):
+- [x] Apply locally: `npx wrangler d1 migrations apply ev-bingo --local`.
+- [x] Handle validation helper (in `src/pages/api/account/profile.ts`):
       normalize (`trim().toLowerCase()`, strip control chars, cap 24), slug regex
       `^[a-z0-9-]{3,24}$`, then `checkNick()` from `src/lib/blocklist.ts`.
-- [ ] `POST /api/account/profile.ts` (`prerender = false`): session-auth (`401`);
+- [x] `POST /api/account/profile.ts` (`prerender = false`): session-auth (`401`);
       body `{handle, public}`; validate → `422 handle_invalid`; blocklist → `422`
       with the matching message; `UPDATE accounts SET public_handle=?, profile_public=?`;
       unique violation → `409 handle_taken`; success `204`.
-- [ ] Extend `GET /api/account` to return `publicHandle`, `profilePublic`.
-- [ ] `src/lib/api.ts`: `setProfile(handle, isPublic)` → `{ok} | {error}`; extend the
+- [x] Extend `GET /api/account` to return `publicHandle`, `profilePublic`.
+- [x] `src/lib/api.ts`: `setProfile(handle, isPublic)` → `{ok} | {error}`; extend the
       account type with `publicHandle`/`profilePublic`. Degrade on failure.
-- [ ] Gate green.
+- [x] Gate green.
 
 ## P2 — Profile page
 - [ ] `src/pages/jugador/[handle].astro` (`prerender = false`): lookup
