@@ -45,8 +45,7 @@ export const POST: APIRoute = async ({ request }) => {
       .bind(handle, isPublic ? 1 : 0, session.accountId)
       .run();
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes('UNIQUE constraint failed')) {
+    if (err instanceof Error && /UNIQUE/i.test(err.message)) {
       return Response.json({ error: 'handle_taken' }, { status: 409 });
     }
     throw err;

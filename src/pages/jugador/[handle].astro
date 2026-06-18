@@ -21,10 +21,10 @@ if (!HANDLE_RE.test(handle)) {
 }
 
 interface AccountRow {
-  id: number;
+  id: string;
 }
 
-let accountId: number | null = null;
+let accountId: string | null = null;
 let items: GalleryEntry[] = [];
 
 if (Astro.response.status !== 404) {
