@@ -31,3 +31,21 @@ without adding value.
 **Impact on P3:** the UI must branch on both shapes: `error === 'handle_invalid'`
 or `error === 'handle_taken'` for those two; all other non-null errors are
 renderable verbatim (they are already Spanish user-facing strings).
+
+## D-exec-3 — Gallery sibling_count reflects total unfiltered diplomas (P3)
+
+**Decision:** the `sibling_count` computed in `queryGallery` counts all of an
+account's listed completed diplomas (`gallery_hidden = 0 AND completed_at IS NOT
+NULL`) without applying the blocklist filter that the display pipeline applies
+after fetching rows.
+
+**Why:** applying the blocklist inside a correlated SQL subquery would require a
+`NOT IN (...)` clause with every blocked nick, coupling the query to the blocklist
+at the DB layer. The divergence only materialises if a stored nick is *later*
+added to the blocklist — a rare event — and the consequence is a counter that
+reads slightly higher than the visible profile page count.
+
+**Accepted risk:** the link target is the profile page (which applies the
+blocklist correctly); the counter is informational, not authoritative. The
+discrepancy is self-correcting once the account owner updates their nick or the
+blocklisted card expires.
