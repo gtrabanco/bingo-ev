@@ -20,17 +20,22 @@
       account type with `publicHandle`/`profilePublic`. Degrade on failure.
 - [x] Gate green.
 
-## P2 — Profile page
-- [ ] `src/pages/jugador/[handle].astro` (`prerender = false`): lookup
+## P2 — Profile page ✅
+- [x] `src/pages/jugador/[handle].astro` (`prerender = false`): lookup
       `SELECT id FROM accounts WHERE public_handle=? AND profile_public=1`; no row →
-      404 (render 404 layout / `Astro.redirect(..., 404)` pattern used elsewhere).
-- [ ] Diploma aggregation: `SELECT … FROM cards WHERE account_id=? AND
+      `Astro.response.status = 404` + inline 404 content (handle unknown and private
+      are identical; no existence leak).
+- [x] Diploma aggregation: `SELECT … FROM cards WHERE account_id=? AND
       completed_at IS NOT NULL AND gallery_hidden=0 ORDER BY completed_at DESC`,
-      mapped via shared row→entry logic (honorific, blocklist nick suppression).
-- [ ] Render handle title, total count, honorific breakdown (seal colors reused),
+      mapped via `rowToEntry`/`checkNick` reused from `src/lib/gallery.ts`.
+- [x] Exported `GalleryRow` (type) and `rowToEntry` from `gallery.ts` — minimal
+      change; the profile page is the only new consumer. P3 gallery integration also
+      benefits.
+- [x] Render handle title, total count, honorific breakdown (seal colors reused),
       diploma grid → `/v/{id}`. Empty state (dry es-ES) when no listed diplomas.
-- [ ] OG/canonical meta; indexable. Never render `display_name`/`email`.
-- [ ] Gate green.
+- [x] OG/canonical meta; indexable. `noIndex={true}` only on the 404 variant.
+      No `display_name`/`email` anywhere in the template.
+- [x] Gate green.
 
 ## P3 — Gallery counter + opt-in UI + privacy
 - [ ] Extend `GalleryEntry` (`src/lib/gallery.ts`) with `profileHandle: string|null`

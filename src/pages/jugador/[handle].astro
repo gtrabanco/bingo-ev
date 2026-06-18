@@ -1,0 +1,213 @@
+---
+// Public player profile: /jugador/<handle>
+// 404 for unknown OR private handles — no existence leak.
+export const prerender = false;
+
+import { env } from 'cloudflare:workers';
+import Layout from '../../layouts/Layout.astro';
+import { type Honorific, VEHICLE_TYPES, type VehicleType } from '../../lib/card';
+import { HONORIFICS, FALLBACK_NICK } from '../../lib/certificate-design';
+import { rowToEntry, HONORIFIC_KEYS, type GalleryRow, type GalleryEntry } from '../../lib/gallery';
+import { checkNick } from '../../lib/blocklist';
+
+const HANDLE_RE = /^[a-z0-9-]{3,24}$/;
+
+const rawHandle = Astro.params.handle ?? '';
+const handle = rawHandle.trim().toLowerCase();
+
+// Unknown or malformed handle → same 404 as a private handle
+if (!HANDLE_RE.test(handle)) {
+  Astro.response.status = 404;
+}
+
+interface AccountRow {
+  id: number;
+}
+
+let accountId: number | null = null;
+let items: GalleryEntry[] = [];
+
+if (Astro.response.status !== 404) {
+  try {
+    const acct = await env.DB
+      .prepare('SELECT id FROM accounts WHERE public_handle = ? AND profile_public = 1')
+      .bind(handle)
+      .first<AccountRow>();
+
+    if (!acct) {
+      Astro.response.status = 404;
+    } else {
+      accountId = acct.id;
+
+      const rows = await env.DB
+        .prepare(
+          `SELECT id, nick, completed_at, marks, cells, vehicle_type
+           FROM cards
+           WHERE account_id = ? AND completed_at IS NOT NULL AND gallery_hidden = 0
+           ORDER BY completed_at DESC`
+        )
+        .bind(accountId)
+        .all<GalleryRow>();
+
+      for (const row of rows.results ?? []) {
+        if (row.nick !== null && checkNick(row.nick).blocked) continue;
+        const entry = rowToEntry(row);
+        if (entry) items.push(entry);
+      }
+    }
+  } catch {
+    // D1 unreachable — degrade to empty profile; game unaffected.
+  }
+}
+
+const HONORIFIC_COLORS: Record<Honorific, string> = {
+  resignado: '#11503c',
+  granujilla: '#c07820',
+  sinverguenza: '#b02e22',
+};
+
+const honorificCounts: Record<Honorific, number> = {
+  resignado: 0,
+  granujilla: 0,
+  sinverguenza: 0,
+};
+for (const entry of items) {
+  honorificCounts[entry.honorific]++;
+}
+
+const VEHICLE_LABELS: Record<string, string> = {
+  bev_tesla: 'Tesla',
+  bev_renault: 'Renault',
+  bev_vw: 'Volkswagen',
+  bev_hyundai: 'Hyundai',
+  bev_kia: 'Kia',
+  bev_byd: 'BYD',
+  bev_cupra: 'SEAT / Cupra',
+  bev_peugeot: 'Peugeot / Citroën / Opel',
+  bev_nissan: 'Nissan',
+  bev_bmw: 'BMW / MINI',
+  bev_audi: 'Audi',
+  bev_mercedes: 'Mercedes',
+  bev_volvo: 'Volvo',
+  bev_other: 'Otra eléctrica',
+  phev: 'Híbrido enchufable',
+  ice: 'Combustión',
+};
+
+function formatDate(iso: string): string {
+  return new Intl.DateTimeFormat('es-ES', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(iso));
+}
+
+const pageTitle = Astro.response.status === 404
+  ? 'Jugador no encontrado — El Bingo del Cargador'
+  : `${handle} — Perfil · El Bingo del Cargador`;
+
+const pageDescription = Astro.response.status === 404
+  ? 'Este perfil no existe o no es público.'
+  : `${items.length} ${items.length === 1 ? 'bingo certificado' : 'bingos certificados'} de ${handle} en El Bingo del Cargador.`;
+
+Astro.response.headers.set('cache-control', 'no-store');
+---
+
+{
+  Astro.response.status === 404 ? (
+    <Layout title={pageTitle} description={pageDescription} noIndex={true}>
+      <main class="mx-auto w-full max-w-2xl px-4 pt-20 pb-16 text-center">
+        <a
+          href="/galeria"
+          class="mb-8 inline-block text-xs text-paper-300/50 hover:text-paper-300/80 transition-colors"
+        >← Galería de diplomas</a>
+        <p class="text-6xl font-black text-paper-300/20">404</p>
+        <h1 class="mt-4 text-xl font-bold text-paper-50">
+          Este jugador no existe o no es público
+        </h1>
+        <p class="mt-3 text-sm text-paper-300/50">
+          O bien la URL es incorrecta, o bien este jugador ha decidido que prefiere el anonimato.
+          En cualquier caso, no hay nada que ver aquí.
+        </p>
+        <a
+          href="/galeria"
+          class="mt-8 inline-block rounded border border-paper-300/25 bg-felt-800/40 px-6 py-2.5 text-sm text-paper-300/80 transition-colors hover:bg-felt-800/70"
+        >Ver galería de diplomas</a>
+      </main>
+    </Layout>
+  ) : (
+    <Layout title={pageTitle} description={pageDescription}>
+      <main class="mx-auto w-full max-w-5xl px-4 pt-10 pb-16 sm:pt-14">
+        <!-- Header -->
+        <div class="mb-8">
+          <a
+            href="/galeria"
+            class="mb-4 inline-block text-xs text-paper-300/50 hover:text-paper-300/80 transition-colors"
+          >← Galería de diplomas</a>
+          <h1 class="text-2xl font-black uppercase tracking-tight text-amber-300 sm:text-3xl">
+            {handle}
+          </h1>
+          <p class="mt-1 text-sm text-paper-300/60">
+            {items.length === 0
+              ? 'Todavía no ha completado ningún bingo visible.'
+              : items.length === 1
+                ? '1 bingo certificado'
+                : `${items.length} bingos certificados`}
+          </p>
+        </div>
+
+        {/* Honorific breakdown — only when there are diplomas */}
+        {items.length > 0 && (
+          <div class="mb-8 flex flex-wrap gap-3">
+            {HONORIFIC_KEYS.filter((h) => honorificCounts[h] > 0).map((h) => (
+              <span
+                class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold"
+                style={`color: ${HONORIFIC_COLORS[h]}; border-color: ${HONORIFIC_COLORS[h]}40;`}
+              >
+                {HONORIFICS[h].title}
+                <span
+                  class="rounded-full px-1.5 py-0.5 text-[10px]"
+                  style={`background: ${HONORIFIC_COLORS[h]}20;`}
+                >
+                  {honorificCounts[h]}
+                </span>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Diploma grid */}
+        {items.length === 0 ? (
+          <p class="py-16 text-center text-sm text-paper-300/50">
+            Este jugador tiene el perfil activado pero aún no ha completado ningún bingo
+            que sea visible en la galería. Paciencia.
+          </p>
+        ) : (
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {items.map((entry) => (
+              <a
+                href={`/v/${entry.id}`}
+                class="group block rounded-lg border border-paper-300/10 bg-felt-950/40 p-4 transition-colors hover:border-paper-300/25 hover:bg-felt-950/60"
+                style={`border-left: 3px solid ${HONORIFIC_COLORS[entry.honorific]};`}
+              >
+                <p
+                  class="text-xs font-semibold uppercase tracking-widest"
+                  style={`color: ${HONORIFIC_COLORS[entry.honorific]};`}
+                >
+                  {HONORIFICS[entry.honorific].title}
+                </p>
+                <p class="mt-1.5 truncate font-bold text-paper-50">
+                  {entry.nick ?? FALLBACK_NICK}
+                </p>
+                <p class="mt-1 text-xs text-paper-300/50">
+                  {formatDate(entry.completedAt)}
+                  {entry.vehicleType ? ` · ${VEHICLE_LABELS[entry.vehicleType] ?? entry.vehicleType}` : ''}
+                </p>
+              </a>
+            ))}
+          </div>
+        )}
+      </main>
+    </Layout>
+  )
+}

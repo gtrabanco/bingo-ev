@@ -18,7 +18,7 @@ export interface GalleryEntry {
   vehicleType: VehicleType | null;
 }
 
-interface GalleryRow {
+export interface GalleryRow {
   id: string;
   nick: string | null;
   completed_at: string;
@@ -42,7 +42,7 @@ function parseVehicleType(v: string | null): VehicleType | null {
   return v && (VEHICLE_TYPES as readonly string[]).includes(v) ? (v as VehicleType) : null;
 }
 
-function rowToEntry(row: GalleryRow): GalleryEntry | null {
+export function rowToEntry(row: GalleryRow): GalleryEntry | null {
   let cells: (string | null)[];
   try {
     const parsed: unknown = JSON.parse(row.cells ?? 'null');

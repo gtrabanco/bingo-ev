@@ -24,6 +24,17 @@
 
 **Left open for P2:** profile page `/jugador/[handle].astro`.
 
+## P2 — Profile page ✅
+
+- `src/pages/jugador/[handle].astro` — SSR, `prerender = false`. Slug-validates the handle first (malformed → same 404). Looks up `accounts WHERE public_handle = ? AND profile_public = 1`; missing → `Astro.response.status = 404`, renders inline 404 with `noIndex` (private and unknown handles indistinguishable).
+- Diploma aggregation: `cards WHERE account_id = ? AND completed_at IS NOT NULL AND gallery_hidden = 0 ORDER BY completed_at DESC`. Rows filtered through `checkNick` (blocklist) + `rowToEntry` (now exported from `gallery.ts`).
+- Renders: handle as h1, count caption, honorific breakdown chips (colors matching the gallery seals), diploma grid → `/v/{id}`. Dry es-ES empty state when no listed diplomas.
+- OG + canonical populated; public profiles are indexable. `display_name`/`email` absent from all branches.
+- `GalleryRow` and `rowToEntry` exported from `gallery.ts` (previously unexported) — no behavior change in the gallery; export is additive.
+- Gate green.
+
+**Left open for P3:** gallery counter + opt-in UI in `index.astro` + `/privacidad` update.
+
 ## P2 — Profile page ⏳
 
 _not started_
