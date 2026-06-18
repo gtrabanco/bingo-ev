@@ -1,7 +1,14 @@
 ---
+export const prerender = false;
+
+import { env } from 'cloudflare:workers';
 import Layout from '../layouts/Layout.astro';
 import BingoCard from '../components/BingoCard.astro';
 import CertificateModal from '../components/CertificateModal.astro';
+
+const hasGoogle = Boolean(env.GOOGLE_OAUTH_CLIENT_ID);
+const hasX = Boolean(env.X_OAUTH_CLIENT_ID);
+const hasAnyProvider = hasGoogle || hasX;
 ---
 
 <Layout
@@ -30,23 +37,29 @@ import CertificateModal from '../components/CertificateModal.astro';
          - logged-out → two social login buttons.
          - logged-in  → brief identity chip + logout link.
          Hidden until JS resolves the session to avoid layout flash. -->
-    <div id="account-bar" class="mt-3 items-center justify-center gap-2 text-xs sm:text-sm hidden" aria-live="polite">
-      <!-- Logged-out state -->
-      <div id="account-loggedout" class="hidden items-center gap-2">
-        <span class="text-paper-300/60">Guardar mis diplomas:</span>
-        <button
-          id="btn-login-google"
-          type="button"
-          class="rounded-lg border border-paper-50/25 bg-felt-950/40 px-2.5 py-1 font-semibold text-paper-50 transition-colors hover:bg-paper-50/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
-          aria-label="Continuar con Google"
-        >Continuar con Google</button>
-        <button
-          id="btn-login-x"
-          type="button"
-          class="rounded-lg border border-paper-50/25 bg-felt-950/40 px-2.5 py-1 font-semibold text-paper-50 transition-colors hover:bg-paper-50/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
-          aria-label="Continuar con X"
-        >Continuar con X</button>
-      </div>
+    <div id="account-bar" data-has-providers={hasAnyProvider ? 'true' : 'false'} class="mt-3 items-center justify-center gap-2 text-xs sm:text-sm hidden" aria-live="polite">
+      <!-- Logged-out state — only rendered when at least one OAuth provider is configured -->
+      {hasAnyProvider && (
+        <div id="account-loggedout" class="hidden items-center gap-2">
+          <span class="text-paper-300/60">Guardar mis diplomas:</span>
+          {hasGoogle && (
+            <button
+              id="btn-login-google"
+              type="button"
+              class="rounded-lg border border-paper-50/25 bg-felt-950/40 px-2.5 py-1 font-semibold text-paper-50 transition-colors hover:bg-paper-50/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+              aria-label="Continuar con Google"
+            >Continuar con Google</button>
+          )}
+          {hasX && (
+            <button
+              id="btn-login-x"
+              type="button"
+              class="rounded-lg border border-paper-50/25 bg-felt-950/40 px-2.5 py-1 font-semibold text-paper-50 transition-colors hover:bg-paper-50/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+              aria-label="Continuar con X"
+            >Continuar con X</button>
+          )}
+        </div>
+      )}
       <!-- Logged-in state -->
       <div id="account-loggedin" class="hidden flex-wrap items-center gap-2">
         <span id="account-label" class="text-paper-300/75"></span>
@@ -1458,9 +1471,12 @@ import CertificateModal from '../components/CertificateModal.astro';
     }
   }
 
+  const hasProviders = accountBar?.dataset.hasProviders === 'true';
+
   async function initAccountBar(): Promise<void> {
     if (!accountBar) return;
     const account = await fetchAccount();
+    if (!account && !hasProviders) return;
     accountBar.classList.remove('hidden');
     accountBar.classList.add('flex');
 
