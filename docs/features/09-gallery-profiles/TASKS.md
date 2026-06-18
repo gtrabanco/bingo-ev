@@ -50,6 +50,10 @@
       labelled input, focus).
 - [ ] `/privacidad`: opt-in public-profile subsection (handle not real name, how to
       disable, consent basis, hidden-diploma note).
+- [ ] Centralize `HONORIFIC_COLORS` into `src/lib/certificate-design.ts` (export
+      alongside `HONORIFICS`) and import it in `galeria.astro` + `galeria.astro`
+      client `<script>` + `jugador/[handle].astro` — eliminates three duplicates.
+      Issue #12 closed; folded here because P3 already edits both files.
 - [ ] Gate green.
 
 ## P4 — Hardening + review
