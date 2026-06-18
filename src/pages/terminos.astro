@@ -1,0 +1,118 @@
+---
+// Terms of service. Required by X (Twitter) OAuth and good practice.
+// Short, plain prose — no legalese, consistent with the project's tone.
+import Layout from '../layouts/Layout.astro';
+
+const updated = '19 de junio de 2026';
+---
+
+<Layout
+  title="Términos de uso — El Bingo del Cargador"
+  description="Condiciones de uso de El Bingo del Cargador: un juego gratuito de parodia sobre la recarga pública de vehículos eléctricos en España."
+>
+  <main
+    class="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pt-10 pb-6 sm:max-w-2xl sm:pt-14"
+  >
+    <h1 class="text-2xl font-black uppercase tracking-tight text-amber-300 sm:text-3xl">
+      Términos de uso
+    </h1>
+    <p class="mt-1 text-[0.6875rem] text-paper-300/60 sm:text-xs">
+      Última actualización: {updated}
+    </p>
+
+    <div class="mt-6 space-y-5 text-sm/relaxed text-paper-300/90 sm:text-base/relaxed">
+
+      <section>
+        <h2 class="text-base font-bold text-paper-50 sm:text-lg">Qué es esto</h2>
+        <p class="mt-2">
+          <strong class="text-paper-50">El Bingo del Cargador</strong> (en adelante, «el Juego») es
+          una obra de parodia y sátira gratuita sobre las experiencias cotidianas de la recarga
+          pública de vehículos eléctricos en España. No tiene ánimo de lucro, no está afiliado
+          a ninguna red de recarga, fabricante de vehículos ni entidad oficial.
+        </p>
+        <p class="mt-2">
+          El Juego es accesible en <a href="https://bingo.gruxon.com" class="underline decoration-paper-300/40 underline-offset-2 hover:text-paper-50">bingo.gruxon.com</a>
+          y es operado por Gabriel Trabanco Llano, con domicilio en España.
+          Correo de contacto: <a href="mailto:gabriel@trabanco.soy" class="underline decoration-paper-300/40 underline-offset-2 hover:text-paper-50">gabriel@trabanco.soy</a>.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-base font-bold text-paper-50 sm:text-lg">Uso permitido</h2>
+        <p class="mt-2">
+          Puedes jugar, compartir tu diploma y reírte. El Juego es de uso personal y
+          no comercial. Queda prohibido:
+        </p>
+        <ul class="mt-2 list-disc space-y-1 pl-5">
+          <li>Usar el Juego o sus datos para fines comerciales sin autorización previa por escrito.</li>
+          <li>Intentar interferir con el funcionamiento del servicio (ataques, scraping masivo, etc.).</li>
+          <li>Registrar alias o nombres de grupo que sean ofensivos, discriminatorios o ilícitos.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="text-base font-bold text-paper-50 sm:text-lg">Propiedad intelectual</h2>
+        <p class="mt-2">
+          El código fuente del Juego es software libre (consulta el repositorio para la licencia
+          exacta). El contenido textual — situaciones, copias, diploma — es una obra satírica
+          original. Los diplomas generados son tuyos: puedes compartirlos libremente.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-base font-bold text-paper-50 sm:text-lg">Inicio de sesión con terceros</h2>
+        <p class="mt-2">
+          Si usas Google o X para guardar tus diplomas, tu uso de esos servicios también
+          queda sujeto a sus propias condiciones y políticas de privacidad. El Juego solo
+          recibe los datos mínimos necesarios para identificarte (nombre de perfil e identificador
+          de cuenta). Consulta la <a href="/privacidad" class="underline decoration-paper-300/40 underline-offset-2 hover:text-paper-50">política de privacidad</a> para
+          más detalle.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-base font-bold text-paper-50 sm:text-lg">Sin garantías</h2>
+        <p class="mt-2">
+          El Juego se ofrece «tal cual». No garantizamos disponibilidad continua ni la
+          conservación indefinida de tus datos. En particular: los cartones incompletos
+          caducan tras un mes de inactividad y pueden eliminarse. Los diplomas completados
+          se conservan doce meses. Más detalle en la <a href="/privacidad" class="underline decoration-paper-300/40 underline-offset-2 hover:text-paper-50">política de privacidad</a>.
+        </p>
+        <p class="mt-2">
+          Si un cargador te falla mientras juegas, eso tampoco es culpa nuestra. Aunque
+          admitimos que tiene su gracia.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-base font-bold text-paper-50 sm:text-lg">Modificaciones</h2>
+        <p class="mt-2">
+          Podemos actualizar estos términos en cualquier momento. La fecha de «Última
+          actualización» al principio de esta página indica cuándo se revisaron por última vez.
+          El uso continuado del Juego tras cualquier cambio implica la aceptación de los
+          términos vigentes.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-base font-bold text-paper-50 sm:text-lg">Legislación aplicable</h2>
+        <p class="mt-2">
+          Estos términos se rigen por la legislación española. Para cualquier controversia,
+          las partes se someten a los juzgados y tribunales del domicilio del operador,
+          sin perjuicio de los fueros imperativos que pudieran corresponder al usuario como
+          consumidor.
+        </p>
+      </section>
+
+    </div>
+
+    <p class="mt-8 text-xs text-paper-300/50">
+      ¿Preguntas? <a href="mailto:gabriel@trabanco.soy" class="underline underline-offset-2 hover:text-paper-300/80">gabriel@trabanco.soy</a>
+    </p>
+
+    <nav class="mt-6 flex gap-4 text-xs text-paper-300/60">
+      <a href="/privacidad" class="underline decoration-paper-300/30 underline-offset-2 hover:text-paper-50">Política de privacidad</a>
+      <a href="/" class="underline decoration-paper-300/30 underline-offset-2 hover:text-paper-50">Volver al bingo</a>
+    </nav>
+  </main>
+</Layout>

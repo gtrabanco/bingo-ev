@@ -12,7 +12,7 @@ import {
 } from '../../../../lib/auth';
 import { checkRateLimit } from '../../../../lib/rate-limit';
 
-const CONTROL_CHARS = /[ -]/g;
+const CONTROL_CHARS = /[\x00-\x1f\x7f]/g;
 
 export const POST: APIRoute = async ({ params, request }) => {
   const cardId = params.id ?? '';
