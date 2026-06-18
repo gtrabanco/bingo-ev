@@ -25,5 +25,17 @@
 **Postponed (issue):**
 - [#18](https://github.com/gtrabanco/bingo-ev/issues/18) — a11y: `aria-labelledby` on the conflict dialog points to screen-1's heading while screen-2 is visible.
 
+## P2b — Dialog UX refinement (done)
+
+- **Auto-resolve group vs solo**: `showConflictDialog` now checks if exactly one card has a group; the group card wins silently without showing the dialog (`resolveKeepIncoming`/`resolveKeepExisting` fired immediately, reload follows).
+- **Default option**: `computeDefault` picks the recommended card — group > solo (handled above), then more marks wins; tie goes to existing. Stored as `conflictState.default`.
+- **Escape = accept default**: native `cancel` event is suppressed; `acceptDefault()` fires instead, routing through owner confirmation if needed.
+- **"✓ Recomendado" chip**: shown on the default slot; default slot gets a green border via `border-green-500`.
+- **Contextual intro copy**: when both cards are in groups, text names both groups and warns about departure. Solo-vs-solo keeps the original text.
+- **Group context always visible**: `populateConflictSlot` now always renders the context line — "Grupo: X" or "Cartón individual" — rather than hiding it for solo cards.
+
 **Intentional tradeoff:**
-- Native `<dialog>` Escape key dismisses the conflict dialog without resolving it. Enforcing no-escape would make the modal harder to dismiss than the risk warrants; the conflict reappears on next reload.
+- Native `<dialog>` Escape key previously dismissed unresolved; now it accepts the default instead. The default is deterministic (group > more marks > existing), so Escape is always safe.
+
+**Tradeoff removed** (was recorded in previous hardening entry):
+- ~~Escape dismisses without resolving~~ — resolved in P2b: Escape now calls `acceptDefault()`.

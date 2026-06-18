@@ -549,12 +549,13 @@ const hasAnyProvider = hasGoogle || hasX;
     <div id="conflict-main" class="p-5 sm:p-6">
       <p class="text-xs font-bold uppercase tracking-[0.3em] text-dauber-700">Conflicto de cartones</p>
       <h2 id="conflict-dialog-title" class="mt-1 text-2xl font-black uppercase tracking-tight">Dos cartones</h2>
-      <p class="mt-2 text-sm/relaxed text-ink-900/70">
+      <p id="conflict-dialog-intro" class="mt-2 text-sm/relaxed text-ink-900/70">
         Esta cuenta ya tiene un cartón activo. Elige cuál conservar; el otro se eliminará sin posibilidad de recuperación.
       </p>
       <div class="mt-4 grid grid-cols-2 gap-3">
         <!-- Incoming card (the one in this device's localStorage) -->
-        <div class="flex flex-col gap-2 rounded-xl border-2 border-paper-300 bg-paper-100/50 p-3">
+        <div id="conflict-incoming-slot" class="flex flex-col gap-2 rounded-xl border-2 border-paper-300 bg-paper-100/50 p-3">
+          <p id="conflict-incoming-rec" class="hidden text-[0.625rem] font-bold uppercase tracking-wider text-green-700">✓ Recomendado</p>
           <p class="text-[0.625rem] font-bold uppercase tracking-wider text-ink-900/50">Este cartón</p>
           <p id="conflict-incoming-marks" class="text-sm font-semibold text-ink-900"></p>
           <p id="conflict-incoming-group" class="hidden rounded-md bg-paper-100 px-2 py-1 text-xs text-ink-900/70"></p>
@@ -566,7 +567,8 @@ const hasAnyProvider = hasGoogle || hasX;
           >Conservar este</button>
         </div>
         <!-- Existing card (already on the account, on another device) -->
-        <div class="flex flex-col gap-2 rounded-xl border-2 border-paper-300 bg-paper-100/50 p-3">
+        <div id="conflict-existing-slot" class="flex flex-col gap-2 rounded-xl border-2 border-paper-300 bg-paper-100/50 p-3">
+          <p id="conflict-existing-rec" class="hidden text-[0.625rem] font-bold uppercase tracking-wider text-green-700">✓ Recomendado</p>
           <p class="text-[0.625rem] font-bold uppercase tracking-wider text-ink-900/50">Cartón anterior</p>
           <p id="conflict-existing-marks" class="text-sm font-semibold text-ink-900"></p>
           <p id="conflict-existing-group" class="hidden rounded-md bg-paper-100 px-2 py-1 text-xs text-ink-900/70"></p>
@@ -1555,6 +1557,7 @@ const hasAnyProvider = hasGoogle || hasX;
     incomingSecret: string;
     conflict: ConflictPayload;
     pendingAction: 'keep-incoming' | 'keep-existing' | null;
+    default: 'incoming' | 'existing';
   };
   let conflictState: ConflictState | null = null;
 
@@ -1573,6 +1576,24 @@ const hasAnyProvider = hasGoogle || hasX;
   const conflictOwnerMsg = $<HTMLParagraphElement>('#conflict-owner-msg');
   const btnOwnerCancel = $<HTMLButtonElement>('#btn-owner-cancel');
   const btnOwnerConfirm = $<HTMLButtonElement>('#btn-owner-confirm');
+  const conflictDialogIntro = $<HTMLParagraphElement>('#conflict-dialog-intro');
+  const conflictIncomingSlot = $<HTMLDivElement>('#conflict-incoming-slot');
+  const conflictIncomingRec = $<HTMLParagraphElement>('#conflict-incoming-rec');
+  const conflictExistingSlot = $<HTMLDivElement>('#conflict-existing-slot');
+  const conflictExistingRec = $<HTMLParagraphElement>('#conflict-existing-rec');
+
+  function marksCount(marks: string): number {
+    return [...marks].filter((c) => c !== '0').length;
+  }
+
+  function computeDefault(conflict: ConflictPayload): 'incoming' | 'existing' {
+    const inc = conflict.incoming;
+    const ex = conflict.existing;
+    if (inc.groupId && !ex.groupId) return 'incoming';
+    if (ex.groupId && !inc.groupId) return 'existing';
+    // Both same context: more marks wins; tie goes to existing (the established card).
+    return marksCount(inc.marks) > marksCount(ex.marks) ? 'incoming' : 'existing';
+  }
 
   function conflictMarksLabel(marks: string): string {
     const n = [...marks].filter((c) => c !== '0').length;
@@ -1602,12 +1623,8 @@ const hasAnyProvider = hasGoogle || hasX;
     card: ConflictCardInfo,
   ): void {
     marksEl.textContent = conflictMarksLabel(card.marks);
-    if (card.groupId) {
-      groupEl.textContent = `Grupo: ${card.groupName ?? card.groupId}`;
-      groupEl.classList.remove('hidden');
-    } else {
-      groupEl.classList.add('hidden');
-    }
+    groupEl.textContent = card.groupId ? `Grupo: ${card.groupName ?? card.groupId}` : 'Cartón individual';
+    groupEl.classList.remove('hidden');
     ownerEl.classList.toggle('hidden', !card.isGroupOwner);
   }
 
@@ -1616,10 +1633,43 @@ const hasAnyProvider = hasGoogle || hasX;
     incomingCardId: string,
     incomingSecret: string,
   ): void {
-    conflictState = { incomingCardId, incomingSecret, conflict, pendingAction: null };
+    const incHasGroup = !!conflict.incoming.groupId;
+    const exHasGroup = !!conflict.existing.groupId;
+
+    // Group always beats a solo card — resolve silently, no dialog needed.
+    if (incHasGroup !== exHasGroup) {
+      const dflt: 'incoming' | 'existing' = incHasGroup ? 'incoming' : 'existing';
+      conflictState = { incomingCardId, incomingSecret, conflict, pendingAction: null, default: dflt };
+      void (dflt === 'incoming' ? resolveKeepIncoming() : resolveKeepExisting());
+      return;
+    }
+
+    const dflt = computeDefault(conflict);
+    conflictState = { incomingCardId, incomingSecret, conflict, pendingAction: null, default: dflt };
     clearConflictError();
+
+    // Contextual intro copy
+    if (incHasGroup && exHasGroup) {
+      conflictDialogIntro.textContent =
+        `Tu cuenta tiene un cartón en «${conflict.existing.groupName ?? conflict.existing.groupId}» ` +
+        `y otro en «${conflict.incoming.groupName ?? conflict.incoming.groupId}». ` +
+        `Solo puedes estar activo en uno; el que elimines te sacará automáticamente de ese grupo.`;
+    } else {
+      conflictDialogIntro.textContent =
+        'Esta cuenta ya tiene un cartón activo. Elige cuál conservar; el otro se eliminará sin posibilidad de recuperación.';
+    }
+
     populateConflictSlot(conflictIncomingMarks, conflictIncomingGroup, conflictIncomingOwner, conflict.incoming);
     populateConflictSlot(conflictExistingMarks, conflictExistingGroup, conflictExistingOwner, conflict.existing);
+
+    // Highlight the recommended option
+    conflictIncomingRec.classList.toggle('hidden', dflt !== 'incoming');
+    conflictExistingRec.classList.toggle('hidden', dflt !== 'existing');
+    conflictIncomingSlot.classList.toggle('border-green-500', dflt === 'incoming');
+    conflictIncomingSlot.classList.toggle('border-paper-300', dflt !== 'incoming');
+    conflictExistingSlot.classList.toggle('border-green-500', dflt === 'existing');
+    conflictExistingSlot.classList.toggle('border-paper-300', dflt !== 'existing');
+
     conflictMain.classList.remove('hidden');
     conflictOwnerWarn.classList.add('hidden');
     conflictDialog.showModal();
@@ -1638,6 +1688,25 @@ const hasAnyProvider = hasGoogle || hasX;
     conflictMain.classList.add('hidden');
     conflictOwnerWarn.classList.remove('hidden');
     btnOwnerCancel.focus();
+  }
+
+  async function acceptDefault(): Promise<void> {
+    if (!conflictState) return;
+    if (conflictState.default === 'incoming') {
+      if (conflictState.conflict.existing.isGroupOwner) {
+        conflictState.pendingAction = 'keep-incoming';
+        showOwnerConfirmation(true);
+      } else {
+        await resolveKeepIncoming();
+      }
+    } else {
+      if (conflictState.conflict.incoming.isGroupOwner) {
+        conflictState.pendingAction = 'keep-existing';
+        showOwnerConfirmation(false);
+      } else {
+        await resolveKeepExisting();
+      }
+    }
   }
 
   async function resolveKeepIncoming(): Promise<void> {
@@ -1715,6 +1784,12 @@ const hasAnyProvider = hasGoogle || hasX;
     } else {
       await resolveKeepExisting();
     }
+  });
+
+  // Escape accepts the default option instead of dismissing unresolved.
+  conflictDialog.addEventListener('cancel', (e) => {
+    e.preventDefault();
+    void acceptDefault();
   });
 
   async function initAccountBar(): Promise<void> {
