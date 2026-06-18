@@ -1450,11 +1450,11 @@ const hasAnyProvider = hasGoogle || hasX;
   // -------------------------------------------------------------------------
 
   const accountBar = $<HTMLDivElement>('#account-bar');
-  const accountLoggedOut = $<HTMLDivElement>('#account-loggedout');
+  const accountLoggedOut = document.querySelector<HTMLDivElement>('#account-loggedout');
   const accountLoggedIn = $<HTMLDivElement>('#account-loggedin');
   const accountLabel = $<HTMLSpanElement>('#account-label');
-  const btnLoginGoogle = $<HTMLButtonElement>('#btn-login-google');
-  const btnLoginX = $<HTMLButtonElement>('#btn-login-x');
+  const btnLoginGoogle = document.querySelector<HTMLButtonElement>('#btn-login-google');
+  const btnLoginX = document.querySelector<HTMLButtonElement>('#btn-login-x');
   const btnLogout = $<HTMLButtonElement>('#btn-logout');
 
   // Profile control elements (feature 09)

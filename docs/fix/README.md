@@ -13,7 +13,7 @@ history lives in git log + closed issues.
 
 | Folder | Topic | Status | Depends on | Issue |
 |--------|-------|--------|------------|-------|
-| | | | | |
+| `20-script-crash-conditional-elements` | Script crash on absent OAuth env vars — kills device-code button | `in-progress` | — | [#20](https://github.com/gtrabanco/bingo-ev/issues/20) |
 
 ## Conventions
 
