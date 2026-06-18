@@ -537,6 +537,71 @@ const hasAnyProvider = hasGoogle || hasX;
 
   <CertificateModal />
 
+  <!-- Conflict resolution dialog (feature 10-multi-card-conflict):
+       Shown when link-card returns 409 because the account already has
+       a different active card. Two sub-screens: main choice + owner warning. -->
+  <dialog
+    id="conflict-dialog"
+    aria-labelledby="conflict-dialog-title"
+    class="m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-sm overflow-y-auto rounded-2xl border-4 border-ink-900 bg-paper-50 p-0 text-ink-900 shadow-2xl backdrop:bg-felt-950/80"
+  >
+    <!-- Screen 1: choose which card to keep -->
+    <div id="conflict-main" class="p-5 sm:p-6">
+      <p class="text-xs font-bold uppercase tracking-[0.3em] text-dauber-700">Conflicto de cartones</p>
+      <h2 id="conflict-dialog-title" class="mt-1 text-2xl font-black uppercase tracking-tight">Dos cartones</h2>
+      <p id="conflict-dialog-intro" class="mt-2 text-sm/relaxed text-ink-900/70">
+        Esta cuenta ya tiene un cartón activo. Elige cuál conservar; el otro se eliminará sin posibilidad de recuperación.
+      </p>
+      <div class="mt-4 grid grid-cols-2 gap-3">
+        <!-- Incoming card (the one in this device's localStorage) -->
+        <div id="conflict-incoming-slot" class="flex flex-col gap-2 rounded-xl border-2 border-paper-300 bg-paper-100/50 p-3">
+          <p id="conflict-incoming-rec" class="hidden text-[0.625rem] font-bold uppercase tracking-wider text-green-700">✓ Recomendado</p>
+          <p class="text-[0.625rem] font-bold uppercase tracking-wider text-ink-900/50">Este cartón</p>
+          <p id="conflict-incoming-marks" class="text-sm font-semibold text-ink-900"></p>
+          <p id="conflict-incoming-group" class="hidden rounded-md bg-paper-100 px-2 py-1 text-xs text-ink-900/70"></p>
+          <p id="conflict-incoming-owner" class="hidden rounded-md bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800">Admin del grupo</p>
+          <button
+            id="btn-keep-incoming"
+            type="button"
+            class="mt-auto rounded-lg border-2 border-amber-500/70 bg-amber-50 px-3 py-2 text-xs font-bold uppercase tracking-wide text-amber-900 transition-colors hover:bg-amber-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500 disabled:opacity-50"
+          >Conservar este</button>
+        </div>
+        <!-- Existing card (already on the account, on another device) -->
+        <div id="conflict-existing-slot" class="flex flex-col gap-2 rounded-xl border-2 border-paper-300 bg-paper-100/50 p-3">
+          <p id="conflict-existing-rec" class="hidden text-[0.625rem] font-bold uppercase tracking-wider text-green-700">✓ Recomendado</p>
+          <p class="text-[0.625rem] font-bold uppercase tracking-wider text-ink-900/50">Cartón anterior</p>
+          <p id="conflict-existing-marks" class="text-sm font-semibold text-ink-900"></p>
+          <p id="conflict-existing-group" class="hidden rounded-md bg-paper-100 px-2 py-1 text-xs text-ink-900/70"></p>
+          <p id="conflict-existing-owner" class="hidden rounded-md bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800">Admin del grupo</p>
+          <button
+            id="btn-keep-existing"
+            type="button"
+            class="mt-auto rounded-lg border-2 border-paper-300 bg-paper-50 px-3 py-2 text-xs font-bold uppercase tracking-wide text-ink-900 transition-colors hover:bg-paper-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ink-900 disabled:opacity-50"
+          >Conservar el anterior</button>
+        </div>
+      </div>
+      <p id="conflict-error" class="mt-3 hidden text-xs text-dauber-700" aria-live="polite"></p>
+    </div>
+    <!-- Screen 2: shown when the card being discarded is a group owner -->
+    <div id="conflict-owner-warn" class="hidden p-5 sm:p-6">
+      <p class="text-xs font-bold uppercase tracking-[0.3em] text-amber-700">Atención</p>
+      <h2 class="mt-1 text-2xl font-black uppercase tracking-tight">¿Seguro?</h2>
+      <p id="conflict-owner-msg" class="mt-2 text-sm/relaxed text-ink-900/70"></p>
+      <div class="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <button
+          id="btn-owner-cancel"
+          type="button"
+          class="rounded-lg border-2 border-paper-300 px-4 py-2 text-sm font-semibold text-ink-900 transition-colors hover:bg-paper-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ink-900"
+        >Cancelar</button>
+        <button
+          id="btn-owner-confirm"
+          type="button"
+          class="rounded-lg border-2 border-dauber-700 bg-paper-50 px-4 py-2 text-sm font-bold text-dauber-700 transition-colors hover:bg-dauber-700/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-dauber-700 disabled:opacity-50"
+        >Entendido, eliminar</button>
+      </div>
+    </div>
+  </dialog>
+
   {import.meta.env.PUBLIC_TURNSTILE_SITE_KEY && (
     <Fragment>
       <script is:inline>
@@ -574,6 +639,8 @@ const hasAnyProvider = hasGoogle || hasX;
     cardShareUrl,
     createGroup,
     deleteAccount,
+    deleteAccountCard,
+    deleteCard,
     discardCard,
     fetchAccount,
     fetchOwnedCard,
@@ -1473,6 +1540,258 @@ const hasAnyProvider = hasGoogle || hasX;
 
   const hasProviders = accountBar?.dataset.hasProviders === 'true';
 
+  // -------------------------------------------------------------------------
+  // Conflict resolution dialog (feature 10-multi-card-conflict)
+  // -------------------------------------------------------------------------
+
+  type ConflictCardInfo = {
+    cardId: string;
+    marks: string;
+    groupId: string | null;
+    groupName: string | null;
+    isGroupOwner: boolean;
+  };
+  type ConflictPayload = { existing: ConflictCardInfo; incoming: ConflictCardInfo };
+  type ConflictState = {
+    incomingCardId: string;
+    incomingSecret: string;
+    conflict: ConflictPayload;
+    pendingAction: 'keep-incoming' | 'keep-existing' | null;
+    default: 'incoming' | 'existing';
+  };
+  let conflictState: ConflictState | null = null;
+
+  const conflictDialog = $<HTMLDialogElement>('#conflict-dialog');
+  const conflictMain = $<HTMLDivElement>('#conflict-main');
+  const conflictOwnerWarn = $<HTMLDivElement>('#conflict-owner-warn');
+  const conflictIncomingMarks = $<HTMLParagraphElement>('#conflict-incoming-marks');
+  const conflictIncomingGroup = $<HTMLParagraphElement>('#conflict-incoming-group');
+  const conflictIncomingOwner = $<HTMLParagraphElement>('#conflict-incoming-owner');
+  const conflictExistingMarks = $<HTMLParagraphElement>('#conflict-existing-marks');
+  const conflictExistingGroup = $<HTMLParagraphElement>('#conflict-existing-group');
+  const conflictExistingOwner = $<HTMLParagraphElement>('#conflict-existing-owner');
+  const conflictError = $<HTMLParagraphElement>('#conflict-error');
+  const btnKeepIncoming = $<HTMLButtonElement>('#btn-keep-incoming');
+  const btnKeepExisting = $<HTMLButtonElement>('#btn-keep-existing');
+  const conflictOwnerMsg = $<HTMLParagraphElement>('#conflict-owner-msg');
+  const btnOwnerCancel = $<HTMLButtonElement>('#btn-owner-cancel');
+  const btnOwnerConfirm = $<HTMLButtonElement>('#btn-owner-confirm');
+  const conflictDialogIntro = $<HTMLParagraphElement>('#conflict-dialog-intro');
+  const conflictIncomingSlot = $<HTMLDivElement>('#conflict-incoming-slot');
+  const conflictIncomingRec = $<HTMLParagraphElement>('#conflict-incoming-rec');
+  const conflictExistingSlot = $<HTMLDivElement>('#conflict-existing-slot');
+  const conflictExistingRec = $<HTMLParagraphElement>('#conflict-existing-rec');
+
+  function marksCount(marks: string): number {
+    return [...marks].filter((c) => c !== '0').length;
+  }
+
+  function computeDefault(conflict: ConflictPayload): 'incoming' | 'existing' {
+    const inc = conflict.incoming;
+    const ex = conflict.existing;
+    if (inc.groupId && !ex.groupId) return 'incoming';
+    if (ex.groupId && !inc.groupId) return 'existing';
+    // Both same context: more marks wins; tie goes to existing (the established card).
+    return marksCount(inc.marks) > marksCount(ex.marks) ? 'incoming' : 'existing';
+  }
+
+  function conflictMarksLabel(marks: string): string {
+    const n = [...marks].filter((c) => c !== '0').length;
+    return `${n}/${SITUATION_COUNT} situaciones marcadas`;
+  }
+
+  function showConflictError(msg: string): void {
+    conflictError.textContent = msg;
+    conflictError.classList.remove('hidden');
+  }
+
+  function clearConflictError(): void {
+    conflictError.textContent = '';
+    conflictError.classList.add('hidden');
+  }
+
+  function setConflictBusy(busy: boolean): void {
+    btnKeepIncoming.disabled = busy;
+    btnKeepExisting.disabled = busy;
+    btnOwnerConfirm.disabled = busy;
+  }
+
+  function populateConflictSlot(
+    marksEl: HTMLParagraphElement,
+    groupEl: HTMLParagraphElement,
+    ownerEl: HTMLParagraphElement,
+    card: ConflictCardInfo,
+  ): void {
+    marksEl.textContent = conflictMarksLabel(card.marks);
+    groupEl.textContent = card.groupId ? `Grupo: ${card.groupName ?? card.groupId}` : 'Cartón individual';
+    groupEl.classList.remove('hidden');
+    ownerEl.classList.toggle('hidden', !card.isGroupOwner);
+  }
+
+  function showConflictDialog(
+    conflict: ConflictPayload,
+    incomingCardId: string,
+    incomingSecret: string,
+  ): void {
+    const incHasGroup = !!conflict.incoming.groupId;
+    const exHasGroup = !!conflict.existing.groupId;
+
+    const dflt = computeDefault(conflict);
+    conflictState = { incomingCardId, incomingSecret, conflict, pendingAction: null, default: dflt };
+    clearConflictError();
+
+    // Contextual intro copy
+    if (incHasGroup && exHasGroup) {
+      conflictDialogIntro.textContent =
+        `Tu cuenta tiene un cartón en «${conflict.existing.groupName ?? conflict.existing.groupId}» ` +
+        `y otro en «${conflict.incoming.groupName ?? conflict.incoming.groupId}». ` +
+        `Solo puedes estar activo en uno; el que elimines te sacará automáticamente de ese grupo.`;
+    } else if (incHasGroup !== exHasGroup) {
+      const groupCard = incHasGroup ? conflict.incoming : conflict.existing;
+      conflictDialogIntro.textContent =
+        `El cartón de grupo «${groupCard.groupName ?? groupCard.groupId}» tiene prioridad sobre el cartón individual. Resolviendo automáticamente…`;
+    } else {
+      conflictDialogIntro.textContent =
+        'Esta cuenta ya tiene un cartón activo. Elige cuál conservar; el otro se eliminará sin posibilidad de recuperación.';
+    }
+
+    populateConflictSlot(conflictIncomingMarks, conflictIncomingGroup, conflictIncomingOwner, conflict.incoming);
+    populateConflictSlot(conflictExistingMarks, conflictExistingGroup, conflictExistingOwner, conflict.existing);
+
+    // Highlight the recommended option
+    conflictIncomingRec.classList.toggle('hidden', dflt !== 'incoming');
+    conflictExistingRec.classList.toggle('hidden', dflt !== 'existing');
+    conflictIncomingSlot.classList.toggle('border-green-500', dflt === 'incoming');
+    conflictIncomingSlot.classList.toggle('border-paper-300', dflt !== 'incoming');
+    conflictExistingSlot.classList.toggle('border-green-500', dflt === 'existing');
+    conflictExistingSlot.classList.toggle('border-paper-300', dflt !== 'existing');
+
+    conflictMain.classList.remove('hidden');
+    conflictOwnerWarn.classList.add('hidden');
+    conflictDialog.showModal();
+
+    // Group beats solo: fire immediately. Dialog is already open so any failure is
+    // visible and retryable; on success the page reloads before the user notices.
+    if (incHasGroup !== exHasGroup) void acceptDefault();
+  }
+
+  function showOwnerConfirmation(discardingExisting: boolean): void {
+    if (!conflictState) return;
+    const card = discardingExisting
+      ? conflictState.conflict.existing
+      : conflictState.conflict.incoming;
+    const groupName = card.groupName ?? card.groupId ?? 'este grupo';
+    conflictOwnerMsg.textContent =
+      `Este cartón es el administrador de «${groupName}». Al eliminarlo, la administración ` +
+      `pasará automáticamente al miembro más veterano del grupo. Tendrás que pedir que te ` +
+      `inviten de nuevo con un cartón nuevo si quieres volver.`;
+    conflictMain.classList.add('hidden');
+    conflictOwnerWarn.classList.remove('hidden');
+    btnOwnerCancel.focus();
+  }
+
+  async function acceptDefault(): Promise<void> {
+    if (!conflictState) return;
+    if (conflictState.default === 'incoming') {
+      if (conflictState.conflict.existing.isGroupOwner) {
+        conflictState.pendingAction = 'keep-incoming';
+        showOwnerConfirmation(true);
+      } else {
+        await resolveKeepIncoming();
+      }
+    } else {
+      if (conflictState.conflict.incoming.isGroupOwner) {
+        conflictState.pendingAction = 'keep-existing';
+        showOwnerConfirmation(false);
+      } else {
+        await resolveKeepExisting();
+      }
+    }
+  }
+
+  async function resolveKeepIncoming(): Promise<void> {
+    if (!conflictState) return;
+    clearConflictError();
+    setConflictBusy(true);
+    const { incomingCardId, incomingSecret, conflict } = conflictState;
+
+    const del = await deleteAccountCard(conflict.existing.cardId);
+    if (!del.ok) {
+      setConflictBusy(false);
+      showConflictError('No se pudo eliminar el cartón anterior. Inténtalo de nuevo.');
+      return;
+    }
+
+    const link = await linkCard(incomingCardId, incomingSecret);
+    if (!link.ok) {
+      setConflictBusy(false);
+      showConflictError('El cartón anterior se eliminó, pero no se pudo vincular este. Recarga la página.');
+      return;
+    }
+
+    window.location.reload();
+  }
+
+  async function resolveKeepExisting(): Promise<void> {
+    if (!conflictState) return;
+    clearConflictError();
+    setConflictBusy(true);
+    const { incomingCardId, incomingSecret } = conflictState;
+
+    const ok = await deleteCard(incomingCardId, incomingSecret);
+    if (!ok) {
+      setConflictBusy(false);
+      showConflictError('No se pudo resolver el conflicto. Inténtalo de nuevo.');
+      return;
+    }
+
+    window.location.reload();
+  }
+
+  btnKeepIncoming.addEventListener('click', async () => {
+    if (!conflictState) return;
+    if (conflictState.conflict.existing.isGroupOwner) {
+      conflictState.pendingAction = 'keep-incoming';
+      showOwnerConfirmation(true);
+    } else {
+      await resolveKeepIncoming();
+    }
+  });
+
+  btnKeepExisting.addEventListener('click', async () => {
+    if (!conflictState) return;
+    if (conflictState.conflict.incoming.isGroupOwner) {
+      conflictState.pendingAction = 'keep-existing';
+      showOwnerConfirmation(false);
+    } else {
+      await resolveKeepExisting();
+    }
+  });
+
+  btnOwnerCancel.addEventListener('click', () => {
+    if (!conflictState) return;
+    conflictState.pendingAction = null;
+    clearConflictError();
+    conflictOwnerWarn.classList.add('hidden');
+    conflictMain.classList.remove('hidden');
+    btnKeepIncoming.focus();
+  });
+
+  btnOwnerConfirm.addEventListener('click', async () => {
+    if (!conflictState?.pendingAction) return;
+    if (conflictState.pendingAction === 'keep-incoming') {
+      await resolveKeepIncoming();
+    } else {
+      await resolveKeepExisting();
+    }
+  });
+
+  // Escape accepts the default option instead of dismissing unresolved.
+  conflictDialog.addEventListener('cancel', (e) => {
+    e.preventDefault();
+    void acceptDefault();
+  });
+
   async function initAccountBar(): Promise<void> {
     if (!accountBar) return;
     const account = await fetchAccount();
@@ -1492,10 +1811,16 @@ const hasAnyProvider = hasGoogle || hasX;
       currentHandle = account.publicHandle ?? null;
       renderProfileControl(account.profilePublic && account.publicHandle ? 'active' : 'none', account.publicHandle);
 
-      // Link any localStorage cards to the account (best-effort, fire-and-forget).
+      // Link the active localStorage card; show the conflict dialog if the account
+      // already has a different active card (feature 10).
       const cards = loadCurrentCard() ? [loadCurrentCard()!] : [];
       for (const c of cards) {
-        if (c.id && c.secret) void linkCard(c.id, c.secret);
+        if (!c.id || !c.secret) continue;
+        const result = await linkCard(c.id, c.secret);
+        if (!result.ok && 'conflict' in result) {
+          showConflictDialog(result.conflict, c.id, c.secret);
+          return;
+        }
       }
     } else {
       accountLoggedIn?.classList.add('hidden');

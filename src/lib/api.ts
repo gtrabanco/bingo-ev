@@ -93,6 +93,19 @@ export function discardCard(cardId: string, secret: string | null): void {
   void request(`/api/cards/${cardId}`, jsonInit({ secret }, 'DELETE'));
 }
 
+// Awaitable variant of discardCard for conflict resolution: returns true on success or 404.
+export async function deleteCard(cardId: string, secret: string): Promise<boolean> {
+  try {
+    const res = await fetch(`/api/cards/${cardId}`, {
+      ...jsonInit({ secret }, 'DELETE'),
+      signal: AbortSignal.timeout(4000),
+    });
+    return res.ok || res.status === 204 || res.status === 404;
+  } catch {
+    return false;
+  }
+}
+
 // Owner rehydration: fetch a card's full state with its secret (recovery
 // links). Returns null if it doesn't exist or the secret is wrong.
 export function fetchOwnedCard(
@@ -379,9 +392,27 @@ export function fetchAccount(): Promise<AccountInfo | null> {
   return request<AccountInfo>('/api/account');
 }
 
+export interface ConflictCardInfo {
+  cardId: string;
+  marks: string;
+  groupId: string | null;
+  groupName: string | null;
+  isGroupOwner: boolean;
+}
+
+export interface LinkCardConflict {
+  existing: ConflictCardInfo;
+  incoming: ConflictCardInfo;
+}
+
+export type LinkCardResult =
+  | { ok: true }
+  | { ok: false; conflict: LinkCardConflict }
+  | { ok: false; error: string };
+
 // Links a localStorage card to the logged-in account via the owner secret.
-// Returns false on secret mismatch or network failure.
-export async function linkCard(cardId: string, secret: string): Promise<boolean> {
+// Returns { ok: false, conflict } when the account already has a different active card.
+export async function linkCard(cardId: string, secret: string): Promise<LinkCardResult> {
   try {
     const res = await fetch('/api/account/link-card', {
       method: 'POST',
@@ -389,9 +420,29 @@ export async function linkCard(cardId: string, secret: string): Promise<boolean>
       body: JSON.stringify({ cardId, secret }),
       signal: AbortSignal.timeout(4000),
     });
-    return res.ok || res.status === 204;
+    if (res.ok || res.status === 204) return { ok: true };
+    if (res.status === 409) {
+      const data = (await res.json().catch(() => null)) as { conflict?: LinkCardConflict } | null;
+      if (data?.conflict) return { ok: false, conflict: data.conflict };
+    }
+    return { ok: false, error: 'failed' };
   } catch {
-    return false;
+    return { ok: false, error: 'offline' };
+  }
+}
+
+// Deletes an active card belonging to the logged-in account (session-auth only, no secret).
+// 404 is treated as success — the card is already gone (idempotent).
+export async function deleteAccountCard(cardId: string): Promise<{ ok: boolean; status: number }> {
+  try {
+    const res = await fetch(`/api/account/card/${cardId}`, {
+      method: 'DELETE',
+      signal: AbortSignal.timeout(4000),
+    });
+    const ok = res.ok || res.status === 204 || res.status === 404;
+    return { ok, status: res.status };
+  } catch {
+    return { ok: false, status: 0 };
   }
 }
 
