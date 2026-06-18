@@ -23,14 +23,14 @@ export const DELETE: APIRoute = async ({ request, params }) => {
   if (card.account_id !== session.accountId) return new Response(null, { status: 403 });
   if (card.completed_at !== null) return new Response(null, { status: 409 });
 
-  // Re-assert ownership and active state atomically in the DELETE.
-  await env.DB
-    .prepare('DELETE FROM cards WHERE id = ? AND account_id = ? AND completed_at IS NULL')
+  // Re-assert ownership and active state atomically; RETURNING confirms the delete happened.
+  const deleted = await env.DB
+    .prepare('DELETE FROM cards WHERE id = ? AND account_id = ? AND completed_at IS NULL RETURNING group_id')
     .bind(cardId, session.accountId)
-    .run();
+    .first<{ group_id: string | null }>();
 
-  if (card.group_id) {
-    await settleDeparture(card.group_id, cardId);
+  if (deleted?.group_id) {
+    await settleDeparture(deleted.group_id, cardId);
   }
 
   return new Response(null, { status: 204 });

@@ -6,7 +6,7 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { getSession } from '../../../lib/auth';
 
-const CONTROL_CHARS = /[ -]/g;
+const CONTROL_CHARS = /[\x00-\x1f\x7f]/g;
 
 type ConflictCard = {
   id: string;

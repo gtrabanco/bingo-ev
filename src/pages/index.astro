@@ -638,6 +638,7 @@ const hasAnyProvider = hasGoogle || hasX;
     createGroup,
     deleteAccount,
     deleteAccountCard,
+    deleteCard,
     discardCard,
     fetchAccount,
     fetchOwnedCard,
@@ -1668,21 +1669,10 @@ const hasAnyProvider = hasGoogle || hasX;
     setConflictBusy(true);
     const { incomingCardId, incomingSecret } = conflictState;
 
-    try {
-      const res = await fetch(`/api/cards/${incomingCardId}`, {
-        method: 'DELETE',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ secret: incomingSecret }),
-        signal: AbortSignal.timeout(4000),
-      });
-      if (!res.ok && res.status !== 204 && res.status !== 404) {
-        setConflictBusy(false);
-        showConflictError('No se pudo resolver el conflicto. Inténtalo de nuevo.');
-        return;
-      }
-    } catch {
+    const ok = await deleteCard(incomingCardId, incomingSecret);
+    if (!ok) {
       setConflictBusy(false);
-      showConflictError('Sin conexión. Comprueba tu red e inténtalo de nuevo.');
+      showConflictError('No se pudo resolver el conflicto. Inténtalo de nuevo.');
       return;
     }
 

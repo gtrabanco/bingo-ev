@@ -93,6 +93,19 @@ export function discardCard(cardId: string, secret: string | null): void {
   void request(`/api/cards/${cardId}`, jsonInit({ secret }, 'DELETE'));
 }
 
+// Awaitable variant of discardCard for conflict resolution: returns true on success or 404.
+export async function deleteCard(cardId: string, secret: string): Promise<boolean> {
+  try {
+    const res = await fetch(`/api/cards/${cardId}`, {
+      ...jsonInit({ secret }, 'DELETE'),
+      signal: AbortSignal.timeout(4000),
+    });
+    return res.ok || res.status === 204 || res.status === 404;
+  } catch {
+    return false;
+  }
+}
+
 // Owner rehydration: fetch a card's full state with its secret (recovery
 // links). Returns null if it doesn't exist or the secret is wrong.
 export function fetchOwnedCard(
