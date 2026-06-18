@@ -1406,7 +1406,7 @@ import CertificateModal from '../components/CertificateModal.astro';
     profileError.classList.add('hidden');
   }
 
-  function renderProfileControl(state: ProfileState, handle?: string | null): void {
+  function renderProfileControl(state: ProfileState, handle?: string | null, moveFocus = false): void {
     const none = state === 'none';
     const active = state === 'active';
     const form = state === 'form';
@@ -1429,6 +1429,9 @@ import CertificateModal from '../components/CertificateModal.astro';
     if (form && profileHandleInput) {
       profileHandleInput.value = handle ?? '';
       profileHandleInput.focus();
+    } else if (moveFocus) {
+      if (active) btnEditProfile?.focus();
+      else if (none) btnCreateProfile?.focus();
     }
   }
 
@@ -1440,7 +1443,7 @@ import CertificateModal from '../components/CertificateModal.astro';
 
     if (result.ok) {
       currentHandle = handle;
-      renderProfileControl(isPublic ? 'active' : 'none', handle);
+      renderProfileControl(isPublic ? 'active' : 'none', handle, true);
       return;
     }
     // Map typed errors; blocklist messages are already Spanish strings.
@@ -1490,7 +1493,7 @@ import CertificateModal from '../components/CertificateModal.astro';
   btnCreateProfile?.addEventListener('click', () => renderProfileControl('form', currentHandle));
   btnEditProfile?.addEventListener('click', () => renderProfileControl('form', currentHandle));
   btnCancelProfile?.addEventListener('click', () =>
-    renderProfileControl(currentHandle ? 'active' : 'none', currentHandle)
+    renderProfileControl(currentHandle ? 'active' : 'none', currentHandle, true)
   );
   btnSaveProfile?.addEventListener('click', async () => {
     const handle = profileHandleInput?.value.trim().toLowerCase() ?? '';
@@ -1505,7 +1508,7 @@ import CertificateModal from '../components/CertificateModal.astro';
   btnDisableProfile?.addEventListener('click', async () => {
     if (!currentHandle) return;
     const result = await setProfile(currentHandle, false);
-    if (result.ok) renderProfileControl('none', currentHandle);
+    if (result.ok) renderProfileControl('none', currentHandle, true);
   });
 
   btnLoginGoogle?.addEventListener('click', () => startLogin('google'));
