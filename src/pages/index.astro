@@ -1636,14 +1636,6 @@ const hasAnyProvider = hasGoogle || hasX;
     const incHasGroup = !!conflict.incoming.groupId;
     const exHasGroup = !!conflict.existing.groupId;
 
-    // Group always beats a solo card — resolve silently, no dialog needed.
-    if (incHasGroup !== exHasGroup) {
-      const dflt: 'incoming' | 'existing' = incHasGroup ? 'incoming' : 'existing';
-      conflictState = { incomingCardId, incomingSecret, conflict, pendingAction: null, default: dflt };
-      void (dflt === 'incoming' ? resolveKeepIncoming() : resolveKeepExisting());
-      return;
-    }
-
     const dflt = computeDefault(conflict);
     conflictState = { incomingCardId, incomingSecret, conflict, pendingAction: null, default: dflt };
     clearConflictError();
@@ -1654,6 +1646,10 @@ const hasAnyProvider = hasGoogle || hasX;
         `Tu cuenta tiene un cartón en «${conflict.existing.groupName ?? conflict.existing.groupId}» ` +
         `y otro en «${conflict.incoming.groupName ?? conflict.incoming.groupId}». ` +
         `Solo puedes estar activo en uno; el que elimines te sacará automáticamente de ese grupo.`;
+    } else if (incHasGroup !== exHasGroup) {
+      const groupCard = incHasGroup ? conflict.incoming : conflict.existing;
+      conflictDialogIntro.textContent =
+        `El cartón de grupo «${groupCard.groupName ?? groupCard.groupId}» tiene prioridad sobre el cartón individual. Resolviendo automáticamente…`;
     } else {
       conflictDialogIntro.textContent =
         'Esta cuenta ya tiene un cartón activo. Elige cuál conservar; el otro se eliminará sin posibilidad de recuperación.';
@@ -1673,6 +1669,10 @@ const hasAnyProvider = hasGoogle || hasX;
     conflictMain.classList.remove('hidden');
     conflictOwnerWarn.classList.add('hidden');
     conflictDialog.showModal();
+
+    // Group beats solo: fire immediately. Dialog is already open so any failure is
+    // visible and retryable; on success the page reloads before the user notices.
+    if (incHasGroup !== exHasGroup) void acceptDefault();
   }
 
   function showOwnerConfirmation(discardingExisting: boolean): void {
