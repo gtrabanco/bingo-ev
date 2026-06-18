@@ -35,10 +35,26 @@
   Disclosed in `/privacidad` under "Protección contra bots". Secret key via
   `wrangler secret put TURNSTILE_SECRET_KEY`; site key via `PUBLIC_TURNSTILE_SITE_KEY`
   build-time env var (CF Workers Builds dashboard for production).
+- **Google and X (Twitter)** are processors for social OAuth login (feature 05).
+  Data received: provider user id, display name, email (if returned — X may omit it).
+  Purpose: creating a durable identity to aggregate diplomas across devices.
+  Lawful basis: consent (the user actively clicks "Continuar con Google/X").
+  Retention: until the user deletes their account via `DELETE /api/account`.
+  Provider tokens are **not stored** — used once at callback, then discarded.
+  Disclosed in `/privacidad` under "Cuentas e inicio de sesión".
+  Secrets: `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`,
+  `X_OAUTH_CLIENT_ID`, `X_OAUTH_CLIENT_SECRET` via `wrangler secret put`.
+- **Session cookie** (`evbingo_session`): `HttpOnly; Secure; SameSite=Lax; Path=/`.
+  Strictly necessary (authentication only, not tracking). Set on OAuth callback,
+  cleared on logout. Only the SHA-256 hash of the token is stored in D1 (`sessions`
+  table); the raw token cannot be reconstructed from DB. Expires after 90 days.
+  Cookie is **not set** when the user is not logged in — no cookie banner needed
+  (ePrivacy strictly-necessary exemption); but the "no cookies" claim in
+  `/privacidad` has been corrected to clarify this.
 - **No brand names** anywhere in copy or situations (editorial/legal hygiene — avoids
-  implying any real company). **Exception:** the vehicle-type selector lists car maker names
-  as user-submitted self-identification data (not editorial copy); this is legally distinct
-  from endorsing or naming a brand in game content.
+  implying any real company). **Exceptions:** vehicle-type selector (user self-identification
+  data, not editorial copy); "Continuar con Google/X" login buttons (functional auth UI,
+  legally analogous to the vehicle-brand selector — not editorial game copy).
 - **Tesla referral** copy must not imply unequal benefit ("ganamos los dos por igual").
 - Any new field that stores personal data must be reflected in `/privacidad` (purpose,
   basis, retention) before shipping.

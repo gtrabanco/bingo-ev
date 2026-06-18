@@ -25,6 +25,39 @@ import CertificateModal from '../components/CertificateModal.astro';
       </p>
     </header>
 
+    <!-- Account / login affordance (feature 05-accounts).
+         Shown as a compact row under the tagline:
+         - logged-out → two social login buttons.
+         - logged-in  → brief identity chip + logout link.
+         Hidden until JS resolves the session to avoid layout flash. -->
+    <div id="account-bar" class="mt-3 items-center justify-center gap-2 text-xs sm:text-sm hidden" aria-live="polite">
+      <!-- Logged-out state -->
+      <div id="account-loggedout" class="hidden items-center gap-2">
+        <span class="text-paper-300/60">Guardar mis diplomas:</span>
+        <button
+          id="btn-login-google"
+          type="button"
+          class="rounded-lg border border-paper-50/25 bg-felt-950/40 px-2.5 py-1 font-semibold text-paper-50 transition-colors hover:bg-paper-50/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+          aria-label="Continuar con Google"
+        >Continuar con Google</button>
+        <button
+          id="btn-login-x"
+          type="button"
+          class="rounded-lg border border-paper-50/25 bg-felt-950/40 px-2.5 py-1 font-semibold text-paper-50 transition-colors hover:bg-paper-50/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+          aria-label="Continuar con X"
+        >Continuar con X</button>
+      </div>
+      <!-- Logged-in state -->
+      <div id="account-loggedin" class="hidden items-center gap-2">
+        <span id="account-label" class="text-paper-300/75"></span>
+        <button
+          id="btn-logout"
+          type="button"
+          class="underline decoration-paper-300/40 underline-offset-2 transition-colors hover:text-paper-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+        >Cerrar sesión</button>
+      </div>
+    </div>
+
     <!-- Wide screens (Tesla, laptop): two columns — the cartón on the left,
          the paperwork (save, groups, ads) on the right. One column on mobile. -->
     <div class="lg:mt-2 lg:grid lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-start lg:gap-x-10">
@@ -152,6 +185,38 @@ import CertificateModal from '../components/CertificateModal.astro';
     >
       Ocultar de la galería pública
     </button>
+
+    <!-- Device-code transfer panel: hidden until the button is clicked.
+         Shown whenever a card exists (has id + secret), logged in or not. -->
+    <button
+      id="device-code-btn"
+      type="button"
+      class="mt-2 hidden w-full rounded-xl border border-paper-300/20 px-4 py-2 text-xs text-paper-300/60 transition-colors hover:border-paper-300/35 hover:text-paper-300/80"
+      aria-expanded="false"
+      aria-controls="device-code-panel"
+    >
+      Abrir en otro dispositivo
+    </button>
+
+    <div
+      id="device-code-panel"
+      class="hidden mt-3 rounded-xl border border-paper-50/15 bg-felt-950/40 p-4 text-center space-y-3"
+      role="region"
+      aria-label="Código para otro dispositivo"
+    >
+      <p class="text-xs text-paper-300/70">
+        En el otro dispositivo ve a <strong class="text-paper-50">bingo.gruxon.com/activar</strong>
+        e introduce este código, o escanea el QR.
+      </p>
+      <p
+        id="device-code-value"
+        class="text-3xl font-black tracking-[0.25em] text-amber-300"
+        aria-live="polite"
+      ></p>
+      <div id="device-code-qr" class="flex justify-center" aria-hidden="true"></div>
+      <p id="device-code-expiry" class="text-[0.6875rem] text-paper-300/50"></p>
+      <p id="device-code-error" class="hidden text-xs text-red-300"></p>
+    </div>
 
     <noscript>
       <p
@@ -438,18 +503,25 @@ import CertificateModal from '../components/CertificateModal.astro';
   import {
     cardShareUrl,
     createGroup,
+    deleteAccount,
     discardCard,
+    fetchAccount,
     fetchOwnedCard,
     joinGroup,
+    linkCard,
     linkEmail,
+    logout,
     registerCard,
     reportCompletion,
+    requestDeviceCode,
     requestRecovery,
     setGalleryHidden,
+    startLogin,
     syncAlias,
     syncMarks,
     verificationUrl,
   } from '../lib/api';
+  import { encode as encodeQr } from 'uqr';
   import { echarConfetti } from '../lib/confetti';
   import {
     isNewsletterSubscribed,
@@ -508,6 +580,12 @@ import CertificateModal from '../components/CertificateModal.astro';
   const shareWhatsappButton = $<HTMLButtonElement>('#share-whatsapp');
   const shareCardButton = $<HTMLButtonElement>('#share-card');
   const galleryToggleBtn = $<HTMLButtonElement>('#gallery-toggle');
+  const deviceCodeBtn = $<HTMLButtonElement>('#device-code-btn');
+  const deviceCodePanel = $<HTMLDivElement>('#device-code-panel');
+  const deviceCodeValue = $<HTMLParagraphElement>('#device-code-value');
+  const deviceCodeQr = $<HTMLDivElement>('#device-code-qr');
+  const deviceCodeExpiry = $<HTMLParagraphElement>('#device-code-expiry');
+  const deviceCodeError = $<HTMLParagraphElement>('#device-code-error');
   let galleryHidden = false;
   const emailForm = $<HTMLFormElement>('#email-form');
   const emailInput = $<HTMLInputElement>('#email-input');
@@ -803,6 +881,9 @@ import CertificateModal from '../components/CertificateModal.astro';
     // Gallery toggle: only shown for completed cards with a secret (owned).
     const isCompleted = card.completedAt !== null;
     galleryToggleBtn.classList.toggle('hidden', !isCompleted || card.secret === null);
+
+    // Device-code button: shown whenever a registered card exists (has id + secret).
+    deviceCodeBtn?.classList.toggle('hidden', !card.id || card.secret === null);
     if (isCompleted) {
       galleryToggleBtn.setAttribute('aria-pressed', String(galleryHidden));
       galleryToggleBtn.textContent = galleryHidden
@@ -1225,4 +1306,127 @@ import CertificateModal from '../components/CertificateModal.astro';
   renderGrid();
   syncStatus();
   void refreshGroupMembership();
+
+  // -------------------------------------------------------------------------
+  // Account bar (feature 05-accounts)
+  // -------------------------------------------------------------------------
+
+  const accountBar = $<HTMLDivElement>('#account-bar');
+  const accountLoggedOut = $<HTMLDivElement>('#account-loggedout');
+  const accountLoggedIn = $<HTMLDivElement>('#account-loggedin');
+  const accountLabel = $<HTMLSpanElement>('#account-label');
+  const btnLoginGoogle = $<HTMLButtonElement>('#btn-login-google');
+  const btnLoginX = $<HTMLButtonElement>('#btn-login-x');
+  const btnLogout = $<HTMLButtonElement>('#btn-logout');
+
+  async function initAccountBar(): Promise<void> {
+    if (!accountBar) return;
+    const account = await fetchAccount();
+    accountBar.classList.remove('hidden');
+    accountBar.classList.add('flex');
+
+    if (account) {
+      const name = account.displayName ?? account.email ?? account.provider;
+      if (accountLabel) accountLabel.textContent = `Cuenta: ${name}`;
+      accountLoggedOut?.classList.add('hidden');
+      accountLoggedOut?.classList.remove('flex');
+      accountLoggedIn?.classList.remove('hidden');
+      accountLoggedIn?.classList.add('flex');
+
+      // Link any localStorage cards to the account (best-effort, fire-and-forget).
+      const cards = loadCurrentCard() ? [loadCurrentCard()!] : [];
+      for (const c of cards) {
+        if (c.id && c.secret) void linkCard(c.id, c.secret);
+      }
+    } else {
+      accountLoggedIn?.classList.add('hidden');
+      accountLoggedIn?.classList.remove('flex');
+      accountLoggedOut?.classList.remove('hidden');
+      accountLoggedOut?.classList.add('flex');
+    }
+  }
+
+  btnLoginGoogle?.addEventListener('click', () => startLogin('google'));
+  btnLoginX?.addEventListener('click', () => startLogin('x'));
+  btnLogout?.addEventListener('click', async () => {
+    await logout();
+    // Reload to reflect logged-out state — the server-side redirect handles /.
+    window.location.reload();
+  });
+
+  void initAccountBar();
+
+  // -------------------------------------------------------------------------
+  // Device-code cross-device transfer (feature 05-accounts P7)
+  // -------------------------------------------------------------------------
+
+  function renderDeviceCodeQr(code: string): void {
+    if (!deviceCodeQr) return;
+    const url = `${location.origin}/activar?code=${encodeURIComponent(code)}`;
+    const qr = encodeQr(url, { ecc: 'M', border: 2 });
+    const scale = 5;
+    const size = qr.size * scale;
+    let cells = '';
+    for (let row = 0; row < qr.size; row++) {
+      for (let col = 0; col < qr.size; col++) {
+        if (qr.data[row]![col]) {
+          cells += `<rect x="${col * scale}" y="${row * scale}" width="${scale}" height="${scale}" fill="currentColor"/>`;
+        }
+      }
+    }
+    deviceCodeQr.innerHTML =
+      `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" class="text-paper-50" xmlns="http://www.w3.org/2000/svg">${cells}</svg>`;
+  }
+
+  let deviceCodeExpirerId: ReturnType<typeof setInterval> | null = null;
+
+  function startExpiryCountdown(expiresIn: number): void {
+    if (deviceCodeExpirerId) clearInterval(deviceCodeExpirerId);
+    let remaining = expiresIn;
+    function tick(): void {
+      if (!deviceCodeExpiry) return;
+      if (remaining <= 0) {
+        deviceCodeExpiry.textContent = 'Código caducado. Genera uno nuevo.';
+        if (deviceCodeExpirerId) clearInterval(deviceCodeExpirerId);
+        return;
+      }
+      const m = Math.floor(remaining / 60);
+      const s = String(remaining % 60).padStart(2, '0');
+      deviceCodeExpiry.textContent = `Caduca en ${m}:${s}`;
+      remaining--;
+    }
+    tick();
+    deviceCodeExpirerId = setInterval(tick, 1000);
+  }
+
+  deviceCodeBtn?.addEventListener('click', async () => {
+    const isOpen = deviceCodeBtn.getAttribute('aria-expanded') === 'true';
+    if (isOpen) {
+      deviceCodePanel?.classList.add('hidden');
+      deviceCodeBtn.setAttribute('aria-expanded', 'false');
+      if (deviceCodeExpirerId) clearInterval(deviceCodeExpirerId);
+      return;
+    }
+
+    if (!card.id || !card.secret) return;
+
+    if (deviceCodeError) deviceCodeError.classList.add('hidden');
+    if (deviceCodeValue) deviceCodeValue.textContent = '…';
+    deviceCodePanel?.classList.remove('hidden');
+    deviceCodeBtn.setAttribute('aria-expanded', 'true');
+
+    const result = await requestDeviceCode(card.id, card.secret);
+    if (!result) {
+      if (deviceCodeError) {
+        deviceCodeError.textContent = 'No se pudo generar el código. Inténtalo de nuevo.';
+        deviceCodeError.classList.remove('hidden');
+      }
+      if (deviceCodeValue) deviceCodeValue.textContent = '';
+      return;
+    }
+
+    if (deviceCodeValue) deviceCodeValue.textContent = result.code;
+    renderDeviceCodeQr(result.code);
+    startExpiryCountdown(result.expiresIn);
+  });
 </script>

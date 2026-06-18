@@ -1,0 +1,101 @@
+# 05 — accounts · TASKS
+
+> Concrete checklist per phase. Check off during `execute-phase`.
+> Gate = `npm run build` green before each commit.
+
+## P1 — Schema + session primitive
+- [x] `migrations/0011_accounts.sql`: `accounts` (UNIQUE provider+provider_user_id),
+      `sessions` (token_hash PK), `oauth_state` (state PK), `cards.account_id` nullable.
+- [x] Apply locally: `npx wrangler d1 migrations apply ev-bingo --local`.
+- [x] `src/lib/auth.ts`: `generatePkce()` (verifier + S256 challenge via Web Crypto),
+      `randomToken()`, `sha256(token)`.
+- [x] `src/lib/auth.ts`: `issueSession(accountId)` → token + DB row (expires +90d);
+      `getSession(request)` → `{ accountId } | null` (hash + expiry check);
+      `revokeSession(token)`.
+- [x] Opportunistic GC: delete expired `sessions` + `oauth_state` rows, batched into
+      auth writes (mirror the card/group GC pattern).
+- [x] No new runtime dependency added to `package.json`.
+- [x] Gate green.
+
+## P2 — Google flow end-to-end
+- [x] Provider config in `lib/auth.ts`: google authorize/token/userinfo URLs,
+      scopes (`openid email profile`), env var names.
+- [x] `GET /api/auth/google/start` (`prerender = false`): make state + PKCE, insert
+      `oauth_state`, GC, 302 to authorize URL.
+- [x] `GET /api/auth/google/callback`: consume (DELETE) `oauth_state` single-use;
+      reject missing/expired/provider-mismatch; exchange code (+verifier); fetch
+      userinfo; upsert account; issue session cookie; 302 to `/` (hardcoded origin).
+- [x] `POST /api/auth/logout`: revoke session + clear cookie.
+- [x] Session cookie: `HttpOnly; Secure; SameSite=Lax; Path=/`.
+- [x] Tokens used once then discarded (not stored).
+- [x] Rate-limit `start` + `callback` (`lib/rate-limit.ts`).
+- [ ] Gate; manual `auth:google-login`, `auth:returning`, `auth:logout`,
+      `auth:csrf`, `auth:open-redirect` (Google test app + `.dev.vars`).
+
+## P3 — X provider
+- [x] X config: authorize/token URLs, `users.read tweet.read` scope, `users/me`
+      userinfo; PKCE mandatory.
+- [x] `:provider` routing covers `x`; reject unknown providers.
+- [x] Tolerate absent email (store null); identity = `data.id`.
+- [ ] Gate; manual `auth:x-login` (verify null-email path + no duplicate on
+      `auth:returning`).
+
+## P4 — Account/card plumbing + minimal UI
+- [x] `POST /api/account/link-card` `{cardId, secret}` (session-auth): atomic
+      `UPDATE cards SET account_id=? WHERE id=? AND (secret=? OR secret IS NULL)`.
+- [x] `POST /api/cards`: when `getSession` present, set `account_id` at creation.
+- [x] `GET /api/account` (session-auth): `{ provider, displayName, email, cardCount }`.
+- [x] `DELETE /api/account` (session-auth): delete account + its sessions; null
+      `account_id` on its cards (cards survive). No `settleDeparture` impact.
+- [x] `src/lib/api.ts`: `startLogin(provider)` (full redirect), `logout()`,
+      `fetchAccount()`, `linkCard(id, secret)`, `deleteAccount()` — degrade to
+      `null`/`false`.
+- [x] `index.astro` menu: logged-out → "Continuar con Google" / "Continuar con X";
+      logged-in → account indicator + "Cerrar sesión". Accessible (aria, focus).
+- [x] Post-login: client links `localStorage` cards via `linkCard`.
+- [ ] Gate; manual `auth:link-card`, `auth:create-logged-in`, `auth:account-delete`,
+      `auth:degraded`.
+
+## P5 — Legal + hardening
+- [x] `/privacidad`: new "Cuentas e inicio de sesión" section — processors (Google,
+      X), data received (provider id, nombre, email si lo hay), purpose (identidad
+      duradera para agrupar tus diplomas), basis (consentimiento), retention (hasta
+      borrado de cuenta), deletion right. Correct "no usamos cookies" → cookie de
+      sesión estrictamente necesaria solo al iniciar sesión.
+- [x] `docs/legal/README.md`: add Google + X processors + session-cookie touchpoint.
+- [x] Bump `/privacidad` `updated` date.
+- [ ] Mandatory `security-review` of the auth surface; resolve/track findings.
+- [x] Gate.
+
+## P6 — PR
+- [x] Branch `feat/05-accounts`; one PR against `main`.
+- [x] English body; `Closes #9`; flag migration `0011` + required secrets
+      (`GOOGLE_OAUTH_*`, `X_OAUTH_*`) + redirect-URI registration for the deployer.
+- [x] Gate green.
+
+## P7 — Device-code cross-device transfer
+- [x] `migrations/0012_device_codes.sql`: `device_codes` table (code PK, card_id,
+      created_at, expires_at TEXT, consumed_at TEXT nullable).
+- [x] Apply locally: `npx wrangler d1 migrations apply ev-bingo --local`.
+- [x] `src/lib/auth.ts`: `generateDeviceCode()` — 6 chars from `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`,
+      formatted `XXX-XXX` for readability. Also `normalizeDeviceCode`, `isValidDeviceCodeFormat`.
+- [x] `POST /api/cards/[id]/device-code.ts` (`prerender = false`): validate secret vs
+      `cards.secret`; INSERT device_code (TTL 5 min); GC expired codes in batch;
+      return `{code, expiresIn: 300}`. Rate-limit via `RATE_LIMITER_CREATE`.
+- [x] `POST /api/device-code/claim.ts` (`prerender = false`): atomic claim via UPDATE
+      RETURNING; 410 on missing/expired/consumed.
+- [x] `src/pages/activar.astro` (`prerender = false`): auto-claims server-side when
+      `?code=` present (QR path); manual form with auto-format input (Tesla path).
+- [x] `index.astro`: "Abrir en otro dispositivo" button (visible when card has id + secret).
+      Panel shows code + QR (uqr, inline SVG) + countdown expiry timer.
+- [x] `src/lib/api.ts`: `requestDeviceCode(cardId, secret)` → `{code, expiresIn} | null`.
+- [x] No new runtime dependency (`uqr` already approved).
+- [x] Gate green.
+- [ ] Manual: `device:send`, `device:receive-qr`, `device:receive-manual`,
+      `device:expired`, `device:replay` — deferred to deployer (needs running Worker).
+
+## Tracking
+- [x] Create the GitHub issue for this feature; issue #9, PR #10.
+- [x] Confirm `09 gallery-profiles` still lists `05` as a dependency (it does).
+- [x] Note the deferred "mis diplomas" dashboard as a candidate fast-follow / new
+      roadmap row after merge.

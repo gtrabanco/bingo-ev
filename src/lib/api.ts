@@ -320,7 +320,7 @@ export interface GalleryParams {
 
 const GALLERY_EMPTY: GalleryResponse = {
   items: [],
-  total: 0,
+  count: 0,
   counts: { honorific: {}, vehicle: {} },
   hasMore: false,
   page: 1,
@@ -341,4 +341,85 @@ export async function fetchGallery(params: GalleryParams = {}): Promise<GalleryR
   } catch {
     return GALLERY_EMPTY;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Account / session (feature 05-accounts)
+// ---------------------------------------------------------------------------
+
+export interface AccountInfo {
+  provider: string;
+  displayName: string | null;
+  email: string | null;
+  cardCount: number;
+}
+
+// Full-page navigation to the OAuth start endpoint — OAuth requires top-level
+// redirect, not a fetch. Degrades silently if the Worker is down.
+export function startLogin(provider: 'google' | 'x'): void {
+  window.location.href = `/api/auth/${provider}/start`;
+}
+
+// POST to logout endpoint; clears session cookie server-side; redirects to /.
+export async function logout(): Promise<boolean> {
+  try {
+    const res = await fetch('/api/auth/logout', { method: 'POST', signal: AbortSignal.timeout(4000) });
+    if (res.redirected) window.location.href = res.url;
+    return res.ok || res.status === 302 || res.redirected;
+  } catch {
+    return false;
+  }
+}
+
+// Returns the logged-in account's minimal identity, or null when logged out /
+// Worker down.
+export function fetchAccount(): Promise<AccountInfo | null> {
+  return request<AccountInfo>('/api/account');
+}
+
+// Links a localStorage card to the logged-in account via the owner secret.
+// Returns false on secret mismatch or network failure.
+export async function linkCard(cardId: string, secret: string): Promise<boolean> {
+  try {
+    const res = await fetch('/api/account/link-card', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ cardId, secret }),
+      signal: AbortSignal.timeout(4000),
+    });
+    return res.ok || res.status === 204;
+  } catch {
+    return false;
+  }
+}
+
+// Deletes the account and its sessions; cards survive unlinked.
+export async function deleteAccount(): Promise<boolean> {
+  try {
+    const res = await fetch('/api/account', { method: 'DELETE', signal: AbortSignal.timeout(4000) });
+    return res.ok || res.status === 204;
+  } catch {
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Device-code cross-device card transfer (feature 05-accounts P7)
+// ---------------------------------------------------------------------------
+
+export interface DeviceCodeResult {
+  code: string;
+  expiresIn: number;
+}
+
+// Generates a short single-use code (format "ABC-DEF") that another device can
+// enter at /activar to receive this card's id + secret. Requires the owner secret.
+export async function requestDeviceCode(
+  cardId: string,
+  secret: string,
+): Promise<DeviceCodeResult | null> {
+  return request<DeviceCodeResult>(
+    `/api/cards/${cardId}/device-code`,
+    jsonInit({ secret }),
+  );
 }
