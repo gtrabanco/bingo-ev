@@ -1,5 +1,10 @@
 # 10 — multi-card-conflict · Progress
 
+## P3 — PR (done)
+
+[PR #19](https://github.com/gtrabanco/bingo-ev/pull/19) — `feat/10-multi-card-conflict` → `main`.
+5 commits ahead of main: roadmap + P1 + P2 + review-fixes + P2b.
+
 ## P1 — Backend (done)
 
 - Modified `src/pages/api/account/link-card.ts`: conflict detection via two-query approach (secret verify + active-card check). Returns 409 with `{ conflict: { existing, incoming } }` when account already has a different active card. Completed cards are exempt.
