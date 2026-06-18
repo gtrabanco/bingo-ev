@@ -63,6 +63,7 @@
 
 **Left open for P5:** PR against main.
 
-## P5 — PR ⏳
+## P5 — PR ✅
 
-_not started_
+- PR [#13](https://github.com/gtrabanco/bingo-ev/pull/13) opened against `main`.
+- English body; deployer note for migration `0013`; manual verification checklist included.

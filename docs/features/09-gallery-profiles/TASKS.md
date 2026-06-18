@@ -69,10 +69,10 @@
 - [x] Resolve/track findings. No fix-now findings. Tech-debt (VEHICLE_LABELS duplication)
       postponed as pre-existing pattern.
 
-## P5 — PR
-- [ ] Branch `feat/09-gallery-profiles`; one PR vs `main`.
-- [ ] English body; `Closes #<issue>`; flag migration `0013` for the deployer.
-- [ ] Gate green.
+## P5 — PR ✅
+- [x] Branch `feat/09-gallery-profiles`; PR #13 vs `main`.
+- [x] English body; deployer note for migration `0013`; manual verification checklist.
+- [x] Gate green.
 
 ## Tracking
 - [ ] Create the GitHub issue for this feature; record issue/PR numbers here.
