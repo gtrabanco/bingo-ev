@@ -5,7 +5,7 @@ import Layout from '../layouts/Layout.astro';
 import { env } from 'cloudflare:workers';
 import { VEHICLE_TYPES, type VehicleType, type Honorific } from '../lib/card';
 import { queryGallery, HONORIFIC_KEYS, type GalleryEntry } from '../lib/gallery';
-import { HONORIFICS, FALLBACK_NICK } from '../lib/certificate-design';
+import { HONORIFICS, HONORIFIC_COLORS, FALLBACK_NICK } from '../lib/certificate-design';
 
 const VEHICLE_LABELS: Record<string, string> = {
   bev_tesla: 'Tesla',
@@ -24,12 +24,6 @@ const VEHICLE_LABELS: Record<string, string> = {
   bev_other: 'Otra eléctrica',
   phev: 'Híbrido enchufable',
   ice: 'Combustión',
-};
-
-const HONORIFIC_COLORS: Record<Honorific, string> = {
-  resignado: '#11503c',
-  granujilla: '#c07820',
-  sinverguenza: '#b02e22',
 };
 
 // Read URL filter params — used for both server render and no-JS fallback.
@@ -170,26 +164,39 @@ function filterUrl(honorific: string | null, vehicle: string | null): string {
           </p>
         ) : (
           items.map((entry) => (
-            <a
-              href={`/v/${entry.id}`}
-              class="gallery-card group block rounded-lg border border-paper-300/10 bg-felt-950/40 p-4 transition-colors hover:border-paper-300/25 hover:bg-felt-950/60"
+            <div
+              class="gallery-card rounded-lg border border-paper-300/10 bg-felt-950/40 transition-colors hover:border-paper-300/25 hover:bg-felt-950/60"
               style={`border-left: 3px solid ${HONORIFIC_COLORS[entry.honorific]};`}
               data-entry-id={entry.id}
             >
-              <p
-                class="text-xs font-semibold uppercase tracking-widest"
-                style={`color: ${HONORIFIC_COLORS[entry.honorific]};`}
-              >
-                {HONORIFICS[entry.honorific].title}
-              </p>
-              <p class="mt-1.5 truncate font-bold text-paper-50">
-                {entry.nick ?? FALLBACK_NICK}
-              </p>
-              <p class="mt-1 text-xs text-paper-300/50">
-                {formatDate(entry.completedAt)}
-                {entry.vehicleType ? ` · ${VEHICLE_LABELS[entry.vehicleType] ?? entry.vehicleType}` : ''}
-              </p>
-            </a>
+              <a href={`/v/${entry.id}`} class="block p-4 group">
+                <p
+                  class="text-xs font-semibold uppercase tracking-widest"
+                  style={`color: ${HONORIFIC_COLORS[entry.honorific]};`}
+                >
+                  {HONORIFICS[entry.honorific].title}
+                </p>
+                <p class="mt-1.5 truncate font-bold text-paper-50">
+                  {entry.nick ?? FALLBACK_NICK}
+                </p>
+                <p class="mt-1 text-xs text-paper-300/50">
+                  {formatDate(entry.completedAt)}
+                  {entry.vehicleType ? ` · ${VEHICLE_LABELS[entry.vehicleType] ?? entry.vehicleType}` : ''}
+                </p>
+              </a>
+              {entry.profileHandle && (
+                <div class="border-t border-paper-300/10 px-4 py-2">
+                  <a
+                    href={`/jugador/${entry.profileHandle}`}
+                    class="text-xs text-amber-300/70 transition-colors hover:text-amber-300"
+                  >
+                    {entry.siblingCount > 1
+                      ? `${entry.siblingCount} bingos del mismo jugador`
+                      : `@${entry.profileHandle}`}
+                  </a>
+                </div>
+              )}
+            </div>
           ))
         )
       }
@@ -242,12 +249,7 @@ function filterUrl(honorific: string | null, vehicle: string | null): string {
 
 <script>
   import { fetchGallery, type GalleryEntry } from '../lib/api';
-
-  const HONORIFIC_COLORS: Record<string, string> = {
-    resignado: '#11503c',
-    granujilla: '#c07820',
-    sinverguenza: '#b02e22',
-  };
+  import { HONORIFIC_COLORS } from '../lib/certificate-design';
 
   const HONORIFIC_TITLES: Record<string, string> = {
     resignado: '«Resignado Sufridor»',
@@ -281,14 +283,10 @@ function filterUrl(honorific: string | null, vehicle: string | null): string {
     const title = HONORIFIC_TITLES[entry.honorific] ?? entry.honorific;
     const nick = escapeHtml(entry.nick ?? FALLBACK_NICK);
     const vehicle = entry.vehicleType ? ` · ${VEHICLE_LABELS[entry.vehicleType] ?? entry.vehicleType}` : '';
-    return `<a href="/v/${entry.id}"
-      class="gallery-card group block rounded-lg border border-paper-300/10 bg-felt-950/40 p-4 transition-colors hover:border-paper-300/25 hover:bg-felt-950/60"
-      style="border-left: 3px solid ${color};"
-      data-entry-id="${entry.id}">
-      <p class="text-xs font-semibold uppercase tracking-widest" style="color: ${color};">${title}</p>
-      <p class="mt-1.5 truncate font-bold text-paper-50">${nick}</p>
-      <p class="mt-1 text-xs text-paper-300/50">${formatDate(entry.completedAt)}${vehicle}</p>
-    </a>`;
+    const profileHtml = entry.profileHandle
+      ? `<div class="border-t border-paper-300/10 px-4 py-2"><a href="/jugador/${escapeHtml(entry.profileHandle)}" class="text-xs text-amber-300/70 transition-colors hover:text-amber-300">${entry.siblingCount > 1 ? `${entry.siblingCount} bingos del mismo jugador` : `@${escapeHtml(entry.profileHandle)}`}</a></div>`
+      : '';
+    return `<div class="gallery-card rounded-lg border border-paper-300/10 bg-felt-950/40 transition-colors hover:border-paper-300/25 hover:bg-felt-950/60" style="border-left: 3px solid ${color};" data-entry-id="${entry.id}"><a href="/v/${entry.id}" class="block p-4 group"><p class="text-xs font-semibold uppercase tracking-widest" style="color: ${color};">${title}</p><p class="mt-1.5 truncate font-bold text-paper-50">${nick}</p><p class="mt-1 text-xs text-paper-300/50">${formatDate(entry.completedAt)}${vehicle}</p></a>${profileHtml}</div>`;
   }
 
   function emptyHtml(filtered: boolean): string {

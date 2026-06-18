@@ -16,15 +16,23 @@ export interface GalleryEntry {
   completedAt: string;
   honorific: Honorific;
   vehicleType: VehicleType | null;
+  // null when the owning account has no public profile (or no account at all).
+  profileHandle: string | null;
+  // Count of the owning account's listed completed diplomas; 0 when profileHandle is null.
+  siblingCount: number;
 }
 
-interface GalleryRow {
+export interface GalleryRow {
   id: string;
   nick: string | null;
   completed_at: string;
   marks: string | null;
   cells: string | null;
   vehicle_type: string | null;
+  // Present only when the gallery query includes the accounts LEFT JOIN (feature 09).
+  // Absent (undefined) when the row comes from the profile page's own query.
+  profile_handle?: string | null;
+  sibling_count?: number;
 }
 
 export interface GalleryParams {
@@ -42,7 +50,7 @@ function parseVehicleType(v: string | null): VehicleType | null {
   return v && (VEHICLE_TYPES as readonly string[]).includes(v) ? (v as VehicleType) : null;
 }
 
-function rowToEntry(row: GalleryRow): GalleryEntry | null {
+export function rowToEntry(row: GalleryRow): GalleryEntry | null {
   let cells: (string | null)[];
   try {
     const parsed: unknown = JSON.parse(row.cells ?? 'null');
@@ -62,6 +70,8 @@ function rowToEntry(row: GalleryRow): GalleryEntry | null {
     completedAt: row.completed_at,
     honorific: honorificFor(cells, marks),
     vehicleType: parseVehicleType(row.vehicle_type),
+    profileHandle: row.profile_handle ?? null,
+    siblingCount: row.sibling_count ?? 0,
   };
 }
 
@@ -73,20 +83,29 @@ export async function queryGallery(db: D1Database, params: GalleryParams = {}): 
   const limit = PAGE_SIZE * OVER_FETCH;
   const offset = (page - 1) * PAGE_SIZE;
 
+  // LEFT JOIN accounts to surface the public profile handle and sibling diploma count.
+  // The correlated subquery only runs when the account has a public profile (CASE guard).
   let query = `
-    SELECT id, nick, completed_at, marks, cells, vehicle_type
-    FROM cards
-    WHERE completed_at IS NOT NULL AND gallery_hidden = 0
+    SELECT c.id, c.nick, c.completed_at, c.marks, c.cells, c.vehicle_type,
+      CASE WHEN a.profile_public = 1 AND a.public_handle IS NOT NULL THEN a.public_handle ELSE NULL END AS profile_handle,
+      CASE WHEN a.profile_public = 1 AND a.public_handle IS NOT NULL
+           THEN (SELECT COUNT(*) FROM cards c2
+                 WHERE c2.account_id = c.account_id
+                   AND c2.completed_at IS NOT NULL AND c2.gallery_hidden = 0)
+           ELSE 0 END AS sibling_count
+    FROM cards c
+    LEFT JOIN accounts a ON c.account_id = a.id
+    WHERE c.completed_at IS NOT NULL AND c.gallery_hidden = 0
   `;
   const bindings: (string | number)[] = [];
   let bindIdx = 1;
 
   if (validVehicle) {
-    query += ` AND vehicle_type = ?${bindIdx++}`;
+    query += ` AND c.vehicle_type = ?${bindIdx++}`;
     bindings.push(validVehicle);
   }
 
-  query += ` ORDER BY completed_at DESC LIMIT ?${bindIdx++} OFFSET ?${bindIdx++}`;
+  query += ` ORDER BY c.completed_at DESC LIMIT ?${bindIdx++} OFFSET ?${bindIdx++}`;
   bindings.push(limit, offset);
 
   const result = await db.prepare(query).bind(...bindings).all<GalleryRow>();

@@ -1,7 +1,14 @@
 ---
+export const prerender = false;
+
+import { env } from 'cloudflare:workers';
 import Layout from '../layouts/Layout.astro';
 import BingoCard from '../components/BingoCard.astro';
 import CertificateModal from '../components/CertificateModal.astro';
+
+const hasGoogle = Boolean(env.GOOGLE_OAUTH_CLIENT_ID);
+const hasX = Boolean(env.X_OAUTH_CLIENT_ID);
+const hasAnyProvider = hasGoogle || hasX;
 ---
 
 <Layout
@@ -30,26 +37,89 @@ import CertificateModal from '../components/CertificateModal.astro';
          - logged-out → two social login buttons.
          - logged-in  → brief identity chip + logout link.
          Hidden until JS resolves the session to avoid layout flash. -->
-    <div id="account-bar" class="mt-3 items-center justify-center gap-2 text-xs sm:text-sm hidden" aria-live="polite">
-      <!-- Logged-out state -->
-      <div id="account-loggedout" class="hidden items-center gap-2">
-        <span class="text-paper-300/60">Guardar mis diplomas:</span>
-        <button
-          id="btn-login-google"
-          type="button"
-          class="rounded-lg border border-paper-50/25 bg-felt-950/40 px-2.5 py-1 font-semibold text-paper-50 transition-colors hover:bg-paper-50/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
-          aria-label="Continuar con Google"
-        >Continuar con Google</button>
-        <button
-          id="btn-login-x"
-          type="button"
-          class="rounded-lg border border-paper-50/25 bg-felt-950/40 px-2.5 py-1 font-semibold text-paper-50 transition-colors hover:bg-paper-50/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
-          aria-label="Continuar con X"
-        >Continuar con X</button>
-      </div>
+    <div id="account-bar" data-has-providers={hasAnyProvider ? 'true' : 'false'} class="mt-3 items-center justify-center gap-2 text-xs sm:text-sm hidden" aria-live="polite">
+      <!-- Logged-out state — only rendered when at least one OAuth provider is configured -->
+      {hasAnyProvider && (
+        <div id="account-loggedout" class="hidden items-center gap-2">
+          <span class="text-paper-300/60">Guardar mis diplomas:</span>
+          {hasGoogle && (
+            <button
+              id="btn-login-google"
+              type="button"
+              class="rounded-lg border border-paper-50/25 bg-felt-950/40 px-2.5 py-1 font-semibold text-paper-50 transition-colors hover:bg-paper-50/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+              aria-label="Continuar con Google"
+            >Continuar con Google</button>
+          )}
+          {hasX && (
+            <button
+              id="btn-login-x"
+              type="button"
+              class="rounded-lg border border-paper-50/25 bg-felt-950/40 px-2.5 py-1 font-semibold text-paper-50 transition-colors hover:bg-paper-50/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+              aria-label="Continuar con X"
+            >Continuar con X</button>
+          )}
+        </div>
+      )}
       <!-- Logged-in state -->
-      <div id="account-loggedin" class="hidden items-center gap-2">
+      <div id="account-loggedin" class="hidden flex-wrap items-center gap-2">
         <span id="account-label" class="text-paper-300/75"></span>
+        <span class="text-paper-300/30" aria-hidden="true">·</span>
+        <!-- Public profile control (feature 09) — three sub-states toggled by JS -->
+        <div id="profile-ctl" class="flex flex-wrap items-center gap-1.5">
+          <!-- no profile yet -->
+          <div id="profile-none">
+            <button
+              id="btn-create-profile"
+              type="button"
+              class="underline decoration-paper-300/40 underline-offset-2 transition-colors hover:text-paper-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+            >Perfil público</button>
+          </div>
+          <!-- profile active -->
+          <div id="profile-active" class="hidden items-center gap-1.5">
+            <a
+              id="profile-link"
+              href=""
+              class="font-semibold text-amber-300/80 transition-colors hover:text-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+            ></a>
+            <button
+              id="btn-edit-profile"
+              type="button"
+              class="underline decoration-paper-300/40 underline-offset-2 transition-colors hover:text-paper-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+            >editar</button>
+            <button
+              id="btn-disable-profile"
+              type="button"
+              class="underline decoration-paper-300/40 underline-offset-2 transition-colors hover:text-paper-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+            >desactivar</button>
+          </div>
+          <!-- create / edit form -->
+          <div id="profile-form-wrap" class="hidden flex-wrap items-center gap-1.5">
+            <label for="profile-handle-input" class="sr-only">Nombre de perfil público (letras minúsculas, números y guiones, 3–24 caracteres)</label>
+            <input
+              id="profile-handle-input"
+              type="text"
+              placeholder="mi-handle"
+              maxlength="24"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              class="w-28 rounded border border-paper-300/25 bg-felt-950/60 px-2 py-0.5 text-xs text-paper-50 placeholder-paper-300/40 focus:outline-none focus:ring-1 focus:ring-amber-300/50"
+              aria-describedby="profile-error"
+            />
+            <button
+              id="btn-save-profile"
+              type="button"
+              class="rounded border border-amber-300/30 bg-felt-800/40 px-2 py-0.5 text-xs text-amber-300 transition-colors hover:bg-felt-800/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+            >Activar</button>
+            <button
+              id="btn-cancel-profile"
+              type="button"
+              class="underline decoration-paper-300/40 underline-offset-2 transition-colors hover:text-paper-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+            >cancelar</button>
+            <p id="profile-error" aria-live="polite" class="hidden w-full text-xs text-red-300"></p>
+          </div>
+        </div>
+        <span class="text-paper-300/30" aria-hidden="true">·</span>
         <button
           id="btn-logout"
           type="button"
@@ -516,6 +586,7 @@ import CertificateModal from '../components/CertificateModal.astro';
     requestDeviceCode,
     requestRecovery,
     setGalleryHidden,
+    setProfile,
     startLogin,
     syncAlias,
     syncMarks,
@@ -1319,9 +1390,93 @@ import CertificateModal from '../components/CertificateModal.astro';
   const btnLoginX = $<HTMLButtonElement>('#btn-login-x');
   const btnLogout = $<HTMLButtonElement>('#btn-logout');
 
+  // Profile control elements (feature 09)
+  const profileNone = $<HTMLDivElement>('#profile-none');
+  const profileActive = $<HTMLDivElement>('#profile-active');
+  const profileFormWrap = $<HTMLDivElement>('#profile-form-wrap');
+  const profileLink = $<HTMLAnchorElement>('#profile-link');
+  const profileHandleInput = $<HTMLInputElement>('#profile-handle-input');
+  const profileError = $<HTMLParagraphElement>('#profile-error');
+  const btnCreateProfile = $<HTMLButtonElement>('#btn-create-profile');
+  const btnEditProfile = $<HTMLButtonElement>('#btn-edit-profile');
+  const btnDisableProfile = $<HTMLButtonElement>('#btn-disable-profile');
+  const btnSaveProfile = $<HTMLButtonElement>('#btn-save-profile');
+  const btnCancelProfile = $<HTMLButtonElement>('#btn-cancel-profile');
+
+  let currentHandle: string | null = null;
+
+  type ProfileState = 'none' | 'active' | 'form';
+
+  function showProfileError(msg: string): void {
+    if (!profileError) return;
+    profileError.textContent = msg;
+    profileError.classList.remove('hidden');
+  }
+
+  function clearProfileError(): void {
+    if (!profileError) return;
+    profileError.textContent = '';
+    profileError.classList.add('hidden');
+  }
+
+  function renderProfileControl(state: ProfileState, handle?: string | null, moveFocus = false): void {
+    const none = state === 'none';
+    const active = state === 'active';
+    const form = state === 'form';
+
+    profileNone?.classList.toggle('hidden', !none);
+    if (profileActive) {
+      profileActive.classList.toggle('hidden', !active);
+      profileActive.classList.toggle('flex', active);
+    }
+    if (profileFormWrap) {
+      profileFormWrap.classList.toggle('hidden', !form);
+      profileFormWrap.classList.toggle('flex', form);
+    }
+    clearProfileError();
+
+    if (active && handle && profileLink) {
+      profileLink.textContent = `@${handle}`;
+      profileLink.href = `/jugador/${handle}`;
+    }
+    if (form && profileHandleInput) {
+      profileHandleInput.value = handle ?? '';
+      profileHandleInput.focus();
+    } else if (moveFocus) {
+      if (active) btnEditProfile?.focus();
+      else if (none) btnCreateProfile?.focus();
+    }
+  }
+
+  async function saveProfile(handle: string, isPublic: boolean): Promise<void> {
+    clearProfileError();
+    if (btnSaveProfile) btnSaveProfile.disabled = true;
+    const result = await setProfile(handle, isPublic);
+    if (btnSaveProfile) btnSaveProfile.disabled = false;
+
+    if (result.ok) {
+      currentHandle = handle;
+      renderProfileControl(isPublic ? 'active' : 'none', handle, true);
+      return;
+    }
+    // Map typed errors; blocklist messages are already Spanish strings.
+    if (result.error === 'handle_invalid') {
+      showProfileError('Nombre no válido. Usa letras minúsculas, números y guiones (3–24 caracteres).');
+    } else if (result.error === 'handle_taken') {
+      showProfileError('Ese nombre ya está cogido. Prueba con otro.');
+    } else if (result.error === 'offline') {
+      showProfileError('No se pudo guardar. Comprueba tu conexión.');
+    } else {
+      showProfileError(result.error);
+    }
+  }
+
+  const hasProviders = accountBar?.dataset.hasProviders === 'true';
+
   async function initAccountBar(): Promise<void> {
     if (!accountBar) return;
     const account = await fetchAccount();
+    if (!account && !hasProviders) return;
     accountBar.classList.remove('hidden');
     accountBar.classList.add('flex');
 
@@ -1332,6 +1487,10 @@ import CertificateModal from '../components/CertificateModal.astro';
       accountLoggedOut?.classList.remove('flex');
       accountLoggedIn?.classList.remove('hidden');
       accountLoggedIn?.classList.add('flex');
+
+      // Render profile sub-state.
+      currentHandle = account.publicHandle ?? null;
+      renderProfileControl(account.profilePublic && account.publicHandle ? 'active' : 'none', account.publicHandle);
 
       // Link any localStorage cards to the account (best-effort, fire-and-forget).
       const cards = loadCurrentCard() ? [loadCurrentCard()!] : [];
@@ -1345,6 +1504,28 @@ import CertificateModal from '../components/CertificateModal.astro';
       accountLoggedOut?.classList.add('flex');
     }
   }
+
+  // Profile control event wiring
+  btnCreateProfile?.addEventListener('click', () => renderProfileControl('form', currentHandle));
+  btnEditProfile?.addEventListener('click', () => renderProfileControl('form', currentHandle));
+  btnCancelProfile?.addEventListener('click', () =>
+    renderProfileControl(currentHandle ? 'active' : 'none', currentHandle, true)
+  );
+  btnSaveProfile?.addEventListener('click', async () => {
+    const handle = profileHandleInput?.value.trim().toLowerCase() ?? '';
+    await saveProfile(handle, true);
+  });
+  profileHandleInput?.addEventListener('keydown', async (e) => {
+    if (e.key === 'Enter') {
+      const handle = profileHandleInput.value.trim().toLowerCase();
+      await saveProfile(handle, true);
+    }
+  });
+  btnDisableProfile?.addEventListener('click', async () => {
+    if (!currentHandle) return;
+    const result = await setProfile(currentHandle, false);
+    if (result.ok) renderProfileControl('none', currentHandle, true);
+  });
 
   btnLoginGoogle?.addEventListener('click', () => startLogin('google'));
   btnLoginX?.addEventListener('click', () => startLogin('x'));

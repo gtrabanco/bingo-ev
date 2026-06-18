@@ -352,6 +352,8 @@ export interface AccountInfo {
   displayName: string | null;
   email: string | null;
   cardCount: number;
+  publicHandle: string | null;
+  profilePublic: boolean;
 }
 
 // Full-page navigation to the OAuth start endpoint — OAuth requires top-level
@@ -400,6 +402,26 @@ export async function deleteAccount(): Promise<boolean> {
     return res.ok || res.status === 204;
   } catch {
     return false;
+  }
+}
+
+export type ProfileResult =
+  | { ok: true }
+  | { ok: false; error: string };
+
+// Sets or updates the logged-in account's public handle and visibility.
+// Degrades to { ok: false, error: 'offline' } when the Worker is unreachable.
+export async function setProfile(handle: string, isPublic: boolean): Promise<ProfileResult> {
+  try {
+    const res = await fetch('/api/account/profile', {
+      ...jsonInit({ handle, public: isPublic }),
+      signal: AbortSignal.timeout(4000),
+    });
+    if (res.ok || res.status === 204) return { ok: true };
+    const data = (await res.json().catch(() => null)) as { error?: string } | null;
+    return { ok: false, error: data?.error ?? 'failed' };
+  } catch {
+    return { ok: false, error: 'offline' };
   }
 }
 
