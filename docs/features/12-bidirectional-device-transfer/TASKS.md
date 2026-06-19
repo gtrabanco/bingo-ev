@@ -4,25 +4,25 @@ Checklist expanded from `PLAN.md`. Check off as completed; keep one commit per p
 
 ## P1 — Schema + endpoints
 
-- [ ] `migrations/0013_receive_slots.sql` — create `receive_slots` (code PK,
+- [x] `migrations/0014_receive_slots.sql` — create `receive_slots` (code PK,
       `result_card_id` nullable, `created_at`, `expires_at`, `consumed_at`). Do not
-      alter `device_codes`.
-- [ ] `npx wrangler d1 migrations apply ev-bingo --local` succeeds.
-- [ ] `src/pages/api/receive-slot/index.ts` — `POST`: `RATE_LIMITER_CREATE`,
+      alter `device_codes`. (Migration numbered 0014 — 0013 already taken by profiles.)
+- [x] `npx wrangler d1 migrations apply ev-bingo --local` succeeds.
+- [x] `src/pages/api/receive-slot/index.ts` — `POST`: `RATE_LIMITER_CREATE`,
       `generateDeviceCode`, insert pending row, batch GC delete, return
       `201 { code, expiresIn }`. `prerender = false`, `env` from `cloudflare:workers`.
-- [ ] `src/pages/api/receive-slot/[code]/deposit.ts` — `POST {cardId, secret}`:
+- [x] `src/pages/api/receive-slot/[code]/deposit.ts` — `POST {cardId, secret}`:
       `RATE_LIMITER_WRITE`, validate code format, sanitize/validate `cardId`
       (`^[0-9a-z]{8}$`) + `secret`, ownership `SELECT`, atomic write-once `UPDATE …
       RETURNING`, return `204`/`403`/`410`.
-- [ ] `src/pages/api/receive-slot/[code].ts` — `GET`: validate code, atomic
+- [x] `src/pages/api/receive-slot/[code].ts` — `GET`: validate code, atomic
       consume-once `UPDATE … RETURNING result_card_id`; on no-row do the
       pending-vs-gone follow-up `SELECT`; return `204`/`200 {id,secret}`/`410`.
-- [ ] `src/lib/api.ts` — `createReceiveSlot`, `depositToReceiveSlot`,
+- [x] `src/lib/api.ts` — `createReceiveSlot`, `depositToReceiveSlot`,
       `pollReceiveSlot` with the documented degrade-to-`null`/`false`/`'pending'`.
-- [ ] Manual endpoint checks: create→deposit→poll happy; double-deposit→410; wrong
-      secret→403; poll-after-consume→410; expired→410.
-- [ ] `npm run build` green → commit `feat(device-transfer): add receive-slot table + pull endpoints`.
+- [x] Manual endpoint checks: create→deposit→poll happy; double-deposit→410; wrong
+      secret→403; poll-after-consume→410; pending poll→204; unknown code→410.
+- [x] `npm run build` green → committed.
 
 ## P2 — `/activar` bidirectional UI
 

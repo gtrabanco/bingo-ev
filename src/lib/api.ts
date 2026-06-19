@@ -496,3 +496,60 @@ export async function requestDeviceCode(
     jsonInit({ secret }),
   );
 }
+
+// ---------------------------------------------------------------------------
+// Pull-direction device transfer (feature 12-bidirectional-device-transfer)
+// ---------------------------------------------------------------------------
+
+// Creates an empty receive slot for the pull direction. The caller (a card-less
+// device on /activar) renders the returned code as a QR that a card-holder scans.
+export async function createReceiveSlot(): Promise<DeviceCodeResult | null> {
+  return request<DeviceCodeResult>('/api/receive-slot', { method: 'POST' });
+}
+
+// A card-holding device deposits its card into a pending receive slot.
+// Returns true on 204 (success), false on any failure (403, 410, network).
+export async function depositToReceiveSlot(
+  code: string,
+  cardId: string,
+  secret: string,
+): Promise<boolean> {
+  try {
+    const res = await fetch('/api/receive-slot/' + encodeURIComponent(code) + '/deposit', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ cardId, secret }),
+      signal: AbortSignal.timeout(6000),
+    });
+    return res.status === 204;
+  } catch {
+    return false;
+  }
+}
+
+export type PollReceiveSlotResult =
+  | { status: 'found'; id: string; secret: string }
+  | { status: 'pending' }
+  | { status: 'gone' };
+
+// Polls a receive slot once. Maps server responses to a discriminated union:
+//   200          → { status: 'found', id, secret }  (slot consumed; stop polling)
+//   204          → { status: 'pending' }             (no deposit yet; keep polling)
+//   410 / 4xx   → { status: 'gone' }                (expired or consumed; stop polling)
+//   network err → { status: 'pending' }              (transient; keep polling until expiry)
+export async function pollReceiveSlot(code: string): Promise<PollReceiveSlotResult> {
+  try {
+    const res = await fetch('/api/receive-slot/' + encodeURIComponent(code), {
+      signal: AbortSignal.timeout(6000),
+    });
+    if (res.ok) {
+      const data = await res.json() as { id: string; secret: string };
+      return { status: 'found', id: data.id, secret: data.secret };
+    }
+    if (res.status === 204) return { status: 'pending' };
+    return { status: 'gone' };
+  } catch {
+    // Transient network failure: keep polling until the slot expires locally.
+    return { status: 'pending' };
+  }
+}
