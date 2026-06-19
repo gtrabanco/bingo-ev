@@ -8,7 +8,7 @@
 - [x] UI — "Borrar todo" button in `#account-loggedin` (logged-out: not visible; no `#account-loggedin` shown)
 - [x] UI — native `<dialog>` confirmation with `autofocus` on cancel ("Mejor no"), destructive confirm, `aria-live` error slot
 - [x] UI — degraded path: Worker down → error shown, local state NOT cleared, confirm button re-enabled
-- [x] UI — success path: local card keys cleared (`evbingo.currentCardId` + `evbingo.card.{id}`), then reload
+- [x] UI — success path: `clearCurrentCard()` (storage.ts) clears local card keys, then reload
 - [x] UI strings in es-ES, dry-sarcastic, no brand names
 - [x] `/privacidad` deletion copy rewritten — total erasure, diplomas removed, GDPR art. 17 cited
 - [x] `docs/legal/README.md` — retention note and account deletion note updated
