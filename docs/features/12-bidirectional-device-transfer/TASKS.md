@@ -75,8 +75,7 @@ Checklist expanded from `PLAN.md`. Check off as completed; keep one commit per p
 
 ## P5 — PR
 
-- [ ] Open tracking issue (forge `gh`, `github.com:gtrabanco/bingo-ev`).
-- [ ] Branch `feat/12-bidirectional-device-transfer`; one PR → `main`; body English,
-      `Closes #<issue>`. Do not stack.
-- [ ] Update `docs/features/ROADMAP.md` row 12 status → `in-progress` on branch open,
-      `done` on merge.
+- [x] Open tracking issue: https://github.com/gtrabanco/bingo-ev/issues/29
+- [x] Branch `feat/12-bidirectional-device-transfer`; one PR → `main`; body English,
+      `Closes #29`. Do not stack.
+- [x] Update `docs/features/ROADMAP.md` row 12 status → `done`.
