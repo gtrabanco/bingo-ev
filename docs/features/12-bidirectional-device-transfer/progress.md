@@ -25,6 +25,26 @@ message; push auto-claim redirects to `/` as before (regression clean).
 **Left open for P3:** collision guard in `recoverFromUrl()` — when an incoming card differs
 from a non-trivial existing local card, show the conflict dialog instead of silently overwriting.
 
+## P4 — Hardening + copy + docs (done)
+
+Confirmation pass — no code changes required.
+
+- **Copy**: all new strings confirmed against COPYWRITING.md. Tone dry-sarcastic,
+  informal tú, sentence-case, no brand names, no brands in error messages.
+- **a11y**: `aria-live` correct on all dynamic status/code/error elements; countdown
+  (`#receive-expiry`) deliberately has no `aria-live` (per P2 review fix — would flood
+  SRs at 1 s cadence); QR containers `aria-hidden="true"`; all buttons have text-content
+  labels; disabled state re-enabled on every failure path.
+- **ARCHITECTURE.md**: no edit — `receive_slots` introduces no new invariant. It follows
+  the same atomic single-use SQL pattern as `device_codes`, no FK constraint, no
+  `settleDeparture` path (transfer never removes from a group).
+- **privacidad.astro**: no edit — `result_card_id` is the public card id already
+  disclosed in the privacy model; slots TTL ≤5 min; no new personal-data category and
+  no new data processor.
+- **`transfer:degraded`**: degrade path verified by code review — all three `api.ts`
+  helpers degrade to `null`/`false`/`'pending'`; the UI re-enables buttons and shows
+  error copy on failure.
+
 ## P3 — Collision guard (done)
 
 Extended `recoverFromUrl()` (`src/pages/index.astro`) with three-way classification:

@@ -58,15 +58,20 @@ Checklist expanded from `PLAN.md`. Check off as completed; keep one commit per p
 
 ## P4 — Hardening + copy + docs
 
-- [ ] es-ES copy finalized vs `docs/frontend/COPYWRITING.md` (dry tone, no brands).
-- [ ] a11y pass on new `/activar` controls vs `docs/frontend/ACCESSIBILITY.md`
-      (button label, `aria-live` countdown/status, QR `aria-hidden`).
-- [ ] `docs/architecture/ARCHITECTURE.md` — confirm no new invariant, or add a
-      one-line pull-slot note next to the push device-code note.
-- [ ] `docs/legal` / `privacidad.astro` — confirm no change needed (no new
-      processor/data).
-- [ ] `transfer:degraded` scenario passes (Worker down at create/deposit/poll).
-- [ ] `npm run build` green → commit `chore(device-transfer): copy, a11y, docs`.
+- [x] es-ES copy finalized vs `docs/frontend/COPYWRITING.md` (dry tone, no brands).
+      All new strings: informal tú, dry-sarcastic, sentence-case, no brand names.
+- [x] a11y pass on new `/activar` controls vs `docs/frontend/ACCESSIBILITY.md`.
+      `aria-live` on status/code/error (not countdown — fixed in review after P2);
+      QR `aria-hidden="true"`; button text-content labels; `aria-label` on code input;
+      disabled state re-enabled on failure in both branches.
+- [x] `docs/architecture/ARCHITECTURE.md` — no new invariant. `receive_slots` follows
+      the same atomic single-use SQL pattern as `device_codes`; no edit required.
+- [x] `docs/legal` / `privacidad.astro` — no change needed. `result_card_id` is the
+      public card id already in the data model; slots are ephemeral (≤5 min, then GC'd);
+      no new processor or personal-data category.
+- [x] `transfer:degraded` scenario: confirmed by code review — create→`null`→re-enable;
+      deposit→`false`→re-enable+error; poll network error→`'pending'`→loop continues.
+- [x] `npm run build` green → committed.
 
 ## P5 — PR
 
