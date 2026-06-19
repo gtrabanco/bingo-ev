@@ -43,16 +43,18 @@ Checklist expanded from `PLAN.md`. Check off as completed; keep one commit per p
 
 ## P3 — Collision guard
 
-- [ ] Generalize feature-10 conflict dialog: "discard loser" supports local
+- [x] Generalize feature-10 conflict dialog: "discard loser" supports local
       `discardCard(id, secret)` (no account) **and** the account DELETE path.
-- [ ] `recoverFromUrl()`: classify current card trivial / non-trivial / equal; branch
+      (Used `deleteCard` — awaitable variant — not `discardCard`; see decisions.md D2.)
+- [x] `recoverFromUrl()`: classify current card trivial / non-trivial / equal; branch
       silent-adopt / conflict-dialog / no-op.
-- [ ] Group-owner discard routes through the existing deletion path (departure
+- [x] Group-owner discard routes through the existing deletion path (departure
       settled); confirmation step shown.
-- [ ] Verify existing account-scoped multi-card-conflict callers still work.
+- [x] Verify existing account-scoped multi-card-conflict callers still work.
+      (`initAccountBar` call unchanged; default params preserve backward-compat.)
 - [ ] Scenarios: `collision:non-trivial`, `collision:trivial-silent`,
       `collision:group-owner`; re-check `push:happy` + recovery-link adopt.
-- [ ] `npm run build` green → commit `feat(device-transfer): collision guard on card adopt`.
+- [x] `npm run build` green → committed.
 
 ## P4 — Hardening + copy + docs
 

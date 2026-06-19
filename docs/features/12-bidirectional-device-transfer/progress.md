@@ -24,3 +24,24 @@ message; push auto-claim redirects to `/` as before (regression clean).
 
 **Left open for P3:** collision guard in `recoverFromUrl()` — when an incoming card differs
 from a non-trivial existing local card, show the conflict dialog instead of silently overwriting.
+
+## P3 — Collision guard (done)
+
+Extended `recoverFromUrl()` (`src/pages/index.astro`) with three-way classification:
+- **equal** (same card id) → idempotent update (unchanged).
+- **trivial** (0 marks, no group, not completed, or no secret) → silent adopt (unchanged).
+- **non-trivial** → fetch group standings for both cards in parallel (best-effort), then show
+  the generalized conflict dialog.
+
+Generalized feature-10's conflict dialog to a `mode: 'account' | 'local'` split:
+- `showConflictDialog` gained optional `mode`, `existingSecret`, `incomingCardState` params
+  (defaulted → backward-compat with the existing `initAccountBar` call site).
+- `resolveKeepIncoming` (local): `deleteCard(existingId, existingSecret)` → `saveCard(incoming)` → reload.
+- `resolveKeepExisting` (local): close dialog — no deletion; existing card stays active.
+- Intro copy branches on `mode` (avoids "Tu cuenta" in no-account path).
+- Group-owner confirmation step and departure settlement flow unchanged (routes through
+  `settleDeparture` server-side on `DELETE /api/cards/:id`).
+- `fetchGroupStandings` added to imports in `index.astro`.
+
+Decision recorded in `decisions.md` D2: used `deleteCard` (awaitable) rather than
+`discardCard` (fire-and-forget) so the dialog can surface deletion failures to the player.

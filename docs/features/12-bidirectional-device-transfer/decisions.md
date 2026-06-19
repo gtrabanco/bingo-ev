@@ -1,5 +1,19 @@
 # 12 — bidirectional-device-transfer · Decisions
 
+## D2 — Local conflict resolution uses `deleteCard` (awaitable), not `discardCard` (fire-and-forget)
+
+**Decision:** In the no-account collision path, the "keep incoming" resolution calls the
+awaitable `deleteCard(id, secret)` rather than the fire-and-forget `discardCard`.
+
+**Why:** The conflict dialog is open when the delete fires; if it fails, the player must see
+the error and be able to retry. `discardCard` returns nothing and the error is swallowed.
+`deleteCard` returns a boolean, so the dialog can surface "No se pudo eliminar el cartón anterior."
+
+**How to apply:** Any new UI-driven deletion that needs to show a failure message should use
+`deleteCard`; background / GC-style deletion keeps using `discardCard`.
+
+---
+
 ## D1 — Secret exposure via shoulder-surf (intentional tradeoff)
 
 **Decision:** Accept the risk of a shoulder-surfer photographing the receive QR and
