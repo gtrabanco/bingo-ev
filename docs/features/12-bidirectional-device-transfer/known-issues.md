@@ -43,3 +43,18 @@ which is technically misleading — the card exists but is not transferable.
 Accepted as-is for now; consistent with the push path hiding its button for
 secretless cards. A secretless card cannot be deposited (the ownership proof requires
 a secret), so the message is functionally correct even if wording is imprecise.
+
+---
+
+## KI-4 — Discarded local card leaves an orphaned localStorage entry
+
+**Severity:** low (negligible)  
+**Trigger:** none — dropped; document-only
+
+On local keep-incoming collision resolution, `deleteCard(existing)` removes the card
+server-side and `saveCard(incoming)` repoints `CURRENT_CARD_KEY`, but the discarded
+card's `evbingo.card.<id>` localStorage entry is not explicitly removed. It is orphaned
+(nothing points to it) and overwritten on the next collision.
+
+Dropped: a single stale key with no behavioral impact; adding cleanup code would be
+churn for no user-visible benefit. Recorded for completeness only.

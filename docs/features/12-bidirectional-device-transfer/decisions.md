@@ -1,5 +1,26 @@
 # 12 — bidirectional-device-transfer · Decisions
 
+## D3 — "Group beats solo" auto-resolves in local mode too (intentional tradeoff)
+
+**Decision:** In the no-account collision path, when one card is in a group and the other
+is not (`incHasGroup !== exHasGroup`), the dialog auto-resolves to the group card via
+`void acceptDefault()` — same as the account path. A marks-bearing local card with no group
+is therefore auto-discarded (after a dialog flash) when the incoming card belongs to a group.
+
+**Why accepted:** The SPEC mandates reusing feature-10's conflict dialog verbatim, and
+feature 10 already decided group cards take priority over individual cards (a group card has
+shared social stakes; a solo card does not). Introducing a local-only divergence here would
+contradict the "reuse, don't reinvent" decision (D1 in the SPEC) and surprise users who saw
+the account-mode behavior.
+
+**How to apply:** If manual testing shows the auto-discard flash reads as silent loss,
+tighten by requiring an explicit click in local mode only — but that is a feature-10 change,
+not a feature-12 one, and should be planned as such.
+
+**Verify:** `collision` scenario with a marks-bearing solo card + an incoming group card.
+
+---
+
 ## D2 — Local conflict resolution uses `deleteCard` (awaitable), not `discardCard` (fire-and-forget)
 
 **Decision:** In the no-account collision path, the "keep incoming" resolution calls the
