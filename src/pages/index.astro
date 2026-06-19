@@ -664,6 +664,7 @@ const hasAnyProvider = hasGoogle || hasX;
     deleteCard,
     discardCard,
     fetchAccount,
+    fetchGroupStandings,
     fetchOwnedCard,
     joinGroup,
     linkCard,
@@ -831,14 +832,80 @@ const hasAnyProvider = hasGoogle || hasX;
     const owned = await fetchOwnedCard(cardId, secret);
     history.replaceState(null, '', location.pathname);
     if (!owned) return null;
-    // The alias and vehicle type ride along with the recovery; adopt them
-    // unless this device already has its own values (local wins).
-    const { alias, vehicleType, ...state } = owned;
-    if (alias && !loadAlias()) saveAlias(alias);
-    if (vehicleType && !loadVehicleType()) saveVehicleType(vehicleType);
-    const recovered: CardState = { ...state };
-    saveCard(recovered);
-    return recovered;
+
+    const { alias, vehicleType, ...incomingState } = owned;
+    const existing = loadCurrentCard();
+
+    // Idempotent: same card already in localStorage.
+    if (existing?.id === cardId) {
+      if (alias && !loadAlias()) saveAlias(alias);
+      if (vehicleType && !loadVehicleType()) saveVehicleType(vehicleType);
+      const recovered: CardState = { ...incomingState };
+      saveCard(recovered);
+      return recovered;
+    }
+
+    // Trivial existing card: 0 marks, no group, not completed, or no secret.
+    const trivial =
+      !existing ||
+      !existing.secret ||
+      (existing.marks.every((m) => m === 0) && !existing.groupId && !existing.completedAt);
+
+    if (trivial) {
+      if (alias && !loadAlias()) saveAlias(alias);
+      if (vehicleType && !loadVehicleType()) saveVehicleType(vehicleType);
+      const recovered: CardState = { ...incomingState };
+      saveCard(recovered);
+      return recovered;
+    }
+
+    // Non-trivial collision: build ConflictCardInfo for both cards, then show dialog.
+    const existingInfo: ConflictCardInfo = {
+      cardId: existing.id,
+      marks: packMarks(existing.marks),
+      groupId: existing.groupId,
+      groupName: null,
+      isGroupOwner: false,
+    };
+    const incomingInfo: ConflictCardInfo = {
+      cardId,
+      marks: packMarks(incomingState.marks),
+      groupId: incomingState.groupId,
+      groupName: null,
+      isGroupOwner: false,
+    };
+
+    // Fetch group name + ownership in parallel; dialog degrades gracefully on failure.
+    await Promise.all([
+      existing.groupId
+        ? fetchGroupStandings(existing.groupId, existing.id, existing.secret).then((s) => {
+            if (s) {
+              existingInfo.groupName = s.name;
+              existingInfo.isGroupOwner = s.ownerCardId === existing.id;
+            }
+          }).catch(() => {})
+        : Promise.resolve(),
+      incomingState.groupId
+        ? fetchGroupStandings(incomingState.groupId, cardId, secret).then((s) => {
+            if (s) {
+              incomingInfo.groupName = s.name;
+              incomingInfo.isGroupOwner = s.ownerCardId === cardId;
+            }
+          }).catch(() => {})
+        : Promise.resolve(),
+    ]);
+
+    showConflictDialog(
+      { existing: existingInfo, incoming: incomingInfo },
+      cardId,
+      secret,
+      'local',
+      existing.secret,
+      { ...incomingState },
+    );
+
+    // Existing card stays active until the player resolves the dialog.
+    return null;
   }
 
   let card: CardState = (await recoverFromUrl()) ?? loadCurrentCard() ?? (await newCard());
@@ -1579,6 +1646,9 @@ const hasAnyProvider = hasGoogle || hasX;
     conflict: ConflictPayload;
     pendingAction: 'keep-incoming' | 'keep-existing' | null;
     default: 'incoming' | 'existing';
+    mode: 'account' | 'local';
+    existingSecret: string | null;
+    incomingCardState: CardState | null;
   };
   let conflictState: ConflictState | null = null;
 
@@ -1653,27 +1723,32 @@ const hasAnyProvider = hasGoogle || hasX;
     conflict: ConflictPayload,
     incomingCardId: string,
     incomingSecret: string,
+    mode: 'account' | 'local' = 'account',
+    existingSecret: string | null = null,
+    incomingCardState: CardState | null = null,
   ): void {
     const incHasGroup = !!conflict.incoming.groupId;
     const exHasGroup = !!conflict.existing.groupId;
 
     const dflt = computeDefault(conflict);
-    conflictState = { incomingCardId, incomingSecret, conflict, pendingAction: null, default: dflt };
+    conflictState = { incomingCardId, incomingSecret, conflict, pendingAction: null, default: dflt, mode, existingSecret, incomingCardState };
     clearConflictError();
 
     // Contextual intro copy
     if (incHasGroup && exHasGroup) {
-      conflictDialogIntro.textContent =
-        `Tu cuenta tiene un cartón en «${conflict.existing.groupName ?? conflict.existing.groupId}» ` +
-        `y otro en «${conflict.incoming.groupName ?? conflict.incoming.groupId}». ` +
-        `Solo puedes estar activo en uno; el que elimines te sacará automáticamente de ese grupo.`;
+      const exName = conflict.existing.groupName ?? conflict.existing.groupId;
+      const incName = conflict.incoming.groupName ?? conflict.incoming.groupId;
+      conflictDialogIntro.textContent = mode === 'local'
+        ? `Tu cartón actual está en «${exName}» y el que recibes en «${incName}». Solo puedes estar activo en uno; el que elimines te sacará automáticamente de ese grupo.`
+        : `Tu cuenta tiene un cartón en «${exName}» y otro en «${incName}». Solo puedes estar activo en uno; el que elimines te sacará automáticamente de ese grupo.`;
     } else if (incHasGroup !== exHasGroup) {
       const groupCard = incHasGroup ? conflict.incoming : conflict.existing;
       conflictDialogIntro.textContent =
         `El cartón de grupo «${groupCard.groupName ?? groupCard.groupId}» tiene prioridad sobre el cartón individual. Resolviendo automáticamente…`;
     } else {
-      conflictDialogIntro.textContent =
-        'Esta cuenta ya tiene un cartón activo. Elige cuál conservar; el otro se eliminará sin posibilidad de recuperación.';
+      conflictDialogIntro.textContent = mode === 'local'
+        ? 'Este dispositivo ya tiene un cartón activo. Elige cuál conservar; el otro se eliminará sin posibilidad de recuperación.'
+        : 'Esta cuenta ya tiene un cartón activo. Elige cuál conservar; el otro se eliminará sin posibilidad de recuperación.';
     }
 
     populateConflictSlot(conflictIncomingMarks, conflictIncomingGroup, conflictIncomingOwner, conflict.incoming);
@@ -1734,7 +1809,20 @@ const hasAnyProvider = hasGoogle || hasX;
     if (!conflictState) return;
     clearConflictError();
     setConflictBusy(true);
-    const { incomingCardId, incomingSecret, conflict } = conflictState;
+    const { incomingCardId, incomingSecret, conflict, mode } = conflictState;
+
+    if (mode === 'local') {
+      // No-account path: delete existing local card, save incoming, reload.
+      const ok = await deleteCard(conflict.existing.cardId, conflictState.existingSecret!);
+      if (!ok) {
+        setConflictBusy(false);
+        showConflictError('No se pudo eliminar el cartón anterior. Inténtalo de nuevo.');
+        return;
+      }
+      if (conflictState.incomingCardState) saveCard(conflictState.incomingCardState);
+      window.location.reload();
+      return;
+    }
 
     const del = await deleteAccountCard(conflict.existing.cardId);
     if (!del.ok) {
@@ -1757,7 +1845,15 @@ const hasAnyProvider = hasGoogle || hasX;
     if (!conflictState) return;
     clearConflictError();
     setConflictBusy(true);
-    const { incomingCardId, incomingSecret } = conflictState;
+    const { incomingCardId, incomingSecret, mode } = conflictState;
+
+    if (mode === 'local') {
+      // No-account path: just close the dialog; existing card is already in play.
+      setConflictBusy(false);
+      conflictDialog.close();
+      conflictState = null;
+      return;
+    }
 
     const ok = await deleteCard(incomingCardId, incomingSecret);
     if (!ok) {

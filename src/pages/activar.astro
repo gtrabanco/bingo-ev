@@ -1,8 +1,10 @@
 ---
-// /activar — device-code claim page.
-// Two paths:
-//   ?code=ABC-DEF  (QR scan) → auto-claim server-side → 302 to game with secret.
-//   no code        (manual)  → show form; client script calls claim API on submit.
+// /activar — device transfer page (bidirectional).
+//
+// Three modes:
+//   ?code=ABC-DEF  → push: auto-claim server-side → 302 to game (zero-JS path). Unchanged.
+//   ?recv=ABCDEF   → pull: scanner sees deposit UI; deposits card into receive slot.
+//   no params      → normal: push claim form + receive affordance (generator creates slot + polls).
 export const prerender = false;
 
 import Layout from '../layouts/Layout.astro';
@@ -10,9 +12,10 @@ import { env } from 'cloudflare:workers';
 import { normalizeDeviceCode, isValidDeviceCodeFormat } from '../lib/auth';
 
 const codeParam = Astro.url.searchParams.get('code') ?? '';
+const recvParam  = Astro.url.searchParams.get('recv')  ?? '';
+const isRecvMode = recvParam !== '';
 
-// Auto-claim: if the URL already carries a code (QR scan or link share), try to
-// consume it server-side and redirect immediately — no JS required.
+// Push auto-claim: unchanged — if ?code= is present, consume and redirect (zero-JS).
 if (codeParam) {
   const code = normalizeDeviceCode(codeParam);
   if (isValidDeviceCodeFormat(code)) {
@@ -50,39 +53,102 @@ if (codeParam) {
     class="mx-auto flex min-h-dvh w-full max-w-sm flex-col items-center justify-center gap-6 px-4 pb-10"
   >
     <h1 class="text-2xl font-black uppercase tracking-tight text-amber-300">
-      Activar cartón
+      {isRecvMode ? 'Enviar cartón' : 'Activar cartón'}
     </h1>
-    <p class="text-center text-sm/relaxed text-paper-300/80">
-      Introduce el código de 6 letras que aparece en el otro dispositivo
-      para continuar tu partida aquí.
-    </p>
 
+    {/* Push-code error (only when ?code= was invalid/expired) */}
     {codeParam && (
       <p id="error-msg" class="rounded-lg bg-red-900/40 px-4 py-2 text-center text-sm text-red-300">
         El código ha caducado o ya fue usado. Genera uno nuevo desde el otro dispositivo.
       </p>
     )}
 
-    <form id="claim-form" class="w-full space-y-4">
-      <input
-        id="code-input"
-        type="text"
-        inputmode="text"
-        autocomplete="one-time-code"
-        maxlength="7"
-        placeholder="ABC-DEF"
-        required
-        class="w-full rounded-xl border-2 border-paper-50/25 bg-felt-950/60 px-4 py-3 text-center text-2xl font-black uppercase tracking-[0.3em] text-paper-50 outline-none placeholder:text-paper-300/30 focus:border-amber-300"
-        aria-label="Código de activación"
-      />
-      <button
-        type="submit"
-        class="w-full rounded-xl border-2 border-amber-300/60 bg-amber-300/10 px-4 py-3 text-base font-black uppercase tracking-widest text-amber-300 transition-colors hover:bg-amber-300/20"
-      >
-        Activar
-      </button>
-      <p id="form-error" class="hidden text-center text-sm text-red-300" aria-live="polite"></p>
-    </form>
+    {/* ===== DEPOSIT MODE (?recv=CODE) ===== */}
+    {isRecvMode && (
+      <div id="recv-section" class="w-full space-y-4">
+        {/* Card present — deposit prompt (populated by JS) */}
+        <div id="recv-deposit" class="hidden w-full space-y-4">
+          <p class="text-center text-sm/relaxed text-paper-300/80">
+            La otra pantalla está esperando tu cartón. Envíalo: tu cartón sigue aquí igualmente.
+          </p>
+          <button
+            id="recv-deposit-btn"
+            class="w-full rounded-xl border-2 border-amber-300/60 bg-amber-300/10 px-4 py-3 text-base font-black uppercase tracking-widest text-amber-300 transition-colors hover:bg-amber-300/20 disabled:opacity-40"
+          >
+            Enviar a la otra pantalla
+          </button>
+          <p id="recv-status" class="hidden text-center text-sm" aria-live="polite"></p>
+        </div>
+
+        {/* No card on this device */}
+        <div id="recv-no-card" class="hidden space-y-3 text-center">
+          <p class="text-sm/relaxed text-paper-300/80">
+            Aquí no hay ningún cartón que enviar. Estrena uno o pide el código al revés.
+          </p>
+        </div>
+      </div>
+    )}
+
+    {/* ===== NORMAL MODE (no ?recv=) — push claim form + receive affordance ===== */}
+    {!isRecvMode && (
+      <div id="normal-section" class="w-full space-y-6">
+        {/* Push claim form — existing, unchanged */}
+        <div class="space-y-4">
+          <p class="text-center text-sm/relaxed text-paper-300/80">
+            Introduce el código de 6 letras que aparece en el otro dispositivo
+            para continuar tu partida aquí.
+          </p>
+          <form id="claim-form" class="space-y-4">
+            <input
+              id="code-input"
+              type="text"
+              inputmode="text"
+              autocomplete="one-time-code"
+              maxlength="7"
+              placeholder="ABC-DEF"
+              required
+              class="w-full rounded-xl border-2 border-paper-50/25 bg-felt-950/60 px-4 py-3 text-center text-2xl font-black uppercase tracking-[0.3em] text-paper-50 outline-none placeholder:text-paper-300/30 focus:border-amber-300"
+              aria-label="Código de activación"
+            />
+            <button
+              type="submit"
+              class="w-full rounded-xl border-2 border-amber-300/60 bg-amber-300/10 px-4 py-3 text-base font-black uppercase tracking-widest text-amber-300 transition-colors hover:bg-amber-300/20"
+            >
+              Activar
+            </button>
+            <p id="form-error" class="hidden text-center text-sm text-red-300" aria-live="polite"></p>
+          </form>
+        </div>
+
+        {/* Receive affordance — pull generator (card-less device) */}
+        <div class="space-y-4 border-t border-paper-50/10 pt-4">
+          <p class="text-center text-xs text-paper-300/50">
+            ¿Quieres que la otra pantalla te envíe su cartón?
+          </p>
+          <button
+            id="receive-btn"
+            class="w-full rounded-xl border-2 border-paper-50/20 bg-paper-50/5 px-4 py-3 text-sm font-black uppercase tracking-widest text-paper-300 transition-colors hover:bg-paper-50/10 disabled:opacity-40"
+          >
+            Recibir un cartón aquí
+          </button>
+          <p id="receive-error" class="hidden text-center text-sm text-red-300" aria-live="polite"></p>
+
+          {/* Receive panel — shown after slot is created (JS-controlled) */}
+          <div id="receive-panel" class="hidden space-y-3 text-center">
+            <p class="text-xs text-paper-300/70">
+              Muestra este código o QR en el dispositivo que tiene el cartón.
+            </p>
+            <p
+              id="receive-code"
+              class="text-3xl font-black tracking-[0.25em] text-amber-300"
+              aria-live="polite"
+            >···-···</p>
+            <div id="receive-qr" class="flex justify-center" aria-hidden="true"></div>
+            <p id="receive-expiry" class="text-[0.6875rem] text-paper-300/50"></p>
+          </div>
+        </div>
+      </div>
+    )}
 
     <a
       href="/"
@@ -94,47 +160,204 @@ if (codeParam) {
 </Layout>
 
 <script>
-  const form = document.querySelector<HTMLFormElement>('#claim-form')!;
-  const input = document.querySelector<HTMLInputElement>('#code-input')!;
-  const formError = document.querySelector<HTMLParagraphElement>('#form-error')!;
+  import { loadCurrentCard, loadAlias } from '../lib/storage';
+  import { createReceiveSlot, depositToReceiveSlot, pollReceiveSlot } from '../lib/api';
+  import { encode as encodeQr } from 'uqr';
 
-  // Auto-format: insert dash after 3rd character as the user types.
-  input.addEventListener('input', () => {
-    const raw = input.value.toUpperCase().replace(/[^A-Z2-9]/g, '');
-    if (raw.length > 3) {
-      input.value = `${raw.slice(0, 3)}-${raw.slice(3, 6)}`;
-    } else {
-      input.value = raw;
-    }
-  });
+  const params = new URLSearchParams(location.search);
+  const recvCode = params.get('recv');
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const code = input.value.trim();
-    formError.classList.add('hidden');
+  if (recvCode) {
+    // ===== DEPOSIT MODE: scanner opens ?recv=CODE, deposits its card =====
+    const card = loadCurrentCard();
+    const alias = loadAlias();
 
-    try {
-      const res = await fetch('/api/device-code/claim', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ code }),
-        signal: AbortSignal.timeout(6000),
+    const recvDeposit = document.getElementById('recv-deposit');
+    const recvNoCard  = document.getElementById('recv-no-card');
+    const recvBtn     = document.getElementById('recv-deposit-btn') as HTMLButtonElement | null;
+    const recvStatus  = document.getElementById('recv-status');
+
+    if (card?.secret) {
+      recvDeposit?.classList.remove('hidden');
+      // Interpolate alias into the button label
+      if (recvBtn) {
+        recvBtn.textContent = alias
+          ? `Enviar «${alias}» a la otra pantalla`
+          : 'Enviar mi cartón a la otra pantalla';
+      }
+
+      recvBtn?.addEventListener('click', async () => {
+        if (!recvBtn || !card.secret) return;
+        recvBtn.disabled = true;
+        recvBtn.textContent = 'Enviando…';
+        if (recvStatus) recvStatus.classList.add('hidden');
+
+        const ok = await depositToReceiveSlot(recvCode, card.id, card.secret);
+
+        if (ok) {
+          recvBtn.textContent = 'Enviado ✓';
+          if (recvStatus) {
+            recvStatus.textContent =
+              'Enviado. Tu cartón sigue aquí y también allí; ya sois dos pantallas sufriendo lo mismo.';
+            recvStatus.className = 'text-center text-sm text-green-300';
+            recvStatus.classList.remove('hidden');
+          }
+        } else {
+          recvBtn.disabled = false;
+          recvBtn.textContent = alias
+            ? `Enviar «${alias}» a la otra pantalla`
+            : 'Enviar mi cartón a la otra pantalla';
+          if (recvStatus) {
+            recvStatus.textContent =
+              'No se pudo enviar. El código puede haber caducado o ya fue usado.';
+            recvStatus.className = 'text-center text-sm text-red-300';
+            recvStatus.classList.remove('hidden');
+          }
+        }
       });
+    } else {
+      recvNoCard?.classList.remove('hidden');
+    }
 
-      if (res.ok) {
-        const { id, secret } = await res.json() as { id: string; secret: string };
-        window.location.href = `/?card=${encodeURIComponent(id)}&k=${encodeURIComponent(secret)}`;
+  } else {
+    // ===== NORMAL MODE: receive affordance (generator) + push claim form =====
+
+    function renderReceiveQr(code: string): void {
+      const qrEl = document.getElementById('receive-qr');
+      if (!qrEl) return;
+      const url = `${location.origin}/activar?recv=${encodeURIComponent(code)}`;
+      const qr = encodeQr(url, { ecc: 'M', border: 2 });
+      const scale = 5;
+      const size = qr.size * scale;
+      let cells = '';
+      for (let row = 0; row < qr.size; row++) {
+        for (let col = 0; col < qr.size; col++) {
+          if (qr.data[row]![col]) {
+            cells += `<rect x="${col * scale}" y="${row * scale}" width="${scale}" height="${scale}" fill="currentColor"/>`;
+          }
+        }
+      }
+      qrEl.innerHTML =
+        `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" class="text-paper-50" xmlns="http://www.w3.org/2000/svg">${cells}</svg>`;
+    }
+
+    let pollId: ReturnType<typeof setInterval> | null = null;
+    let expiryId: ReturnType<typeof setInterval> | null = null;
+
+    function stopAll(): void {
+      if (pollId) { clearInterval(pollId); pollId = null; }
+      if (expiryId) { clearInterval(expiryId); expiryId = null; }
+    }
+
+    function startExpiryCountdown(expiresIn: number): void {
+      const expiryEl = document.getElementById('receive-expiry');
+      if (expiryId) clearInterval(expiryId);
+      let remaining = expiresIn;
+      function tick(): void {
+        if (remaining <= 0) {
+          if (expiryEl) expiryEl.textContent = 'Código caducado.';
+          stopAll();
+          return;
+        }
+        const m = Math.floor(remaining / 60);
+        const s = String(remaining % 60).padStart(2, '0');
+        if (expiryEl) expiryEl.textContent = `Caduca en ${m}:${s}`;
+        remaining--;
+      }
+      tick();
+      expiryId = setInterval(tick, 1000);
+    }
+
+    const receiveBtn   = document.getElementById('receive-btn') as HTMLButtonElement | null;
+    const receivePanel = document.getElementById('receive-panel');
+    const receiveCodeEl  = document.getElementById('receive-code');
+    const receiveErrorEl = document.getElementById('receive-error');
+
+    receiveBtn?.addEventListener('click', async () => {
+      if (!receiveBtn) return;
+      receiveBtn.disabled = true;
+      receiveBtn.textContent = 'Generando…';
+      if (receiveErrorEl) receiveErrorEl.classList.add('hidden');
+
+      const result = await createReceiveSlot();
+
+      if (!result) {
+        receiveBtn.disabled = false;
+        receiveBtn.textContent = 'Recibir un cartón aquí';
+        if (receiveErrorEl) {
+          receiveErrorEl.textContent = 'No se pudo generar el código. Inténtalo de nuevo.';
+          receiveErrorEl.classList.remove('hidden');
+        }
         return;
       }
 
-      formError.textContent =
-        res.status === 410
-          ? 'El código ha caducado o ya fue usado. Genera uno nuevo.'
-          : 'Código incorrecto. Comprueba que lo has escrito bien.';
-      formError.classList.remove('hidden');
-    } catch {
-      formError.textContent = 'Error de conexión. Inténtalo de nuevo.';
-      formError.classList.remove('hidden');
+      const { code, expiresIn } = result;
+      receiveBtn.classList.add('hidden');
+      receivePanel?.classList.remove('hidden');
+
+      if (receiveCodeEl) receiveCodeEl.textContent = `${code.slice(0, 3)}-${code.slice(3)}`;
+      renderReceiveQr(code);
+      startExpiryCountdown(expiresIn);
+
+      // Poll every 3 seconds until result or expiry
+      pollId = setInterval(async () => {
+        const poll = await pollReceiveSlot(code);
+        if (poll.status === 'found') {
+          stopAll();
+          location.href = `/?card=${encodeURIComponent(poll.id)}&k=${encodeURIComponent(poll.secret)}`;
+        } else if (poll.status === 'gone') {
+          stopAll();
+          const expiryEl = document.getElementById('receive-expiry');
+          if (expiryEl) expiryEl.textContent = 'Código caducado.';
+          if (receiveErrorEl) {
+            receiveErrorEl.textContent = 'El código ya no está disponible. Vuelve a intentarlo.';
+            receiveErrorEl.classList.remove('hidden');
+          }
+        }
+        // poll.status === 'pending' → keep going
+      }, 3000);
+    });
+
+    // Push claim form — existing behavior, unchanged
+    const form      = document.querySelector<HTMLFormElement>('#claim-form');
+    const input     = document.querySelector<HTMLInputElement>('#code-input');
+    const formError = document.querySelector<HTMLParagraphElement>('#form-error');
+
+    if (form && input && formError) {
+      input.addEventListener('input', () => {
+        const raw = input.value.toUpperCase().replace(/[^A-Z2-9]/g, '');
+        input.value = raw.length > 3 ? `${raw.slice(0, 3)}-${raw.slice(3, 6)}` : raw;
+      });
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const code = input.value.trim();
+        formError.classList.add('hidden');
+
+        try {
+          const res = await fetch('/api/device-code/claim', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ code }),
+            signal: AbortSignal.timeout(6000),
+          });
+
+          if (res.ok) {
+            const { id, secret } = await res.json() as { id: string; secret: string };
+            window.location.href = `/?card=${encodeURIComponent(id)}&k=${encodeURIComponent(secret)}`;
+            return;
+          }
+
+          formError.textContent =
+            res.status === 410
+              ? 'El código ha caducado o ya fue usado. Genera uno nuevo.'
+              : 'Código incorrecto. Comprueba que lo has escrito bien.';
+          formError.classList.remove('hidden');
+        } catch {
+          formError.textContent = 'Error de conexión. Inténtalo de nuevo.';
+          formError.classList.remove('hidden');
+        }
+      });
     }
-  });
+  }
 </script>
