@@ -504,7 +504,10 @@ export async function requestDeviceCode(
 // Creates an empty receive slot for the pull direction. The caller (a card-less
 // device on /activar) renders the returned code as a QR that a card-holder scans.
 export async function createReceiveSlot(): Promise<DeviceCodeResult | null> {
-  return request<DeviceCodeResult>('/api/receive-slot', { method: 'POST' });
+  return request<DeviceCodeResult>('/api/receive-slot', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+  });
 }
 
 // A card-holding device deposits its card into a pending receive slot.

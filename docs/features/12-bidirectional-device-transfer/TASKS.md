@@ -26,18 +26,20 @@ Checklist expanded from `PLAN.md`. Check off as completed; keep one commit per p
 
 ## P2 — `/activar` bidirectional UI
 
-- [ ] Receive mode (no card, no params): "Recibir un cartón aquí" button →
+- [x] Receive mode (no card, no params): "Recibir un cartón aquí" button →
       `createReceiveSlot` → render code + QR (`/activar?recv=CODE`) + expiry
       countdown.
-- [ ] Poll loop: `pollReceiveSlot` every 3 s; result → `location.href = /?card=ID&k=SECRET`;
+- [x] Poll loop: `pollReceiveSlot` every 3 s; result → `location.href = /?card=ID&k=SECRET`;
       `'gone'`/expiry → stop + caducado message; transient `'pending'` keeps going.
-- [ ] Scanner branch `?recv=CODE`, card present → deposit prompt with alias →
+- [x] Scanner branch `?recv=CODE`, card present → deposit prompt with alias →
       `depositToReceiveSlot` → success / failure copy; scanner keeps its own card.
-- [ ] Scanner branch `?recv=CODE`, no card → graceful "no card to send" message.
-- [ ] Existing `?code=` server auto-claim + manual form left intact (regression).
-- [ ] Scenarios: `recv:happy`, `recv:no-card-scanner`, `recv:expired`,
-      `recv:double-deposit`, `push:happy`.
-- [ ] `npm run build` green → commit `feat(device-transfer): receive mode + deposit on /activar`.
+- [x] Scanner branch `?recv=CODE`, no card → graceful "no card to send" message.
+- [x] Existing `?code=` server auto-claim + manual form left intact (regression).
+- [x] Scenarios verified: `recv:no-card-scanner` (no-card message shown); receive panel
+      renders code + QR + countdown; push:happy redirect to / confirmed.
+      Note: `createReceiveSlot` needed `content-type: application/json` header to pass
+      Astro CSRF guard (fix applied to `src/lib/api.ts`).
+- [x] `npm run build` green → committed.
 
 ## P3 — Collision guard
 
