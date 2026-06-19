@@ -19,7 +19,9 @@
 - **No analytics or advertising cookies.** Game state is `localStorage` only (strictly
   necessary) → no cookie banner required.
 - **Retention**: the registry is kept deliberately tiny — regenerated/expired
-  never-completed cards are deleted; completed cards persist so diplomas stay verifiable.
+  never-completed cards are deleted; completed cards persist until the account
+  owner invokes the "Borrar todo" erasure path, which deletes diplomas too (see
+  `DELETE /api/account` — feature 13).
 - **Rights**: users can request deletion (contact above). The newsletter list lives in
   the project's own D1 (`newsletter` table), not a third party.
 
@@ -39,7 +41,9 @@
   Data received: provider user id, display name, email (if returned — X may omit it).
   Purpose: creating a durable identity to aggregate diplomas across devices.
   Lawful basis: consent (the user actively clicks "Continuar con Google/X").
-  Retention: until the user deletes their account via `DELETE /api/account`.
+  Retention: until the user invokes "Borrar todo" via `DELETE /api/account`
+  (feature 13), which hard-deletes the account and all linked cards including
+  completed diplomas.
   Provider tokens are **not stored** — used once at callback, then discarded.
   Disclosed in `/privacidad` under "Cuentas e inicio de sesión".
   Secrets: `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`,

@@ -446,7 +446,8 @@ export async function deleteAccountCard(cardId: string): Promise<{ ok: boolean; 
   }
 }
 
-// Deletes the account and its sessions; cards survive unlinked.
+// Total erasure: deletes account, all its cards (active + completed diplomas),
+// sessions, and settles group departures. Irreversible.
 export async function deleteAccount(): Promise<boolean> {
   try {
     const res = await fetch('/api/account', { method: 'DELETE', signal: AbortSignal.timeout(4000) });
