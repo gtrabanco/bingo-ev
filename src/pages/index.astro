@@ -727,6 +727,7 @@ const hasAnyProvider = hasGoogle || hasX;
     loadMarkMode,
     loadNick,
     loadVehicleType,
+    clearCurrentCard,
     markNewsletterSubscribed,
     markVehicleTypeSeen,
     saveAlias,
@@ -2038,12 +2039,7 @@ const hasAnyProvider = hasGoogle || hasX;
     if (btnDeleteAccountConfirm) btnDeleteAccountConfirm.disabled = true;
     const ok = await deleteAccount();
     if (ok) {
-      // Clear local card state before reloading so the game starts fresh.
-      try {
-        const currentId = localStorage.getItem('evbingo.currentCardId');
-        if (currentId) localStorage.removeItem(`evbingo.card.${currentId}`);
-        localStorage.removeItem('evbingo.currentCardId');
-      } catch { /* private browsing — nothing to clear */ }
+      clearCurrentCard();
       window.location.reload();
     } else {
       if (deleteAccountError) {

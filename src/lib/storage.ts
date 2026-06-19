@@ -128,3 +128,13 @@ export function markVehicleTypeSeen(): void {
 export function isVehicleTypeSeen(): boolean {
   return read(VEHICLE_TYPE_SEEN_KEY) === '1';
 }
+
+export function clearCurrentCard(): void {
+  try {
+    const cardId = localStorage.getItem(CURRENT_CARD_KEY);
+    if (cardId) localStorage.removeItem(cardKey(cardId));
+    localStorage.removeItem(CURRENT_CARD_KEY);
+  } catch {
+    // private browsing — nothing to clear
+  }
+}
