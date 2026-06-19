@@ -139,10 +139,46 @@ const hasAnyProvider = hasGoogle || hasX;
               type="button"
               class="underline decoration-paper-300/40 underline-offset-2 transition-colors hover:text-paper-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
             >Cerrar sesión</button>
+            <span class="text-paper-300/30" aria-hidden="true">·</span>
+            <button
+              id="btn-delete-account"
+              type="button"
+              class="underline decoration-red-300/40 underline-offset-2 text-red-300/80 transition-colors hover:text-red-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+            >Borrar todo</button>
           </div>
         </div>
       </div>
     </nav>
+
+    <!-- Delete-account confirmation dialog -->
+    <dialog
+      id="delete-account-dialog"
+      class="rounded-2xl border border-paper-50/15 bg-felt-900 p-6 text-paper-50 shadow-2xl backdrop:bg-felt-950/80 max-w-sm w-full mx-auto"
+      aria-labelledby="delete-account-title"
+    >
+      <h2 id="delete-account-title" class="text-lg font-black uppercase tracking-tight text-red-400">
+        ¿Borrar todo, de verdad?
+      </h2>
+      <p class="mt-3 text-sm/relaxed text-paper-300/80">
+        Esto borra tu cuenta, tus cartones y también tus diplomas.
+        No quedará nada que verificar ni que presumir.
+        No hay vuelta atrás.
+      </p>
+      <p id="delete-account-error" class="hidden mt-2 text-sm text-red-300" aria-live="polite"></p>
+      <div class="mt-5 flex justify-end gap-3">
+        <button
+          id="btn-delete-account-cancel"
+          type="button"
+          autofocus
+          class="rounded-xl border border-paper-50/20 bg-felt-800/40 px-4 py-2 text-sm font-semibold text-paper-50 transition-colors hover:bg-felt-800/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+        >Mejor no</button>
+        <button
+          id="btn-delete-account-confirm"
+          type="button"
+          class="rounded-xl border border-red-400/40 bg-red-900/30 px-4 py-2 text-sm font-semibold text-red-400 transition-colors hover:bg-red-900/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-400"
+        >Sí, bórralo todo</button>
+      </div>
+    </dialog>
 
     <!-- Device-code panel: shown directly below the navbar when the button is clicked -->
     <div
@@ -691,6 +727,7 @@ const hasAnyProvider = hasGoogle || hasX;
     loadMarkMode,
     loadNick,
     loadVehicleType,
+    clearCurrentCard,
     markNewsletterSubscribed,
     markVehicleTypeSeen,
     saveAlias,
@@ -1544,6 +1581,11 @@ const hasAnyProvider = hasGoogle || hasX;
   const btnLoginGoogle = document.querySelector<HTMLButtonElement>('#btn-login-google');
   const btnLoginX = document.querySelector<HTMLButtonElement>('#btn-login-x');
   const btnLogout = $<HTMLButtonElement>('#btn-logout');
+  const btnDeleteAccount = $<HTMLButtonElement>('#btn-delete-account');
+  const deleteAccountDialog = $<HTMLDialogElement>('#delete-account-dialog');
+  const btnDeleteAccountCancel = $<HTMLButtonElement>('#btn-delete-account-cancel');
+  const btnDeleteAccountConfirm = $<HTMLButtonElement>('#btn-delete-account-confirm');
+  const deleteAccountError = $<HTMLParagraphElement>('#delete-account-error');
 
   // Profile control elements (feature 09)
   const profileNone = $<HTMLDivElement>('#profile-none');
@@ -1973,8 +2015,39 @@ const hasAnyProvider = hasGoogle || hasX;
   btnLoginX?.addEventListener('click', () => startLogin('x'));
   btnLogout?.addEventListener('click', async () => {
     await logout();
-    // Reload to reflect logged-out state — the server-side redirect handles /.
     window.location.reload();
+  });
+
+  btnDeleteAccount?.addEventListener('click', () => {
+    if (deleteAccountError) {
+      deleteAccountError.textContent = '';
+      deleteAccountError.classList.add('hidden');
+    }
+    deleteAccountDialog?.showModal();
+  });
+
+  btnDeleteAccountCancel?.addEventListener('click', () => {
+    deleteAccountDialog?.close();
+  });
+
+  deleteAccountDialog?.addEventListener('cancel', (e) => {
+    e.preventDefault();
+    deleteAccountDialog.close();
+  });
+
+  btnDeleteAccountConfirm?.addEventListener('click', async () => {
+    if (btnDeleteAccountConfirm) btnDeleteAccountConfirm.disabled = true;
+    const ok = await deleteAccount();
+    if (ok) {
+      clearCurrentCard();
+      window.location.reload();
+    } else {
+      if (deleteAccountError) {
+        deleteAccountError.textContent = 'No se pudo borrar. Inténtalo de nuevo.';
+        deleteAccountError.classList.remove('hidden');
+      }
+      if (btnDeleteAccountConfirm) btnDeleteAccountConfirm.disabled = false;
+    }
   });
 
   void initAccountBar();
