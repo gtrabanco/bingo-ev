@@ -1,5 +1,5 @@
 // Shared gallery query logic — used by both GET /api/gallery (paginated JSON)
-// and galeria.astro (SSR first-page render). Keeps the SQL, over-fetch,
+// and hall-of-fame.astro (SSR first-page render). Keeps the SQL, over-fetch,
 // blocklist suppression, and honorific filter in one place.
 import type { D1Database } from '@cloudflare/workers-types';
 import { honorificFor, type Honorific, VEHICLE_TYPES, type VehicleType, unpackMarks, CELL_COUNT } from './card';
