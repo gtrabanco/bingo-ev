@@ -31,11 +31,14 @@ every commit.
 
 ## S2 — Drop "BINGO" from cartón  `XS`  (depends: — ; visually after S1)
 
-- [ ] Replace `src/components/BingoCard.astro` with the package version.
-- [ ] Confirm hooks intact: `bingo-card`, `bingo-grid`, `card-serial`, `card-expiry`,
-      `expired-stamp`.
-- [ ] Gate green; manual `card:no-bingo`.
-- [ ] PR → review → audit.
+- [x] Replace `src/components/BingoCard.astro` with the package version.
+- [x] Confirm hooks intact: `bingo-card`, `bingo-grid`, `card-serial`, `card-expiry`,
+      `expired-stamp`. Verified by grep: `index.astro` L748–752 + L1041 reach exactly
+      these 5 ids + `card-expired`; all preserved verbatim. BingoCard imported only by
+      `index.astro` (the `c/[id]` "Bingo" literal is a separate inline copy → S5a).
+- [x] Gate green; manual `card:no-bingo` verified in browser — header reads
+      `CARTÓN Nº {serial}` + `VÍA PÚBLICA`, footer `Sin validez legal`; no "Bingo" word.
+- [ ] PR → review → audit (final feature PR, after S8).
 
 ## S3 — SiteNav + index nav swap  `S`  (depends: S1)
 

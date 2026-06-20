@@ -6,6 +6,10 @@
 // landscape (3 rows x 4 cols, línea = row) and portrait screens render the
 // transpose (3 cols x 4 rows) by filling the same DOM order column-first
 // (grid-flow-col), so líneas run vertically there. Win logic never changes.
+//
+// NOTE (design refactor): the word "BINGO" was removed from the header — a
+// cartón is universally recognizable as bingo, so the word was redundant. The
+// header now leads with the serial (Cartón nº) and a quiet "Vía pública" tag.
 ---
 
 <article
@@ -13,11 +17,13 @@
   class="relative w-full overflow-hidden rounded-2xl border-4 border-ink-900 bg-paper-50 text-ink-900 shadow-[0_18px_40px_-12px_rgb(0_0_0/0.55)]"
 >
   <header
-    class="flex items-baseline justify-between gap-3 border-b-4 border-ink-900 bg-dauber-600 px-3.5 py-2 text-paper-50"
+    class="flex items-center justify-between gap-3 border-b-4 border-ink-900 bg-dauber-600 px-3.5 py-2.5 text-paper-50"
   >
-    <p class="text-lg font-black uppercase tracking-[0.35em] sm:text-xl">Bingo</p>
-    <p class="shrink-0 font-mono text-[0.625rem] tracking-wider uppercase sm:text-xs">
-      Cartón nº <span id="card-serial">········</span>
+    <p class="font-mono text-[0.625rem] tracking-wider uppercase sm:text-xs">
+      Cartón nº <span id="card-serial" class="font-bold">········</span>
+    </p>
+    <p class="shrink-0 text-[0.625rem] font-bold uppercase tracking-[0.2em] text-paper-50/70 sm:text-xs">
+      Vía pública
     </p>
   </header>
 
@@ -30,7 +36,7 @@
   <footer
     class="flex items-center justify-between gap-2 border-t-4 border-ink-900 bg-paper-100 px-3.5 py-1.5 text-[0.5625rem] font-semibold uppercase tracking-[0.14em] text-ink-900/60 sm:text-[0.6875rem]"
   >
-    <span>Serie: vía pública</span>
+    <span>Sin validez legal</span>
     <span class="shrink-0">Caduca: <span id="card-expiry">—</span></span>
   </footer>
 

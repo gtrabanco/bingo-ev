@@ -52,7 +52,38 @@ the nav that uses them ships in S3. `font-serif` is wired but only the diploma m
 visually validated once a browser can render both the fallback and the real font.
 
 ## S2 — Drop "BINGO" from cartón
-_(pending)_
+
+**Files changed:**
+- `src/components/BingoCard.astro` — full replacement from the integration package.
+  Header drops the "Bingo" word, leads with `Cartón nº {serial}` (serial now bold),
+  adds a quiet `Vía pública` tag (`text-paper-50/70`). Footer copy
+  `Serie: vía pública` → `Sin validez legal`. Header alignment `items-baseline` →
+  `items-center`, padding `py-2` → `py-2.5`. **All 5 script hooks preserved**:
+  `bingo-card`, `bingo-grid`, `card-serial`, `card-expiry`, `expired-stamp`; grid
+  transpose classes byte-identical (win geometry untouched).
+
+**Hook-preservation evidence (grep, build-only gate so no test catches a break):**
+- `BingoCard` imported only by `index.astro:6` (`card.ts`/`certificate.ts` hits are
+  comments).
+- `index.astro` reaches exactly `#bingo-card` (L748), `#bingo-grid` (L749),
+  `#card-serial` (L750), `#card-expiry` (L751), `#expired-stamp` (L752), and toggles
+  `card-expired` (L1041) — every one preserved.
+- No consumer depends on the removed "Bingo" text or `Serie: vía pública` copy.
+- The `c/[id].astro:113` "Bingo" literal is a **separate inline reimplementation** →
+  belongs to S5a, deliberately untouched here.
+
+**Verified in browser (dev server, also covers S1 font scenarios):**
+- `card:no-bingo` ✓ — cartón header `CARTÓN Nº O9CRKWJZ` + `VÍA PÚBLICA`, footer
+  `Sin validez legal`; no "Bingo" word on the cartón (the page H1 is separate → S4).
+- `fonts:self-hosted` ✓ — network shows `/fonts/SpaceMono-*.woff2` (200); zero
+  googleapis/gstatic. `document.fonts`: Bricolage **loaded** + applied to h1/body,
+  Space Mono **loaded** + applied to serial, Lora registered (loads on demand, S7).
+  Confirms `format('woff2-variations')` parses correctly — no Arial fallback.
+- Zero console errors.
+
+**Left open:** copy `Vía pública` / `Sin validez legal` are es-ES, dry, no brand names —
+on convention. The page H1 ("EL BINGO DEL CARGADOR") still dominates; its removal is S4
+(cartón-protagonist home), as planned.
 
 ## S3 — SiteNav + index nav swap
 _(pending)_
