@@ -10,6 +10,7 @@ export const prerender = false;
 import { env } from 'cloudflare:workers';
 import Layout from '../../layouts/Layout.astro';
 import { CELL_COUNT, SITUATION_COUNT } from '../../lib/card';
+import CardFrame from '../../components/CardFrame.astro';
 
 interface GroupRow {
   id: string;
@@ -114,13 +115,13 @@ Astro.response.headers.set('cache-control', 'no-store');
                 </p>
               )}
 
-              <section class="mt-5 overflow-hidden rounded-2xl border-4 border-ink-900 bg-paper-50 text-ink-900 shadow-[0_18px_40px_-12px_rgb(0_0_0/0.55)]">
-                <header class="flex items-baseline justify-between gap-3 border-b-4 border-ink-900 bg-dauber-600 px-3.5 py-2 text-paper-50">
-                  <p class="text-lg font-black uppercase tracking-[0.35em] sm:text-xl">Sala</p>
-                  <p class="shrink-0 font-mono text-[0.625rem] tracking-wider uppercase sm:text-xs">
-                    Grupo nº {group.id}
-                  </p>
-                </header>
+              <CardFrame as="section" class="mt-5">
+                <p slot="header-left" class="font-mono text-[0.625rem] tracking-wider uppercase sm:text-xs">
+                  Grupo nº <span class="font-bold">{group.id}</span>
+                </p>
+                <p slot="header-right" class="shrink-0 text-[0.625rem] font-bold uppercase tracking-[0.2em] text-paper-50 sm:text-xs">
+                  Sala
+                </p>
 
                 {standings.length === 0 ? (
                   <p class="px-4 py-6 text-center text-sm text-ink-900/70 sm:text-base">
@@ -153,26 +154,23 @@ Astro.response.headers.set('cache-control', 'no-store');
                     ))}
                   </ul>
                 )}
-              </section>
+              </CardFrame>
             </>
           ) : (
-            <section
-              id="private-board"
-              class="mt-5 overflow-hidden rounded-2xl border-4 border-ink-900 bg-paper-50 text-ink-900 shadow-[0_18px_40px_-12px_rgb(0_0_0/0.55)]"
-            >
-              <header class="flex items-baseline justify-between gap-3 border-b-4 border-ink-900 bg-dauber-600 px-3.5 py-2 text-paper-50">
-                <p class="text-lg font-black uppercase tracking-[0.35em] sm:text-xl">Sala</p>
-                <p class="shrink-0 font-mono text-[0.625rem] tracking-wider uppercase sm:text-xs">
-                  Grupo nº {group.id}
-                </p>
-              </header>
+            <CardFrame as="section" id="private-board" class="mt-5">
+              <p slot="header-left" class="font-mono text-[0.625rem] tracking-wider uppercase sm:text-xs">
+                Grupo nº <span class="font-bold">{group.id}</span>
+              </p>
+              <p slot="header-right" class="shrink-0 text-[0.625rem] font-bold uppercase tracking-[0.2em] text-paper-50 sm:text-xs">
+                Sala
+              </p>
               <p
                 id="private-notice"
                 class="px-4 py-6 text-center text-sm text-ink-900/70 sm:text-base"
               >
                 El estado de este grupo es privado. Únete con tu cartón para ver a los demás.
               </p>
-            </section>
+            </CardFrame>
           )}
 
           <form id="join-form" class="mt-5 flex flex-col gap-2">
@@ -296,7 +294,7 @@ Astro.response.headers.set('cache-control', 'no-store');
           </p>
         </>
       ) : (
-        <article class="mt-5 overflow-hidden rounded-2xl border-4 border-ink-900 bg-paper-50 text-ink-900 shadow-[0_18px_40px_-12px_rgb(0_0_0/0.55)]">
+        <CardFrame class="mt-5">
           <div class="px-5 py-8 text-center">
             <p class="inline-block -rotate-3 rounded-lg border-4 border-double border-dauber-600 px-4 py-1.5 text-2xl font-black uppercase tracking-[0.25em] text-dauber-600">
               No consta
@@ -305,7 +303,7 @@ Astro.response.headers.set('cache-control', 'no-store');
               Este grupo no existe. Crea uno desde la página principal y reparte sufrimiento.
             </p>
           </div>
-        </article>
+        </CardFrame>
       )
     }
 

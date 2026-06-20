@@ -139,7 +139,43 @@ on convention. The page H1 ("EL BINGO DEL CARGADOR") still dominates; its remova
 block from `index.astro` — brand will live in SiteNav and the H1 becomes redundant.
 
 ## S5 — Shared CardFrame + bespoke pages
-_(pending)_
+
+**Files changed:**
+- `src/components/CardFrame.astro` — new component. Props: `as` (`article`|`section`,
+  default `article`), `id`, `class`, `footerCenter` (boolean). Named slots: `header-left`,
+  `header-right`, `footer`. Header bar (`bg-dauber-600`) renders only when at least one
+  header slot is filled; footer bar (`bg-paper-100`) renders only when `footer` slot is
+  filled. `footerCenter` switches footer from `flex justify-between` to `text-center`.
+  Outer wrapper always gets the shared chrome:
+  `overflow-hidden rounded-2xl border-4 border-ink-900 bg-paper-50 text-ink-900 shadow-[…]`.
+- `src/components/BingoCard.astro` — refitted to `<CardFrame id="bingo-card" class="relative w-full">`.
+  All 5 script hooks (`bingo-card`, `bingo-grid`, `card-serial`, `card-expiry`,
+  `expired-stamp`) preserved verbatim. Grid transpose classes byte-identical.
+- `src/pages/c/[id].astro` — found card refitted to `<CardFrame class="mt-4 w-full">`;
+  new header: serial mono left / "En directo" right. Footer `/60` → `/70` (AA fix, folded
+  from review). Not-found bare wrapper → `<CardFrame class="mt-5">` (no header slots →
+  no header bar).
+- `src/pages/v/[id].astro` — article refitted to `<CardFrame class="mt-5" footerCenter>`;
+  header: serial mono left / "Acta" right. Footer `/60` → `/70` (AA fix, now the CardFrame
+  default). Centered footer text via `footerCenter`.
+- `src/pages/g/[id].astro` — public standings + private board sections refitted to
+  `<CardFrame as="section" ...>`; header: serial mono left / "Sala" right. Not-found
+  article → `<CardFrame class="mt-5">` (no header). JS twin `renderPrivateBoard`
+  unchanged — `#private-board` id on the CardFrame `<section>` is preserved; the twin
+  removes `#private-notice` and appends `<ul>` inside it as before.
+
+**Verified in browser (dev server):**
+- `cardframe:parity` (home) ✓ — BingoCard via CardFrame; serial + "Vía pública" header,
+  "Sin validez legal / Caduca:" footer. Visual parity with pre-S5 cartón confirmed.
+- `cardframe:parity` (c/not-found) ✓ — no header bar, "No consta" stamp renders correctly.
+- `cardframe:parity` (v/unknown) ✓ — "CARTÓN Nº / ACTA" header, centered footer.
+- `cardframe:parity` (g/not-found) ✓ — no header bar, "No consta" stamp renders correctly.
+- Zero console errors across all tested pages.
+
+**Left open (manual verification requires local D1 data or prod):**
+- `cardframe:parity` (c/found) — live card view with marked cells.
+- `cardframe:parity` (v/verified, v/pending) — verdict stamps on real completed/active cards.
+- `cardframe:parity` (g/public standings, g/private board JS twin) — group pages with members.
 
 ## S6 — Light secondary pages + site-wide nav
 _(pending)_

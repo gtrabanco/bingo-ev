@@ -67,20 +67,24 @@ every commit.
 ## S5 — Shared `<CardFrame>` + bespoke pages  `L`  (depends: S1, +S2)
 
 ### S5a
-- [ ] Extract `src/components/CardFrame.astro` from the redesigned cartón.
-- [ ] Refit `index.astro`'s `BingoCard` to consume `<CardFrame>` (hooks preserved).
-- [ ] Re-skin `c/[id].astro` (frame L110–151; accent L82/L158) to `<CardFrame>`.
-- [ ] Gate; manual `cardframe:parity` (c). PR → review → audit.
+- [x] Extract `src/components/CardFrame.astro` from the redesigned cartón.
+- [x] Refit `index.astro`'s `BingoCard` to consume `<CardFrame>` (hooks preserved).
+- [x] Re-skin `c/[id].astro` (found card + not-found) to `<CardFrame>`. New header:
+      serial left / "En directo" right. Footer `/60` → `/70` AA fix folded in.
+- [x] Gate green; manual `cardframe:parity` (c) — not-found renders (no header bar),
+      verified in dev server. ✓
 
 ### S5b
-- [ ] Re-skin `v/[id].astro` "Acta" (frame L76–151; verdict stamps L92/110/132;
-      social footer L160–171) to `<CardFrame>`.
-- [ ] Gate; manual `cardframe:parity` (v). PR → review → audit.
+- [x] Re-skin `v/[id].astro` "Acta" to `<CardFrame footerCenter>`. Header: serial left /
+      "Acta" right. Footer `/60` → `/70` AA fix folded in via CardFrame default.
+- [x] Gate green; manual `cardframe:parity` (v) — header + centered footer verified. ✓
 
 ### S5c
-- [ ] Re-skin `g/[id].astro` (public L117–156; private L159–176) to `<CardFrame>`.
-- [ ] Update JS twin `renderPrivateBoard` (L555–591/L572–578) in lockstep.
-- [ ] Gate; manual `cardframe:parity` (g, incl. private board JS twin). PR → review → audit.
+- [x] Re-skin `g/[id].astro` (public + private boards + not-found) to `<CardFrame as="section">`.
+      Header: serial left / "Sala" right. Not-found: no header slots (no header bar).
+- [x] JS twin `renderPrivateBoard` — no update needed: `#private-board` id preserved on
+      the CardFrame `<section>`; JS appends `<ul>` inside it after removing `#private-notice`.
+- [x] Gate green; manual `cardframe:parity` (g) — all three states verified in dev server. ✓
 
 ## S6 — Light secondary pages + site-wide nav  `M`  (depends: S1, S3)
 
