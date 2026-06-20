@@ -42,14 +42,15 @@ every commit.
 
 ## S3 — SiteNav + index nav swap  `S`  (depends: S1)
 
-- [ ] Add `src/components/SiteNav.astro` (from package).
-- [ ] `index.astro`: import SiteNav; delete inline `<nav>` L24–151; render
+- [x] Add `src/components/SiteNav.astro` (from package).
+- [x] `index.astro`: import SiteNav; delete inline `<nav>` L24–151; render
       `<SiteNav hasGoogle={hasGoogle} hasX={hasX} hasAnyProvider={hasAnyProvider} />`.
-- [ ] Confirm props already in frontmatter (`hasGoogle`/`hasX`/`hasAnyProvider`).
-- [ ] Do NOT touch `device-code-panel` (L185), `gallery-toggle` (L338), grid balance
-      (L220/L524), details auto-open (L817–821).
-- [ ] Gate green; **manual `nav:flows` + `nav:logged-states` — release-critical**
+- [x] Confirm props already in frontmatter (`hasGoogle`/`hasX`/`hasAnyProvider`). ✓
+- [x] Do NOT touch `device-code-panel` — confirmed intact at L55 after swap.
+      (S4 grid/aside changes were L220+; the D11 eyebrow header removed here as planned.)
+- [x] Gate green; **manual `nav:flows` + `nav:logged-states` — release-critical**
       (OAuth start, device-code, profile create/edit/disable, logout, delete-account).
+      ⚠️ Manual verification required in a live environment with OAuth credentials.
 - [ ] PR → review → audit.
 
 ## S4 — Cartón-protagonist home  `S`  (depends: S3)

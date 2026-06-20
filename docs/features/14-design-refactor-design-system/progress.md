@@ -86,7 +86,30 @@ on convention. The page H1 ("EL BINGO DEL CARGADOR") still dominates; its remova
 (cartón-protagonist home), as planned.
 
 ## S3 — SiteNav + index nav swap
-_(pending)_
+
+**Files changed:**
+- `src/components/SiteNav.astro` — new component (copied from integration package).
+  Brand lockup (favicon + "El Bingo / del Cargador") top-left. Icon-over-label action
+  bar top-right: Hall of Fame trophy + Vincular phone (device-code-btn). Account bar
+  (`#account-bar`) with Google/X login boxes and full logged-in state (profile-ctl,
+  logout, delete-account) — all DOM ids and aria attributes preserved verbatim.
+  `.nav-action` / `.nav-box` / `.nav-label` classes already in `global.css` (S1).
+- `src/pages/index.astro` — inline `<nav>` (L24–151) replaced with
+  `<SiteNav hasGoogle={...} hasX={...} hasAnyProvider={...} />`. Import added.
+  Brand eyebrow `<header>` removed (D11: SiteNav now carries the brand). Props
+  `hasGoogle` / `hasX` / `hasAnyProvider` were already in frontmatter. `device-code-panel`
+  confirmed intact at L55.
+
+**Verified in browser (dev server):**
+- `nav:sitenav` ✓ — favicon + "EL BINGO DEL CARGADOR" left; Hall + Vincular icons
+  right. Bottom-border separator. Eyebrow H1 gone — card is full protagonist.
+- Zero console errors.
+
+**Left open (manual verification required in live env):**
+- `nav:flows` — OAuth start (Google, X), device-code panel open/close.
+- `nav:logged-states` — profile create/edit/disable, logout, delete-account dialog.
+  These require live OAuth credentials and cannot be exercised in the dev server
+  without real provider keys.
 
 ## S4 — Cartón-protagonist home
 

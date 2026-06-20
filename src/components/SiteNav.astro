@@ -1,0 +1,177 @@
+---
+// Top navigation, extracted from index.astro as a component and redesigned.
+//
+// WHAT CHANGED (design refactor)
+//  • Brand lockup (favicon + name) now lives top-left — the cartón-protagonist
+//    layout removes the giant H1 from the page header, so the brand moves here.
+//  • Every primary action is an ICON ABOVE A SMALL LABEL (.nav-action), so the
+//    bar reads clearly and compresses cleanly on mobile.
+//  • "Guardar mis diplomas" → "Jugar con cuenta"; provider buttons are 42px
+//    boxed glyphs (.nav-box) sized to align with the nav-action icons.
+//  • "Cambiar de dispositivo" label shortened to "Vincular".
+//
+// WHAT DID NOT CHANGE: every id / aria / hidden-class hook the page script
+// relies on is preserved verbatim, so all behavior (device code, OAuth login,
+// public profile sub-states, logout, delete account) works unchanged.
+//
+// Usage in index.astro (replaces the inline <nav>…</nav>):
+//   import SiteNav from '../components/SiteNav.astro';
+//   <SiteNav hasGoogle={hasGoogle} hasX={hasX} hasAnyProvider={hasAnyProvider} />
+
+interface Props {
+  hasGoogle: boolean;
+  hasX: boolean;
+  hasAnyProvider: boolean;
+}
+const { hasGoogle, hasX, hasAnyProvider } = Astro.props;
+---
+
+<nav
+  class="flex items-end justify-between gap-3 border-b border-paper-50/15 pb-3"
+  aria-label="Navegación principal"
+>
+  <!-- Brand lockup -->
+  <a href="/" class="flex shrink-0 items-center gap-2.5" aria-label="El Bingo del Cargador — inicio">
+    <img src="/favicon.svg" alt="" width="36" height="36" />
+    <span class="hidden text-[0.9375rem] font-extrabold uppercase leading-none tracking-tight text-amber-300 sm:block">
+      El Bingo<br />del Cargador
+    </span>
+  </a>
+
+  <!-- Actions — uniform icon-over-label stacks, labels aligned along the bottom -->
+  <div class="flex items-end gap-0.5">
+    <a
+      href="/hall-of-fame"
+      class="nav-action focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+      <span class="nav-label">Hall</span>
+    </a>
+
+    <!-- Device-transfer — hidden until a card exists (JS-controlled) -->
+    <button
+      id="device-code-btn"
+      type="button"
+      class="nav-action hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+      aria-expanded="false"
+      aria-controls="device-code-panel"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+      <span class="nav-label">Vincular</span>
+    </button>
+
+    <!-- Account / login (feature 05-accounts).
+         Hidden until JS resolves session state to avoid layout flash. -->
+    <div id="account-bar" data-has-providers={hasAnyProvider ? 'true' : 'false'} class="hidden items-end gap-1" aria-live="polite">
+      {hasAnyProvider && (
+        <div id="account-loggedout" class="hidden flex-col items-center gap-1.5 px-2 py-1">
+          <div class="flex gap-1.5">
+            {hasGoogle && (
+              <button
+                id="btn-login-google"
+                type="button"
+                class="nav-box focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+                aria-label="Jugar con Google"
+                title="Jugar con Google"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+              </button>
+            )}
+            {hasX && (
+              <button
+                id="btn-login-x"
+                type="button"
+                class="nav-box focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+                aria-label="Jugar con X"
+                title="Jugar con X"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="currentColor">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
+              </button>
+            )}
+          </div>
+          <span class="text-[0.625rem] font-bold uppercase tracking-wide text-paper-300/60">Jugar con cuenta</span>
+        </div>
+      )}
+
+      <!-- Logged-in state — all power-user controls preserved verbatim -->
+      <div id="account-loggedin" class="hidden flex-wrap items-center gap-2 px-1 text-xs sm:text-sm">
+        <span id="account-label" class="text-paper-300/75"></span>
+        <span class="text-paper-300/30" aria-hidden="true">·</span>
+        <!-- Public profile control (feature 09) — three sub-states toggled by JS -->
+        <div id="profile-ctl" class="flex flex-wrap items-center gap-1.5">
+          <!-- no profile yet -->
+          <div id="profile-none">
+            <button
+              id="btn-create-profile"
+              type="button"
+              class="underline decoration-paper-300/40 underline-offset-2 transition-colors hover:text-paper-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+            >Perfil público</button>
+          </div>
+          <!-- profile active -->
+          <div id="profile-active" class="hidden items-center gap-1.5">
+            <a
+              id="profile-link"
+              href=""
+              class="font-semibold text-amber-300/80 transition-colors hover:text-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+            ></a>
+            <button
+              id="btn-edit-profile"
+              type="button"
+              class="underline decoration-paper-300/40 underline-offset-2 transition-colors hover:text-paper-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+            >editar</button>
+            <button
+              id="btn-disable-profile"
+              type="button"
+              class="underline decoration-paper-300/40 underline-offset-2 transition-colors hover:text-paper-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+            >desactivar</button>
+          </div>
+          <!-- create / edit form -->
+          <div id="profile-form-wrap" class="hidden flex-wrap items-center gap-1.5">
+            <label for="profile-handle-input" class="sr-only">Nombre de perfil público (letras minúsculas, números y guiones, 3–24 caracteres)</label>
+            <input
+              id="profile-handle-input"
+              type="text"
+              placeholder="mi-handle"
+              maxlength="24"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              class="w-28 rounded border border-paper-300/25 bg-felt-950/60 px-2 py-0.5 text-xs text-paper-50 placeholder-paper-300/40 focus:outline-none focus:ring-1 focus:ring-amber-300/50"
+              aria-describedby="profile-error"
+            />
+            <button
+              id="btn-save-profile"
+              type="button"
+              class="rounded border border-amber-300/30 bg-felt-800/40 px-2 py-0.5 text-xs text-amber-300 transition-colors hover:bg-felt-800/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+            >Activar</button>
+            <button
+              id="btn-cancel-profile"
+              type="button"
+              class="underline decoration-paper-300/40 underline-offset-2 transition-colors hover:text-paper-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+            >cancelar</button>
+            <p id="profile-error" aria-live="polite" class="hidden w-full text-xs text-red-300"></p>
+          </div>
+        </div>
+        <span class="text-paper-300/30" aria-hidden="true">·</span>
+        <button
+          id="btn-logout"
+          type="button"
+          class="underline decoration-paper-300/40 underline-offset-2 transition-colors hover:text-paper-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+        >Cerrar sesión</button>
+        <span class="text-paper-300/30" aria-hidden="true">·</span>
+        <button
+          id="btn-delete-account"
+          type="button"
+          class="underline decoration-red-300/40 underline-offset-2 text-red-300/80 transition-colors hover:text-red-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-400"
+        >Borrar todo</button>
+      </div>
+    </div>
+  </div>
+</nav>
