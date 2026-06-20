@@ -97,3 +97,24 @@ independently of issue numbers (features 01–13 don't map to issue numbers). Fe
 PRs must **not** carry `Closes #14`.
 **Why:** prevents accidentally closing an unrelated open issue on merge. **How to apply:**
 PR bodies reference the feature/slice, not issue #14.
+
+## D10 — Delivery: one feature branch, phased commits, single PR after S8 *(revises D2's "one PR each")*
+
+**Decided: one branch `feat/14-design-refactor-design-system`, one gate-green commit per
+slice (S1, S2, …), and a single feature PR opened after the final slice — not 8 separate
+PRs.** The SPEC/decisions/roadmap originally framed the 8 slices as "one PR each, never
+stacked". In execution that proved impossible to honor *as written*: the dependency chain
+(S3→S1, S4→S3, S5→S1, S6→S1+S3, S7→S1, S8→S1+S7) means per-slice PRs against `main` would
+either **stack** (forbidden by the project's hard rule) or require **merging each slice to
+`main` before starting the next** — a cadence the owner did not choose (slices are being
+run back-to-back without intervening merges).
+**Why:** the never-stack rule and the dependency chain leave a single phased branch as the
+only coherent option under the chosen cadence. Each per-slice commit is still
+**independently reviewable and gate-green** (the substance of "independently shippable"),
+so nothing is lost but the PR-per-slice ceremony.
+**How to apply:** review cadence is the execute-phase default — `/review-change` every 2
+slices and once more before the PR. The single PR (after S8) carries no `Closes #14` (D9).
+If the owner later wants per-slice PRs, the path is: merge S1 to `main`, branch S2 from
+`main`, repeat — but that trades the cohesive-redesign goal (D2) for more merge overhead.
+Revises the **delivery** half of D2; D2's **scope** decision (whole site in feature 14) is
+unchanged.
