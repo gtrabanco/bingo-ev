@@ -111,10 +111,6 @@ Astro.response.headers.set('cache-control', 'no-store');
   Astro.response.status === 404 ? (
     <Layout title={pageTitle} description={pageDescription} noIndex={true}>
       <main class="mx-auto w-full max-w-2xl px-4 pt-20 pb-16 text-center">
-        <a
-          href="/hall-of-fame"
-          class="mb-8 inline-block text-xs text-paper-300/50 hover:text-paper-300/80 transition-colors"
-        >← Hall of Fame</a>
         <p class="text-6xl font-black text-paper-300/20">404</p>
         <h1 class="mt-4 text-xl font-bold text-paper-50">
           Este jugador no existe o no es público
@@ -134,10 +130,6 @@ Astro.response.headers.set('cache-control', 'no-store');
       <main class="mx-auto w-full max-w-5xl px-4 pt-10 pb-16 sm:pt-14">
         <!-- Header -->
         <div class="mb-8">
-          <a
-            href="/hall-of-fame"
-            class="mb-4 inline-block text-xs text-paper-300/50 hover:text-paper-300/80 transition-colors"
-          >← Hall of Fame</a>
           <h1 class="text-2xl font-black uppercase tracking-tight text-amber-300 sm:text-3xl">
             {handle}
           </h1>

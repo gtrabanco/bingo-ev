@@ -178,7 +178,34 @@ block from `index.astro` — brand will live in SiteNav and the H1 becomes redun
 - `cardframe:parity` (g/public standings, g/private board JS twin) — group pages with members.
 
 ## S6 — Light secondary pages + site-wide nav
-_(pending)_
+
+**Files changed:**
+- `src/layouts/Layout.astro` — new `nav` prop (default `true`); `SiteNav` import; body
+  gains `flex flex-col`; when `nav={true}` renders `<SiteNav hasGoogle={false} hasX={false}
+  hasAnyProvider={false} />` in a `max-w-5xl` container before `<slot />`. All-false props:
+  secondary pages need brand/Hall nav only; no account JS on them.
+- `src/pages/index.astro` — `nav={false}` added to `<Layout>` call; prevents double nav.
+- `src/pages/hall-of-fame.astro` — back-link removed; `<style>` block → `.filter-btn-active`
+  only; base filter-btn → Tailwind inline classes; client script imports `HONORIFICS` and
+  drops local `HONORIFIC_TITLES` dict; `entryHtml` uses `HONORIFICS[entry.honorific]?.title`.
+- `src/pages/jugador/[handle].astro` — both `← Hall of Fame` back-links removed (found + 404).
+- `src/pages/activar.astro` — `min-h-dvh` → `flex-1`; `Volver al bingo` link removed.
+- `src/pages/terminos.astro` — `min-h-dvh` → `flex-1`; `Volver al bingo` link removed.
+- `src/pages/privacidad.astro` — `min-h-dvh` → `flex-1`; `Volver al bingo` button removed.
+- `src/pages/c/[id].astro`, `v/[id].astro`, `g/[id].astro` — `min-h-dvh` → `flex-1`.
+
+**Verified in browser (dev server):**
+- `nav:sitenav` (hall-of-fame) ✓ — brand lockup left, Hall trophy right; back-link gone;
+  filter pills correct; gallery cards with honorific colors.
+- `nav:sitenav` (index) ✓ — single SiteNav only; `nav={false}` prevents double.
+- `nav:sitenav` (terminos) ✓ — SiteNav top; h1 amber uppercase; prose inherits; back-link gone.
+- `nav:sitenav` (activar) ✓ — SiteNav top; form centered vertically in flex-1 remaining space.
+- Zero console errors.
+
+**Left open (manual verification requires live env):**
+- Hall/brand nav links exercisable in dev (no OAuth needed).
+- Account bar behavior on index.astro unchanged (secondary pages show no account bar — correct).
+- `cardframe:parity` found-card states (same as S5 left-open).
 
 ## S7 — Diploma canvas fonts
 _(pending)_

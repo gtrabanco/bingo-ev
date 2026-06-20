@@ -88,15 +88,24 @@ every commit.
 
 ## S6 — Light secondary pages + site-wide nav  `M`  (depends: S1, S3)
 
-- [ ] Mount `<SiteNav>` in `Layout.astro`, prop-gated (`nav` default true; finalize
-      opt-out list — D7).
-- [ ] Trim redundant per-page back-links where SiteNav covers them.
-- [ ] `hall-of-fame`: h1/back-link; `.filter-btn` (L227–247); `entryHtml` twin
-      (L281–289 ↔ L166–201).
-- [ ] `jugador/[handle]`: `HONORIFIC_COLORS` parity with hall-of-fame (L181–201).
-- [ ] `activar`: form-control accent (L61/76/110–115/128–134).
-- [ ] `terminos`/`privacidad`: h1 (L16) only; confirm prose inherits.
-- [ ] Gate; manual: shell consistent, gallery surfaces identical. PR → review → audit.
+- [x] Mount `<SiteNav>` in `Layout.astro`, prop-gated (`nav` default true). Opt-out:
+      `index.astro` passes `nav={false}` (owns its full-OAuth SiteNav). All secondary
+      pages get default `nav={true}`. SiteNav in Layout passes all-false provider props —
+      no env access needed (secondary pages don't run account JS).
+- [x] Body gains `flex flex-col`; pages with `min-h-dvh` on main → `flex-1`
+      (c/v/g/activar/terminos/privacidad), so layout is correct with nav above.
+- [x] Trim redundant back-links: hall-of-fame `← Volver al juego`; jugador `← Hall of
+      Fame` (found + 404); activar `Volver al bingo`; terminos/privacidad `Volver al bingo`.
+- [x] `hall-of-fame`: `<style>` block stripped to `.filter-btn-active` only; base
+      filter-btn → Tailwind inline classes; `entryHtml` JS twin imports `HONORIFICS` from
+      `certificate-design` (drops local `HONORIFIC_TITLES` dict).
+- [x] `jugador/[handle]`: both back-links removed; HONORIFIC_COLORS parity confirmed ✓.
+- [x] `activar`: `min-h-dvh` → `flex-1`; back-link removed; form-control accent already
+      correct (no change needed).
+- [x] `terminos`/`privacidad`: `min-h-dvh` → `flex-1`; h1 on-spec ✓; prose inherits ✓;
+      redundant home links removed; cross-links retained.
+- [x] Gate green (`npm run build` ✓).
+- [ ] Manual: shell consistent, gallery surfaces identical. PR → review → audit.
 
 ## S7 — Diploma canvas fonts  `M`  (depends: S1)
 
