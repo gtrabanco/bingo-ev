@@ -9,19 +9,24 @@ every commit.
 
 ## S1 — Fonts + global.css foundation  `M`  (depends: —)
 
-- [ ] Offline: convert the 5 `integration/public/fonts/*.ttf` → `*.woff2`
+- [x] Offline: convert the 5 `integration/public/fonts/*.ttf` → `*.woff2`
       (variable axes kept for Bricolage/Lora). Dev/offline only — no repo dep.
-- [ ] Create `public/fonts/`; add the 5 `*.woff2` + 3 `*-OFL.txt` licenses.
-- [ ] Replace `src/styles/global.css` with `integration/src/styles/global.css`;
-      repoint each `src()` → `/fonts/*.woff2`, `format('woff2')` /
-      `format('woff2-variations')` for variable faces.
-- [ ] Add metric-tuned fallback `@font-face` (`size-adjust`/`ascent-override`/
-      `descent-override`) and fold it into the `--font-sans` stack.
-- [ ] `Layout.astro` `<head>` (~after L50): preload Bricolage woff2 (`as=font
-      type=font/woff2 crossorigin`).
-- [ ] Docs: `CLAUDE.md` L65 parenthetical; `DESIGN.md` L8 + Typography section;
-      `SEO.md` font note; `ACCESSIBILITY.md` small-text/nav-contrast note.
-- [ ] Gate green; manual `fonts:self-hosted` + `fonts:no-reflow`.
+      Used `woff2_compress` (Google reference encoder). Savings: 401→205KB (BG),
+      204→91KB (Lora-Italic), 196→85KB (Lora), 89→35KB (SpaceMono-Bold),
+      90→35KB (SpaceMono-Regular).
+- [x] Create `public/fonts/`; add the 5 `*.woff2` + 3 `*-OFL.txt` licenses.
+- [x] Replace `src/styles/global.css` with `integration/src/styles/global.css`;
+      repointed each `src()` → `/fonts/*.woff2`, `format('woff2-variations')` for
+      variable faces, `format('woff2')` for static.
+- [x] Add metric-tuned fallback `@font-face` (`Bricolage Grotesque Fallback`,
+      base Arial; `size-adjust:106%`, `ascent-override:88%`, `descent-override:20%`)
+      and fold it into the `--font-sans` stack.
+- [x] `Layout.astro` `<head>`: preload Bricolage woff2 (`as=font type=font/woff2
+      crossorigin`).
+- [x] Docs: `CLAUDE.md` L65 parenthetical; `DESIGN.md` L8 → Typography section;
+      `SEO.md` font+LCP note; `ACCESSIBILITY.md` small-text/nav-contrast note.
+- [x] Gate green (`npm run build` ✓).
+- [ ] Manual `fonts:self-hosted` + `fonts:no-reflow` (after PR merge / dev server).
 - [ ] PR → `/review-change` → `/audit-pr`.
 
 ## S2 — Drop "BINGO" from cartón  `XS`  (depends: — ; visually after S1)

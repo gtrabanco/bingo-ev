@@ -1,7 +1,74 @@
 @import 'tailwindcss';
 
-/* Bingo-hall palette: felt table, cartón paper, dauber ink. */
+/* ──────────────────────────────────────────────────────────────────────────
+   Self-hosted webfonts (Opción B · "indie editorial").
+   Files live in /public/fonts/ → served as /fonts/*.woff2.
+   NOT loaded from Google Fonts (EU-privacy + zero latency). All SIL OFL 1.1;
+   license text ships beside each file (/public/fonts/*-OFL.txt).
+
+   Converted offline with woff2_compress (Google reference encoder) — no
+   conversion tool is a runtime or npm dependency.
+
+     Bricolage Grotesque → display + UI   (variable: weight 400–800)
+     Lora               → diploma voice    (variable: weight 400–700 + italic)
+     Space Mono         → serials / codes  (static: 400, 700)
+   ────────────────────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'Bricolage Grotesque';
+  src: url('/fonts/BricolageGrotesque-variable.woff2') format('woff2-variations');
+  font-weight: 400 800;
+  font-stretch: 75% 100%;
+  font-style: normal;
+  font-display: swap;
+}
+/* Metric-tuned fallback — minimises CLS while the real variable font loads.
+   Base: Arial (available on every major OS). Values approximate Bricolage's
+   x-height (≈0.55 em) and cap metrics. Tune visually if CLS is observed. */
+@font-face {
+  font-family: 'Bricolage Grotesque Fallback';
+  src: local('Arial'), local('Helvetica Neue'), local('Helvetica');
+  size-adjust: 106%;
+  ascent-override: 88%;
+  descent-override: 20%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Lora';
+  src: url('/fonts/Lora-variable.woff2') format('woff2-variations');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Lora';
+  src: url('/fonts/Lora-Italic-variable.woff2') format('woff2-variations');
+  font-weight: 400 700;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Space Mono';
+  src: url('/fonts/SpaceMono-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Space Mono';
+  src: url('/fonts/SpaceMono-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Bingo-hall palette: felt table, cartón paper, dauber ink.
+   Font families registered here so Tailwind generates font-sans/serif/mono
+   utilities AND preflight applies Bricolage Grotesque as the default body font. */
 @theme {
+  --font-sans: 'Bricolage Grotesque', 'Bricolage Grotesque Fallback', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Lora', Georgia, 'Times New Roman', Times, serif;
+  --font-mono: 'Space Mono', ui-monospace, 'Courier New', monospace;
+
   --color-felt-950: #06251b;
   --color-felt-900: #0b3d2e;
   --color-felt-800: #11503c;
@@ -159,6 +226,55 @@
   .mode-btn[aria-pressed='true'] {
     background-color: var(--color-amber-300);
     color: var(--color-felt-950);
+  }
+
+  /* ── Top-nav action: icon ABOVE a small label (uniform vertical stacks).
+        Used by SiteNav.astro so the bar reads clearly and compresses on
+        mobile. Boxed icons are 42px to align with the login provider buttons. */
+  .nav-action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4375rem; /* 7px */
+    min-width: 3.875rem; /* 62px */
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.5rem;
+    color: rgb(221 207 169 / 0.7);
+    cursor: pointer;
+    transition:
+      background-color 150ms ease,
+      color 150ms ease;
+  }
+  .nav-action:hover {
+    color: var(--color-paper-50);
+  }
+  .nav-action[aria-pressed='true'],
+  .nav-action.is-active {
+    color: var(--color-amber-300);
+    background-color: rgb(252 211 77 / 0.1);
+  }
+  .nav-action > .nav-label {
+    font-size: 0.625rem; /* 10px */
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    line-height: 1;
+  }
+  /* The 42px boxed glyph used inside provider/login buttons. */
+  .nav-box {
+    width: 2.625rem; /* 42px */
+    height: 2.625rem;
+    display: grid;
+    place-items: center;
+    border-radius: 0.5rem;
+    border: 2px solid rgb(246 240 223 / 0.22);
+    background: transparent;
+    cursor: pointer;
+    color: var(--color-paper-50);
+    transition: border-color 150ms ease;
+  }
+  .nav-box:hover {
+    border-color: var(--color-amber-300);
   }
 
   @media (prefers-reduced-motion: no-preference) {

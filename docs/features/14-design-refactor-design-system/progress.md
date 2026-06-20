@@ -23,7 +23,33 @@ it left open for the next slice). Newest at the bottom.
 _No code yet — planning is docs-only. Next: `execute-phase 14 S1`._
 
 ## S1 — Fonts + global.css foundation
-_(pending)_
+
+**Files changed:**
+- `public/fonts/` — 5 `*.woff2` (BG-variable 201KB, Lora-variable 83KB,
+  Lora-Italic-variable 90KB, SpaceMono-Regular 35KB, SpaceMono-Bold 35KB) + 3 OFL
+  licenses. Converted offline with `woff2_compress` (no runtime dep).
+- `src/styles/global.css` — full replacement from the integration package: 6
+  `@font-face` rules (woff2/woff2-variations paths) + metric-tuned fallback
+  `Bricolage Grotesque Fallback` (Arial base; `size-adjust:106%`,
+  `ascent-override:88%`, `descent-override:20%`); `@theme` gains
+  `--font-sans/serif/mono`; `.nav-action`/`.nav-box` component classes added.
+- `src/layouts/Layout.astro` — added `<link rel="preload">` for BricolageGrotesque
+  woff2 before `<title>`.
+- `CLAUDE.md` — L65 parenthetical updated: self-hosted static fonts explicitly
+  permitted (no runtime dep), Google Fonts / font npm packages still banned.
+- `docs/frontend/DESIGN.md` — replaced "Avoid webfonts" with full Typography section
+  (3-face table + fallback + preload notes).
+- `docs/frontend/SEO.md` — added "Fonts and LCP" section.
+- `docs/frontend/ACCESSIBILITY.md` — added font/nav contrast notes.
+
+**Verification pending (manual, after `npm run dev`):**
+- `fonts:self-hosted` — network panel shows `/fonts/*.woff2`; zero googleapis/gstatic.
+- `fonts:no-reflow` — throttled reload; no visible text reflow / CLS on swap.
+
+**Left open for next slices:** `.nav-action`/`.nav-box` classes are in `global.css` but
+the nav that uses them ships in S3. `font-serif` is wired but only the diploma modal
+(S7) and explicit `font-serif` classes will show Lora. The fallback metrics should be
+visually validated once a browser can render both the fallback and the real font.
 
 ## S2 — Drop "BINGO" from cartón
 _(pending)_

@@ -4,7 +4,25 @@
 
 A **bingo-hall parody** aesthetic: green felt table, paper cartón, red dauber ink. It
 should feel playful and tactile, dry-humored, never edgy or polished-corporate.
-Mobile-first; the cartón is the hero. Avoid webfonts (no new deps — system fonts only).
+Mobile-first; the cartón is the hero.
+
+## Typography
+
+Three self-hosted woff2 faces (no Google Fonts request; all SIL OFL 1.1, files in
+`public/fonts/`; converted offline with `woff2_compress`):
+
+| Face | Role | CSS family | Tailwind utility |
+|---|---|---|---|
+| Bricolage Grotesque (variable, wt 400–800) | Display + UI — body default via preflight | `font-sans` | `font-sans` |
+| Lora (variable, wt 400–700 + italic) | Diploma voice, editorial headings | `font-serif` | `font-serif` |
+| Space Mono (static 400/700) | Serials, codes, monospaced labels | `font-mono` | `font-mono` |
+
+The `@theme` in `global.css` registers `--font-sans/serif/mono`; Tailwind's preflight
+sets Bricolage Grotesque as the default body font site-wide. A metric-tuned fallback
+`@font-face` (`Bricolage Grotesque Fallback`, base Arial) is included in `--font-sans`
+to minimise CLS while the variable file loads.
+
+Preload for Bricolage is in `Layout.astro` `<head>` (`rel=preload as=font crossorigin`).
 
 ## Tokens
 
