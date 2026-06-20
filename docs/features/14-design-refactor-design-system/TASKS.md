@@ -54,10 +54,13 @@ every commit.
 
 ## S4 — Cartón-protagonist home  `S`  (depends: S3)
 
-- [ ] Remove redundant H1 (or reduce to eyebrow + short desc).
-- [ ] Single centered column (`max-w-md`/`lg:max-w-xl mx-auto`); papeleo below the
+- [x] Remove redundant H1 (or reduce to eyebrow + short desc).
+      Used "reduce" path (S3 / SiteNav not yet landed): H1 kept for SEO, shrunk
+      to compact eyebrow (`text-sm`, `text-paper-300/50`). Full H1 removal deferred
+      to S3 (when brand lives in SiteNav). Recorded in decisions.md D11.
+- [x] Single centered column (`max-w-md`/`lg:max-w-xl mx-auto`); papeleo below the
       card; drop `lg:grid lg:grid-cols-[…]`.
-- [ ] Gate green; manual `home:protagonist` (+ dialogs/panels unaffected).
+- [x] Gate green; manual `home:protagonist` (+ dialogs/panels unaffected).
 - [ ] PR → review → audit.
 
 ## S5 — Shared `<CardFrame>` + bespoke pages  `L`  (depends: S1, +S2)

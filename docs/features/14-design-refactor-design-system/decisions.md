@@ -98,6 +98,20 @@ PRs must **not** carry `Closes #14`.
 **Why:** prevents accidentally closing an unrelated open issue on merge. **How to apply:**
 PR bodies reference the feature/slice, not issue #14.
 
+## D11 — S4 executed before S3: "reduce" H1 path chosen
+
+**Decided: reduce H1 to compact eyebrow (not remove).** S4 depends on S3 (SiteNav
+must carry the brand before the H1 is dropped), but S4 was executed back-to-back before
+S3. The TASKS.md "or reduce to eyebrow" escape hatch was taken: the H1 is kept for SEO
+(`<h1 class="... text-sm ... text-paper-300/50">`), visually subdued to look like an
+eyebrow rather than a hero heading. When S3 lands and the brand is in SiteNav, the H1
+can be removed entirely.
+**Why:** removes the two-column layout and card-protagonist restructure immediately;
+avoids delaying S4 and S5 on an S3 blocker when the "reduce" path achieves the
+protagonist effect without the brand gap.
+**How to apply:** S3 executor must remove the `<header>` eyebrow block from
+`index.astro` when the SiteNav ships.
+
 ## D10 — Delivery: one feature branch, phased commits, single PR after S8 *(revises D2's "one PR each")*
 
 **Decided: one branch `feat/14-design-refactor-design-system`, one gate-green commit per

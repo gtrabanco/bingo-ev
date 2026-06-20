@@ -89,7 +89,31 @@ on convention. The page H1 ("EL BINGO DEL CARGADOR") still dominates; its remova
 _(pending)_
 
 ## S4 — Cartón-protagonist home
-_(pending)_
+
+**Files changed:**
+- `src/pages/index.astro` — H1 reduced to compact two-line eyebrow (`text-sm`,
+  `text-paper-300/50`); H1 kept for SEO pending S3 (D11). Two-column desktop layout
+  removed: `lg:grid lg:grid-cols-[…]` wrapper + left-column `<div class="lg:min-w-0">`
+  + `<aside class="lg:min-w-0">` all dropped. Main max-width `lg:max-w-5xl` → `lg:max-w-xl`.
+  Papeleo (`<details>`) now flows below the cartón in a single column. Tesla CTA comment
+  updated. No DOM/script hook changes.
+- `src/components/BingoCard.astro` — two a11y contrast fixes folded from /review-change:
+  `text-paper-50/70` → `text-paper-50` (Vía pública: 3.51:1 → 5.25:1 AA pass);
+  `text-ink-900/60` → `text-ink-900/70` (footer: 4.02:1 → 5.47:1 AA pass).
+- `docs/features/ROADMAP.md` — row 14 delivery description aligned with D10 (was
+  "one PR each, never stacked"; now "single branch, single PR after S8").
+- `docs/frontend/SEO.md` — corrected "off the critical-path LCP" wording (Bricolage IS
+  the LCP face; preload brings the swap earlier, it does not move the face off the path).
+- `docs/features/14-design-refactor-design-system/decisions.md` — D11 added (S4 "reduce"
+  path rationale).
+
+**Verified in browser:**
+- `home:protagonist` ✓ — compact eyebrow above the card, single centered column; status/
+  mode/alias/card/buttons/papeleo all flow vertically. No two-column layout on any viewport.
+- Zero console errors.
+
+**Left open:** when S3 lands (SiteNav), S3 executor must remove the `<header>` eyebrow
+block from `index.astro` — brand will live in SiteNav and the H1 becomes redundant.
 
 ## S5 — Shared CardFrame + bespoke pages
 _(pending)_
