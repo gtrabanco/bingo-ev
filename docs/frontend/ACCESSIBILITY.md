@@ -26,3 +26,15 @@ issues rather than assumed handled.
 
 - Kick "echar" buttons share a generic accessible name (no per-member label). File before
   relying on it being fixed.
+
+## Font and nav contrast notes (feature 14)
+
+The new top-nav (`.nav-action`) renders text at two small sizes:
+- **10px uppercase labels** (`.nav-label`) in `paper-300/70` on `felt-900` → verify
+  ≥ 3:1 (large-text threshold at 18pt bold / 14pt bold; 10px uppercase doesn't qualify
+  as large, so target **4.5:1** for normal-text AA).
+- **Space Mono serials** (11–12px monospaced code labels on the card header) → verify
+  ≥ 4.5:1 against the cartón background.
+
+The "Borrar todo" link already uses `text-red-300/80` (4.61:1 on felt-900, passes AA)
+— do not regress this when restyling the nav.

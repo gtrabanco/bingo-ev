@@ -6,6 +6,7 @@ export const prerender = false;
 import { env } from 'cloudflare:workers';
 import Layout from '../../layouts/Layout.astro';
 import { expiryFromCreatedAt } from '../../lib/card';
+import CardFrame from '../../components/CardFrame.astro';
 
 interface CardRow {
   id: string;
@@ -66,24 +67,20 @@ const titles = {
   ogImage={ogImage}
   ogImageType={ogImageType}
 >
-  <main class="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pt-10 pb-6">
+  <main class="mx-auto flex flex-1 w-full max-w-md flex-col px-4 pt-10 pb-6">
     <p
       class="text-center text-[0.625rem] font-bold uppercase tracking-[0.4em] text-amber-300/80 sm:text-xs"
     >
       Registro oficioso de cartones
     </p>
 
-    <article
-      class="mt-5 overflow-hidden rounded-2xl border-4 border-ink-900 bg-paper-50 text-ink-900 shadow-[0_18px_40px_-12px_rgb(0_0_0/0.55)]"
-    >
-      <header
-        class="flex items-baseline justify-between gap-3 border-b-4 border-ink-900 bg-dauber-600 px-3.5 py-2 text-paper-50"
-      >
-        <p class="text-lg font-black uppercase tracking-[0.35em] sm:text-xl">Acta</p>
-        <p class="shrink-0 font-mono text-[0.625rem] tracking-wider uppercase sm:text-xs">
-          Cartón nº {ID_PATTERN.test(id) ? id : '????????'}
-        </p>
-      </header>
+    <CardFrame class="mt-5" footerCenter={true}>
+      <p slot="header-left" class="font-mono text-[0.625rem] tracking-wider uppercase sm:text-xs">
+        Cartón nº <span class="font-bold">{ID_PATTERN.test(id) ? id : '????????'}</span>
+      </p>
+      <p slot="header-right" class="shrink-0 text-[0.625rem] font-bold uppercase tracking-[0.2em] text-paper-50 sm:text-xs">
+        Acta
+      </p>
 
       <div class="px-5 py-6 text-center">
         {
@@ -143,12 +140,8 @@ const titles = {
         }
       </div>
 
-      <footer
-        class="border-t-4 border-ink-900 bg-paper-100 px-3.5 py-1.5 text-center text-[0.5625rem] font-semibold uppercase tracking-[0.14em] text-ink-900/60 sm:text-[0.6875rem]"
-      >
-        Verificación sin validez legal, técnica ni emocional
-      </footer>
-    </article>
+      <Fragment slot="footer">Verificación sin validez legal, técnica ni emocional</Fragment>
+    </CardFrame>
 
     <a
       href="/"

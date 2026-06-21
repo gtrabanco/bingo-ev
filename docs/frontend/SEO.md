@@ -23,3 +23,12 @@ Single-language (es-ES), single-origin (`https://bingo.gruxon.com`). No hreflang
   pages set `cache-control: no-store` and are intentionally not optimized for search.
 - Keep copy honest and keyword-natural in Spanish; no keyword stuffing — the dry tone is
   the brand (see `COPYWRITING.md`).
+
+## Fonts and LCP
+
+Bricolage Grotesque (the body/display font) is the LCP face — it renders the page
+heading. It is preloaded in `Layout.astro` with `<link rel="preload" as="font" crossorigin>`
+so the swap happens as early as possible, minimising the LCP delay vs a late-discovered font.
+A metric-tuned fallback `@font-face` minimises CLS on first paint. If a `web-perf` audit
+flags font bytes as an LCP regression on mobile, revisit Latin subsetting (recorded in
+`docs/features/14-design-refactor-design-system/known-issues.md`).

@@ -2,60 +2,45 @@
 
 /* ──────────────────────────────────────────────────────────────────────────
    Self-hosted webfonts (Opción B · "indie editorial").
-   Files live in /public/fonts/ → served as /fonts/*.woff2.
-   NOT loaded from Google Fonts (EU-privacy + zero latency). All SIL OFL 1.1;
+   Files live in /public/fonts/ → referenced as /fonts/*.ttf.
+   NOT loaded from Google Fonts (EU-privacy + latency). All SIL OFL 1.1;
    license text ships beside each file (/public/fonts/*-OFL.txt).
-
-   Converted offline with woff2_compress (Google reference encoder) — no
-   conversion tool is a runtime or npm dependency.
-
      Bricolage Grotesque → display + UI   (variable: weight 400–800)
      Lora               → diploma voice    (variable: weight 400–700 + italic)
      Space Mono         → serials / codes  (static: 400, 700)
    ────────────────────────────────────────────────────────────────────────── */
 @font-face {
   font-family: 'Bricolage Grotesque';
-  src: url('/fonts/BricolageGrotesque-variable.woff2') format('woff2-variations');
+  src: url('/fonts/BricolageGrotesque-variable.ttf') format('truetype-variations');
   font-weight: 400 800;
   font-stretch: 75% 100%;
   font-style: normal;
   font-display: swap;
 }
-/* Metric-tuned fallback — minimises CLS while the real variable font loads.
-   Base: Arial (available on every major OS). Values approximate Bricolage's
-   x-height (≈0.55 em) and cap metrics. Tune visually if CLS is observed. */
-@font-face {
-  font-family: 'Bricolage Grotesque Fallback';
-  src: local('Arial'), local('Helvetica Neue'), local('Helvetica');
-  size-adjust: 106%;
-  ascent-override: 88%;
-  descent-override: 20%;
-  line-gap-override: 0%;
-}
 @font-face {
   font-family: 'Lora';
-  src: url('/fonts/Lora-variable.woff2') format('woff2-variations');
+  src: url('/fonts/Lora-variable.ttf') format('truetype-variations');
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'Lora';
-  src: url('/fonts/Lora-Italic-variable.woff2') format('woff2-variations');
+  src: url('/fonts/Lora-Italic-variable.ttf') format('truetype-variations');
   font-weight: 400 700;
   font-style: italic;
   font-display: swap;
 }
 @font-face {
   font-family: 'Space Mono';
-  src: url('/fonts/SpaceMono-Regular.woff2') format('woff2');
+  src: url('/fonts/SpaceMono-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'Space Mono';
-  src: url('/fonts/SpaceMono-Bold.woff2') format('woff2');
+  src: url('/fonts/SpaceMono-Bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -65,7 +50,7 @@
    Font families registered here so Tailwind generates font-sans/serif/mono
    utilities AND preflight applies Bricolage Grotesque as the default body font. */
 @theme {
-  --font-sans: 'Bricolage Grotesque', 'Bricolage Grotesque Fallback', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-serif: 'Lora', Georgia, 'Times New Roman', Times, serif;
   --font-mono: 'Space Mono', ui-monospace, 'Courier New', monospace;
 

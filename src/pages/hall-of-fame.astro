@@ -76,11 +76,6 @@ function filterUrl(honorific: string | null, vehicle: string | null): string {
   <main class="mx-auto w-full max-w-5xl px-4 pt-10 pb-16 sm:pt-14">
     <!-- Header -->
     <div class="mb-8">
-      <a
-        href="/"
-        class="mb-4 inline-block text-xs text-paper-300/50 hover:text-paper-300/80 transition-colors"
-        >← Volver al juego</a
-      >
       <h1 class="text-2xl font-black uppercase tracking-tight text-amber-300 sm:text-3xl">
         Hall of Fame
       </h1>
@@ -101,7 +96,7 @@ function filterUrl(honorific: string | null, vehicle: string | null): string {
         <a
           href={filterUrl(null, validVehicle)}
           data-filter-honorific=""
-          class={`filter-btn ${!validHonorific ? 'filter-btn-active' : ''}`}
+          class={`inline-flex items-center whitespace-nowrap rounded-full border border-paper-300/20 px-3 py-1 text-xs text-paper-300/70 no-underline transition-colors hover:border-paper-300/40 hover:text-paper-300/90 ${!validHonorific ? 'filter-btn-active' : ''}`}
           aria-pressed={!validHonorific ? 'true' : 'false'}
         >Todos</a>
         {
@@ -109,7 +104,7 @@ function filterUrl(honorific: string | null, vehicle: string | null): string {
             <a
               href={filterUrl(h, validVehicle)}
               data-filter-honorific={h}
-              class={`filter-btn ${validHonorific === h ? 'filter-btn-active' : ''}`}
+              class={`inline-flex items-center whitespace-nowrap rounded-full border border-paper-300/20 px-3 py-1 text-xs text-paper-300/70 no-underline transition-colors hover:border-paper-300/40 hover:text-paper-300/90 ${validHonorific === h ? 'filter-btn-active' : ''}`}
               aria-pressed={validHonorific === h ? 'true' : 'false'}
               style={validHonorific === h ? `color: ${HONORIFIC_COLORS[h]}; border-color: ${HONORIFIC_COLORS[h]};` : ''}
             >
@@ -225,22 +220,6 @@ function filterUrl(honorific: string | null, vehicle: string | null): string {
 </Layout>
 
 <style>
-  .filter-btn {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-    border: 1px solid rgb(221 207 169 / 0.2);
-    font-size: 0.75rem;
-    color: rgb(221 207 169 / 0.7);
-    text-decoration: none;
-    transition: border-color 150ms, color 150ms;
-    white-space: nowrap;
-  }
-  .filter-btn:hover {
-    border-color: rgb(221 207 169 / 0.4);
-    color: rgb(221 207 169 / 0.9);
-  }
   .filter-btn-active {
     border-color: rgb(251 191 36 / 0.5);
     color: rgb(251 191 36);
@@ -249,13 +228,7 @@ function filterUrl(honorific: string | null, vehicle: string | null): string {
 
 <script>
   import { fetchGallery, type GalleryEntry } from '../lib/api';
-  import { HONORIFIC_COLORS } from '../lib/certificate-design';
-
-  const HONORIFIC_TITLES: Record<string, string> = {
-    resignado: '«Resignado Sufridor»',
-    granujilla: '«Granujilla»',
-    sinverguenza: '«Sinvergüenza»',
-  };
+  import { HONORIFICS, HONORIFIC_COLORS } from '../lib/certificate-design';
 
   const VEHICLE_LABELS: Record<string, string> = {
     bev_tesla: 'Tesla', bev_renault: 'Renault', bev_vw: 'Volkswagen',
@@ -280,7 +253,7 @@ function filterUrl(honorific: string | null, vehicle: string | null): string {
 
   function entryHtml(entry: GalleryEntry): string {
     const color = HONORIFIC_COLORS[entry.honorific] ?? '#11503c';
-    const title = HONORIFIC_TITLES[entry.honorific] ?? entry.honorific;
+    const title = HONORIFICS[entry.honorific]?.title ?? entry.honorific;
     const nick = escapeHtml(entry.nick ?? FALLBACK_NICK);
     const vehicle = entry.vehicleType ? ` · ${VEHICLE_LABELS[entry.vehicleType] ?? entry.vehicleType}` : '';
     const profileHtml = entry.profileHandle
