@@ -5,12 +5,13 @@ home so nothing is silently lost.
 
 ## Deferred within the feature
 
-- **OG font cost fallback (S8).** If base64-embedding a Latin subset of Lora in the
-  OG/diploma SVG proves disproportionate (image weight, build friction, or it brushes
-  the no-deps rule harder than expected), S8 falls back to keeping OG on system
-  Georgia and the real-font OG work becomes its **own tracked issue** rather than
-  bloating this feature. Trigger: subset asset > ~120KB after embedding, or the
-  offline subset step can't be made reproducible without a committed tool.
+- **Space Mono not embedded in OG SVG (S8 partial).** Embedding all 4 font subsets
+  (Lora ×2 + SpaceMono ×2) would be ~162KB base64, exceeding the ~120KB budget.
+  S8 embeds Lora only (104.5KB base64). Space Mono falls back to ui-monospace /
+  Courier New in CF Image Resizing. The verify URL (17px monospace) is legible in
+  Courier New. To embed SpaceMono too: either accept the larger SVG weight or find
+  a smaller subset (ASCII-only, ~15KB each). → open a follow-up issue if Courier New
+  fallback is unacceptable in the rendered PNG.
 
 ## Out of scope (recorded, not done here)
 

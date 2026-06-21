@@ -234,4 +234,33 @@ block from `index.astro` — brand will live in SiteNav and the H1 becomes redun
   for the OG PNG until S8 base64-embeds a subset of Lora in the SVG `<defs>`.
 
 ## S8 — OG real (subset) fonts
-_(pending)_
+
+**Files changed:**
+- `public/fonts/Lora-subset.woff2` (38KB) + `Lora-Italic-subset.woff2` (41KB) — Latin subsets
+  (U+0020-007E, U+00A0-017F) of the variable Lora TTFs, generated offline with `pyftsubset
+  --layout-features="*" --flavor=woff2`. Space Mono NOT subsetted/embedded: both faces
+  together would be 57KB base64, pushing the total to 162KB which exceeds the ~120KB budget
+  threshold. Falls back to ui-monospace / Courier New in the SVG renderer (legible at 17px).
+- `src/lib/og-fonts.ts` — new file exporting `LORA_WOFF2` and `LORA_ITALIC_WOFF2` as
+  `data:font/woff2;base64,...` constants (~108KB source). Documents the regeneration command.
+- `src/lib/og-image.ts`:
+  - `import { LORA_WOFF2, LORA_ITALIC_WOFF2 } from './og-fonts'` added.
+  - `diplomaSvg()` — `<defs><style>` with two `@font-face` rules (Lora 400-700 normal +
+    italic, format('woff2-variations')) added immediately after the SVG root element.
+  - `diplomaStorySvg()` — same `<defs><style>` block added.
+  - `homeSvg()` — `.title` font-family updated from `Georgia, serif` to `${SERIF}` (= Lora,
+    Georgia, ...); `.subtitle` from `'Segoe UI', system-ui, sans-serif` to `${SANS}`.
+    No font embedding in home.svg (static prerendered SVG served to crawlers; Georgia fallback
+    is fine there).
+
+**Verification:**
+- Gate green (`npm run build` ✓).
+- `dist/client/og/home.svg` confirmed: 2.1KB, `.title { font-family: Lora, Georgia, ... }`,
+  no embedded fonts — correct for a static SVG.
+- Manual `og:subset` (CF Image Resizing renders Lora in diploma PNG) requires prod with a
+  real completed card — left as a deploy-time check.
+
+**Trade-offs recorded:**
+- Space Mono omitted from SVG embed (budget constraint ~120KB). Noted in `known-issues.md`.
+- Variable font format ('woff2-variations') used in @font-face; falls back to system serif
+  if CF Image Resizing renderer doesn't support variable woff2 (same Georgia fallback as before).

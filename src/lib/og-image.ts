@@ -3,6 +3,7 @@
 import { encode } from 'uqr';
 import type { Honorific } from './card';
 import { PALETTE, SERIF, SANS, MONO, HONORIFICS, COPY, VERIFY_BASE_URL } from './certificate-design';
+import { LORA_WOFF2, LORA_ITALIC_WOFF2 } from './og-fonts';
 
 const WIDTH = 1200;
 const HEIGHT = 630;
@@ -86,6 +87,10 @@ export function diplomaSvg(data: DiplomaSvgData): string {
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${WIDTH} ${HEIGHT}">
+  <defs><style>
+    @font-face { font-family: 'Lora'; font-weight: 400 700; font-style: normal; src: url('${LORA_WOFF2}') format('woff2-variations'); }
+    @font-face { font-family: 'Lora'; font-weight: 400 700; font-style: italic; src: url('${LORA_ITALIC_WOFF2}') format('woff2-variations'); }
+  </style></defs>
 
   <!-- Background: aged paper -->
   <rect width="${WIDTH}" height="${HEIGHT}" fill="${PALETTE.paper}"/>
@@ -176,6 +181,10 @@ export function diplomaStorySvg(data: DiplomaSvgData): string {
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${STORY_WIDTH} ${STORY_HEIGHT}">
+  <defs><style>
+    @font-face { font-family: 'Lora'; font-weight: 400 700; font-style: normal; src: url('${LORA_WOFF2}') format('woff2-variations'); }
+    @font-face { font-family: 'Lora'; font-weight: 400 700; font-style: italic; src: url('${LORA_ITALIC_WOFF2}') format('woff2-variations'); }
+  </style></defs>
 
   <!-- Background: aged paper -->
   <rect width="${STORY_WIDTH}" height="${STORY_HEIGHT}" fill="${PALETTE.paper}"/>
@@ -236,8 +245,8 @@ export function homeSvg(): string {
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${WIDTH} ${HEIGHT}">
   <defs>
     <style>
-      .title { font-family: Georgia, serif; font-size: 100px; font-weight: 700; fill: #fbbf24; text-anchor: middle; }
-      .subtitle { font-family: 'Segoe UI', system-ui, sans-serif; font-size: 36px; font-weight: 600; fill: #c7d2e0; text-anchor: middle; }
+      .title { font-family: ${SERIF}; font-size: 100px; font-weight: 700; fill: #fbbf24; text-anchor: middle; }
+      .subtitle { font-family: ${SANS}; font-size: 36px; font-weight: 600; fill: #c7d2e0; text-anchor: middle; }
       .grid-cell { fill: #f6f0df; stroke: #221f1a; stroke-width: 2; }
       .grid-dab { fill: #b02e22; opacity: 0.7; }
     </style>

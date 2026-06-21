@@ -126,14 +126,24 @@ every commit.
 
 ## S8 — OG real (subset) fonts  `L`  (depends: S1, S7)
 
-- [ ] Offline: subset Lora + Space Mono to Latin + used weights; commit subset asset (D8).
-- [ ] Base64-embed subset face in OG/diploma SVG `<defs>`; update `homeSvg()`
-      (`og-image.ts` L239–240) + diploma SVG renderer; converge
-      `certificate-design.ts` constants.
-- [ ] Confirm no runtime dependency added; image weight acceptable.
-- [ ] Gate; manual `og:subset`. PR → review → audit.
-- [ ] If cost disproportionate: fall back to Georgia-OG, convert remainder to a
-      tracked issue, note in `known-issues.md`.
+- [x] Offline: subset Lora (regular + italic variable) to Latin U+0020-007E,U+00A0-017F
+      using `pyftsubset --flavor=woff2`. Space Mono NOT embedded (both faces = 42KB
+      binary / 57KB base64; all-4 total 162KB base64 exceeds the ~120KB threshold, so
+      Lora only, 104.5KB base64). SpaceMono falls back to ui-monospace/Courier New in
+      the SVG renderer — legible at 17px. Source subsets committed:
+      `public/fonts/Lora-subset.woff2` (38KB) + `Lora-Italic-subset.woff2` (41KB).
+- [x] Base64 constants stored in `src/lib/og-fonts.ts` (imported by `og-image.ts`).
+      `diplomaSvg()` + `diplomaStorySvg()` embed `@font-face` in `<defs><style>`:
+      Lora 400-700 normal + Lora 400-700 italic, format('woff2-variations').
+      `homeSvg()` updated to use SERIF/SANS constants (no embedding — static SVG
+      served directly to crawlers; falls back to Georgia there).
+      `certificate-design.ts` constants are now consistent across canvas + SVG surfaces.
+- [x] No runtime dependency added. `og-fonts.ts` is a committed TS constant; subsetting
+      tool (`pyftsubset` / `fonttools`) is dev-only, not in `package.json`.
+- [x] Gate green (`npm run build` ✓). `dist/client/og/home.svg` confirms Lora font-family
+      constant applied (2.1KB, no embedding, correct for static SVG).
+- [ ] Manual `og:subset` — verify a diploma SVG response contains the embedded @font-face
+      and CF Image Resizing renders Lora in the PNG (requires prod or a real card ID).
 
 ## Cross-cutting (every slice)
 
