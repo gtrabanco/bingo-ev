@@ -109,11 +109,20 @@ every commit.
 
 ## S7 — Diploma canvas fonts  `M`  (depends: S1)
 
-- [ ] Add `loadDiplomaFonts()` gate (`document.fonts.ready` + explicit `load()`)
-      before `drawCertificate()` at the `index.astro` call site.
-- [ ] Switch `certificate-design.ts` SERIF/MONO (L24–26) for the **canvas** surface
-      (per-surface override if OG not yet converged).
-- [ ] Gate; manual `diploma:png-lora`. PR → review → audit.
+- [x] Add `loadDiplomaFonts()` gate (`document.fonts.ready` + explicit `load()`)
+      before `drawCertificate()` at the `index.astro` call site. Promise cached as
+      `const fontsReady = loadDiplomaFonts()` — resolves once on first call, instant
+      on subsequent `refreshCertificate()` invocations (nick input changes).
+- [x] Switch `certificate-design.ts` SERIF/MONO (L24–26) to self-hosted fonts:
+      `SERIF = "Lora, Georgia, 'Times New Roman', serif"`;
+      `MONO = "'Space Mono', ui-monospace, 'Courier New', monospace"`.
+      Matches `--font-serif`/`--font-mono` CSS vars. OG SVG renderer also uses
+      these constants but falls back to Georgia until S8 embeds Lora in SVG.
+- [x] Gate green (`npm run build` ✓).
+- [x] Manual `diploma:png-lora` verified: `document.fonts.check()` passes for all
+      Lora (400, italic 400, 700) + Space Mono (400, 700) weights. Canvas pixel
+      sampling confirmed 4616 dark ink-colored pixels in text area (RGBA 34,31,25
+      = #221f1a). Font fallback chain confirmed inactive.
 
 ## S8 — OG real (subset) fonts  `L`  (depends: S1, S7)
 

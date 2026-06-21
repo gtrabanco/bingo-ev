@@ -1026,14 +1026,27 @@ const hasAnyProvider = hasGoogle || hasX;
     };
   }
 
-  function refreshCertificate(): void {
+  async function loadDiplomaFonts(): Promise<void> {
+    await document.fonts.ready;
+    await Promise.all([
+      document.fonts.load("400 24px Lora"),
+      document.fonts.load("italic 400 24px Lora"),
+      document.fonts.load("700 44px Lora"),
+      document.fonts.load("400 20px 'Space Mono'"),
+      document.fonts.load("700 20px 'Space Mono'"),
+    ]);
+  }
+  const fontsReady = loadDiplomaFonts();
+
+  async function refreshCertificate(): Promise<void> {
+    await fontsReady;
     drawCertificate(certCanvas, certificateData());
   }
 
-  function openCertificate(): void {
+  async function openCertificate(): Promise<void> {
     nickInput.value = loadNick();
     certLink.textContent = verificationUrl(card.id);
-    refreshCertificate();
+    await refreshCertificate();
     dialog.showModal();
   }
 

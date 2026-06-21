@@ -208,7 +208,30 @@ block from `index.astro` — brand will live in SiteNav and the H1 becomes redun
 - `cardframe:parity` found-card states (same as S5 left-open).
 
 ## S7 — Diploma canvas fonts
-_(pending)_
+
+**Files changed:**
+- `src/lib/certificate-design.ts` — SERIF updated from `"Georgia, 'Times New Roman', serif"` to
+  `"Lora, Georgia, 'Times New Roman', serif"`; MONO from `"ui-monospace, 'Courier New', monospace"` to
+  `"'Space Mono', ui-monospace, 'Courier New', monospace"`. Both now match the `--font-serif`/`--font-mono`
+  CSS custom properties defined in `global.css` (S1). OG SVG renderer shares these constants — falls back
+  to Georgia until S8 embeds Lora in SVG.
+- `src/pages/index.astro` — Added `loadDiplomaFonts()` gate: calls `document.fonts.ready` then
+  `document.fonts.load()` for each weight used on the canvas (Lora 400, italic 400, 700 44px; Space Mono
+  400, 700 20px). Promise cached as `const fontsReady = loadDiplomaFonts()` at module scope — only loads
+  once. `refreshCertificate()` and `openCertificate()` made `async`; both `await fontsReady` before calling
+  `drawCertificate()`.
+
+**Verified in browser (dev server):**
+- `diploma:png-lora` ✓ — `document.fonts.check()` passes for all Lora weights (400, italic 400, 700) and
+  Space Mono (400, 700). Canvas pixel sampling on a test canvas drawn with the same font stack confirmed
+  4616 dark ink-colored pixels (RGBA 34, 31, 25 ≈ #221f1a) in the text region — confirms actual rendering
+  with the serif font, not a blank fallback. Zero console errors.
+- `document.fonts.size = 6` (6 faces registered: BG variable, Lora-variable ×2, SpaceMono ×2).
+  All confirmed loaded before first `drawCertificate()` call.
+
+**Left open for S8:**
+- OG image SVG renderer still uses SERIF/MONO constants but has no embedded font — falls back to Georgia
+  for the OG PNG until S8 base64-embeds a subset of Lora in the SVG `<defs>`.
 
 ## S8 — OG real (subset) fonts
 _(pending)_
