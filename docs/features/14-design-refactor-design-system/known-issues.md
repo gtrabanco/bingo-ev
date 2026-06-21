@@ -41,6 +41,15 @@ home so nothing is silently lost.
   verify on a throttled reload, not just locally where the font is cached.
 - **Two gallery surfaces** (`hall-of-fame` + `jugador`) must stay pixel-identical for
   diploma cards — they carry independent `HONORIFIC_COLORS` copies (S6).
+- **CF Image Resizing honoring `@font-face` data-URIs (S8).** The OG diploma PNG depends on
+  Cloudflare's SVG→PNG renderer loading the base64 variable-woff2 embedded in `<defs><style>`.
+  If CF's renderer ignores `@font-face` (some rasterizers only use system fonts) or rejects
+  the `woff2-variations` format, the PNG silently renders **Georgia** — no regression vs
+  pre-S8, but the Lora goal is unmet. **Untestable locally** (dev's PNG endpoint falls back to
+  SVG). **Verify in prod** by fetching `/og/diploma/{completed-id}.png` and eyeballing the
+  serif. If Georgia: fallback options are (a) embed a **static-instance** Lora subset instead of
+  variable (broader renderer support), or (b) accept Georgia-OG and close the goal. → open a
+  tracked issue only if prod shows the fallback.
 
 ## Ignore (no action, rationale)
 
