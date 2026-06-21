@@ -2,13 +2,14 @@
 // be recovered later, with an optional opt-in to the newsletter. No account,
 // no password: the recovery email itself is the proof of ownership.
 //
-// GDPR: the email is stored on the card only to enable recovery; the
-// newsletter opt-in is a separate, explicit consent recorded in its own table
-// with the origin domain, so the list can later be shared across sites.
+// Newsletter opt-in: delegates to @gtrabanco/newsletter (double opt-in).
+// Best-effort — a subscribe failure never blocks the card save.
+// If NEWSLETTER_API_KEY is absent (dev/staging) the call is skipped silently.
 export const prerender = false;
 
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
+import { createNewsletterClient } from '@gtrabanco/newsletter';
 import { checkRateLimit } from '../../../../lib/rate-limit';
 
 const ID_PATTERN = /^[0-9a-z]{8}$/;
@@ -44,15 +45,27 @@ export const POST: APIRoute = async ({ params, request }) => {
 
   if (!result.meta.changes) return new Response(null, { status: 403 });
 
-  // Newsletter opt-in: record the explicit consent with the origin domain.
-  // INSERT OR IGNORE keeps it idempotent across re-links.
-  if (newsletter) {
-    const source = new URL(request.url).hostname;
-    await env.DB.prepare(
-      'INSERT OR IGNORE INTO newsletter (email, source, consented_at) VALUES (?1, ?2, ?3)',
-    )
-      .bind(email, source, new Date().toISOString())
-      .run();
+  // Newsletter opt-in: delegate to @gtrabanco/newsletter (double opt-in email sent automatically).
+  // Best-effort — never blocks the card save. Skipped silently in dev (no NEWSLETTER_API_KEY).
+  if (newsletter && env.NEWSLETTER_API_KEY) {
+    try {
+      const client = createNewsletterClient({
+        apiKey: env.NEWSLETTER_API_KEY,
+        baseUrl: 'https://gtrabanco.com',
+      });
+      // Race against 4 s so a hung newsletter API never stalls the card-save response.
+      await Promise.race([
+        client.subscribe(email, {
+          language: 'es',
+          referrer_domain: 'bingo.gruxon.com',
+          confirmRedirectUrl: 'https://bingo.gruxon.com',
+          unsubscribeRedirectUrl: 'https://bingo.gruxon.com',
+        }).catch(() => {}),
+        new Promise<void>(resolve => setTimeout(resolve, 4000)),
+      ]);
+    } catch {
+      // best-effort: ignore subscribe errors
+    }
   }
 
   return new Response(null, { status: 204 });

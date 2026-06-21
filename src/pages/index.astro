@@ -1131,11 +1131,11 @@ const hasAnyProvider = hasGoogle || hasX;
     const ok = await linkEmail(card.id, card.secret, email, wantsNewsletter);
     emailHint.textContent = ok
       ? wantsNewsletter
-        ? 'Cartón guardado y apuntado a la newsletter. Gracias.'
+        ? 'Cartón guardado. Confirma la suscripción en el correo que te enviamos.'
         : 'Cartón guardado. Recupéralo cuando quieras desde aquí.'
       : 'No se pudo guardar. Inténtalo más tarde.';
-    // No confirmation email: the form is the confirmation. Record the opt-in
-    // locally so we don't keep offering the newsletter on this device.
+    // Double opt-in: a confirmation email is sent automatically by @gtrabanco/newsletter.
+    // Hide the checkbox immediately so the user doesn't submit twice while waiting.
     if (ok && wantsNewsletter) {
       markNewsletterSubscribed();
       newsletterLabel?.classList.add('hidden');
