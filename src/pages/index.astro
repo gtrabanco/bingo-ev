@@ -60,18 +60,32 @@ const hasAnyProvider = hasGoogle || hasX;
       role="region"
       aria-label="Código para otro dispositivo"
     >
-      <p class="text-xs text-paper-300/70">
-        En el otro dispositivo ve a <strong class="text-paper-50">bingo.gruxon.com/activar</strong>
-        e introduce este código, o escanea el QR.
-      </p>
-      <p
-        id="device-code-value"
-        class="text-3xl font-black tracking-[0.25em] text-amber-300"
-        aria-live="polite"
-      ></p>
-      <div id="device-code-qr" class="flex justify-center" aria-hidden="true"></div>
-      <p id="device-code-expiry" class="text-[0.6875rem] text-paper-300/50"></p>
-      <p id="device-code-error" class="hidden text-xs text-red-300"></p>
+      <!-- No-card state: import a card from another device -->
+      <div id="device-code-no-card" class="hidden space-y-2">
+        <p class="text-xs text-paper-300/70">
+          ¿Tu cartón está en otro dispositivo? Ve a
+          <a
+            href="/activar"
+            class="font-semibold text-amber-300/80 underline decoration-amber-300/40 underline-offset-2 transition-colors hover:text-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+          >bingo.gruxon.com/activar</a>
+          e introduce el código que te dará ese dispositivo.
+        </p>
+      </div>
+      <!-- Has-card state: generate a code to send the card to another device -->
+      <div id="device-code-has-card" class="hidden space-y-3">
+        <p class="text-xs text-paper-300/70">
+          En el otro dispositivo ve a <strong class="text-paper-50">bingo.gruxon.com/activar</strong>
+          e introduce este código, o escanea el QR.
+        </p>
+        <p
+          id="device-code-value"
+          class="text-3xl font-black tracking-[0.25em] text-amber-300"
+          aria-live="polite"
+        ></p>
+        <div id="device-code-qr" class="flex justify-center" aria-hidden="true"></div>
+        <p id="device-code-expiry" class="text-[0.6875rem] text-paper-300/50"></p>
+        <p id="device-code-error" class="hidden text-xs text-red-300"></p>
+      </div>
     </div>
 
 
@@ -629,6 +643,8 @@ const hasAnyProvider = hasGoogle || hasX;
   const galleryToggleBtn = $<HTMLButtonElement>('#gallery-toggle');
   const deviceCodeBtn = $<HTMLButtonElement>('#device-code-btn');
   const deviceCodePanel = $<HTMLDivElement>('#device-code-panel');
+  const deviceCodeNoCard = $<HTMLDivElement>('#device-code-no-card');
+  const deviceCodeHasCard = $<HTMLDivElement>('#device-code-has-card');
   const deviceCodeValue = $<HTMLParagraphElement>('#device-code-value');
   const deviceCodeQr = $<HTMLDivElement>('#device-code-qr');
   const deviceCodeExpiry = $<HTMLParagraphElement>('#device-code-expiry');
@@ -995,8 +1011,6 @@ const hasAnyProvider = hasGoogle || hasX;
     const isCompleted = card.completedAt !== null;
     galleryToggleBtn.classList.toggle('hidden', !isCompleted || card.secret === null);
 
-    // Device-code button: shown whenever a registered card exists (has id + secret).
-    deviceCodeBtn?.classList.toggle('hidden', !card.id || card.secret === null);
     if (isCompleted) {
       galleryToggleBtn.setAttribute('aria-pressed', String(galleryHidden));
       galleryToggleBtn.textContent = galleryHidden
@@ -1967,12 +1981,19 @@ const hasAnyProvider = hasGoogle || hasX;
       return;
     }
 
-    if (!card.id || !card.secret) return;
-
-    if (deviceCodeError) deviceCodeError.classList.add('hidden');
-    if (deviceCodeValue) deviceCodeValue.textContent = '…';
     deviceCodePanel?.classList.remove('hidden');
     deviceCodeBtn.setAttribute('aria-expanded', 'true');
+
+    if (!card.id || !card.secret) {
+      deviceCodeNoCard?.classList.remove('hidden');
+      deviceCodeHasCard?.classList.add('hidden');
+      return;
+    }
+
+    deviceCodeNoCard?.classList.add('hidden');
+    deviceCodeHasCard?.classList.remove('hidden');
+    if (deviceCodeError) deviceCodeError.classList.add('hidden');
+    if (deviceCodeValue) deviceCodeValue.textContent = '…';
 
     const result = await requestDeviceCode(card.id, card.secret);
     if (!result) {

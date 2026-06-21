@@ -48,11 +48,11 @@ const { hasGoogle, hasX, hasAnyProvider } = Astro.props;
       <span class="nav-label">Hall</span>
     </a>
 
-    <!-- Device-transfer — hidden until a card exists (JS-controlled) -->
+    <!-- Device-transfer — always visible; shows import or export mode depending on card state -->
     <button
       id="device-code-btn"
       type="button"
-      class="nav-action hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+      class="nav-action focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
       aria-expanded="false"
       aria-controls="device-code-panel"
     >
