@@ -68,8 +68,9 @@ Add to `reserved` in `src/data/blocklist.json`:
 
 ## Acceptance criteria
 
-- [ ] `gabriel`, `bingo`, `tesla`, `ev`, `auve` all rejected (422) via
-  `POST /api/account/profile`.
+- [ ] `gabriel`, `bingo`, `tesla`, `auve` all rejected (422) via
+  `POST /api/account/profile`. (`ev` removed — 2-char substring too aggressive;
+  EV brands covered by explicit entries like `evbox`, `evgo`.)
 - [ ] `gabrieltrabanco` rejected (matched via both explicit entry and `gabriel`
   substring).
 - [ ] Owner bypass (fix/31) still lets the configured owner set any handle.
