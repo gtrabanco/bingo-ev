@@ -53,12 +53,16 @@ export const POST: APIRoute = async ({ params, request }) => {
         apiKey: env.NEWSLETTER_API_KEY,
         baseUrl: 'https://gtrabanco.com',
       });
-      await client.subscribe(email, {
-        language: 'es',
-        referrer_domain: 'bingo.gruxon.com',
-        confirmRedirectUrl: 'https://bingo.gruxon.com',
-        unsubscribeRedirectUrl: 'https://bingo.gruxon.com',
-      });
+      // Race against 4 s so a hung newsletter API never stalls the card-save response.
+      await Promise.race([
+        client.subscribe(email, {
+          language: 'es',
+          referrer_domain: 'bingo.gruxon.com',
+          confirmRedirectUrl: 'https://bingo.gruxon.com',
+          unsubscribeRedirectUrl: 'https://bingo.gruxon.com',
+        }).catch(() => {}),
+        new Promise<void>(resolve => setTimeout(resolve, 4000)),
+      ]);
     } catch {
       // best-effort: ignore subscribe errors
     }

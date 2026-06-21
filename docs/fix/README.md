@@ -18,6 +18,7 @@ history lives in git log + closed issues.
 | `33-remove-integration-package` | Remove integration/ reference package after feature 14 merge | `in-review` | — | [#33](https://github.com/gtrabanco/bingo-ev/issues/33) |
 | `39-blocklist-reserved-handles` | Expand reserved blocklist — owner variants, site terms, EV brands | `in-review` | — | [#39](https://github.com/gtrabanco/bingo-ev/issues/39) |
 | `41-vincular-bidirectional` | Vincular always visible — bidirectional device transfer | `in-review` | — | [#41](https://github.com/gtrabanco/bingo-ev/issues/41) |
+| `46-newsletter-api-integration` | Replace D1 newsletter table with @gtrabanco/newsletter double opt-in | `in-review` | — | [#46](https://github.com/gtrabanco/bingo-ev/issues/46) |
 | `43-sitenav-login-alignment` | Login buttons misaligned — nav-box vs nav-action mismatch | `in-review` | — | [#43](https://github.com/gtrabanco/bingo-ev/issues/43) |
 
 ## Conventions
