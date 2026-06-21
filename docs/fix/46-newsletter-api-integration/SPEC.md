@@ -32,7 +32,6 @@ never resolved, leaving the table as a dead-end sink.
 - `migrations/0015_drop_newsletter_table.sql`: `DROP TABLE IF EXISTS newsletter`.
 - `src/pages/index.astro`: update success message to reflect double opt-in
   ("Confirma la suscripción en el correo que te enviamos.").
-- `worker-configuration.d.ts`: add `NEWSLETTER_API_KEY: string` to `__BaseEnv_Env`.
 - `CLAUDE.md`: document `@gtrabanco/newsletter` as approved runtime dependency.
 
 ### Out of scope
@@ -45,7 +44,7 @@ never resolved, leaving the table as a dead-end sink.
 ## Impact
 
 - Files touched: `src/pages/api/cards/[id]/email.ts`, `src/pages/index.astro`,
-  `worker-configuration.d.ts`, `CLAUDE.md`, `package.json`, `package-lock.json`,
+  `CLAUDE.md`, `package.json`, `package-lock.json`,
   `migrations/0015_drop_newsletter_table.sql`.
 - Blast radius: subscribe failure never blocks the 204 response (best-effort + timeout).
 - Detection: absent `NEWSLETTER_API_KEY` in prod → silent skip, no error logged; a
