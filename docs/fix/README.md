@@ -13,6 +13,7 @@ history lives in git log + closed issues.
 
 | Folder | Topic | Status | Depends on | Issue |
 |--------|-------|--------|------------|-------|
+| `26-show-carton-on-diploma` | Show completed bingo card on diploma detail page `/v/{id}` | `in-review` | — | [#26](https://github.com/gtrabanco/bingo-ev/issues/26) |
 | `20-script-crash-conditional-elements` | Script crash on absent OAuth env vars — kills device-code button | `in-progress` | — | [#20](https://github.com/gtrabanco/bingo-ev/issues/20) |
 | `31-owner-handle-bypass` | Owner OAuth account should bypass handle blocklist | `in-review` | — | [#31](https://github.com/gtrabanco/bingo-ev/issues/31) |
 | `33-remove-integration-package` | Remove integration/ reference package after feature 14 merge | `in-review` | — | [#33](https://github.com/gtrabanco/bingo-ev/issues/33) |

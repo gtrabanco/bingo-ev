@@ -5,7 +5,7 @@ export const prerender = false;
 
 import { env } from 'cloudflare:workers';
 import Layout from '../../layouts/Layout.astro';
-import { expiryFromCreatedAt } from '../../lib/card';
+import { CELL_COUNT, expiryFromCreatedAt, getSituation, unpackMarks } from '../../lib/card';
 import CardFrame from '../../components/CardFrame.astro';
 
 interface CardRow {
@@ -13,6 +13,8 @@ interface CardRow {
   created_at: string;
   completed_at: string | null;
   nick: string | null;
+  cells: string | null;
+  marks: string | null;
 }
 
 const ID_PATTERN = /^[0-9a-z]{8}$/;
@@ -22,7 +24,7 @@ let row: CardRow | null = null;
 let ogImage = '/og/home.svg';
 let ogImageType = 'image/svg+xml';
 if (ID_PATTERN.test(id)) {
-  row = await env.DB.prepare('SELECT id, created_at, completed_at, nick FROM cards WHERE id = ?1')
+  row = await env.DB.prepare('SELECT id, created_at, completed_at, nick, cells, marks FROM cards WHERE id = ?1')
     .bind(id)
     .first<CardRow>();
 }
@@ -45,6 +47,20 @@ if (row?.completed_at) {
   ogImage = `/og/diploma/${id}.png`;
   ogImageType = 'image/png';
 }
+
+// Parse card cells and marks for the verified view (null-safe: old cards lack this data).
+let cells: (string | null)[] | null = null;
+if (row?.cells) {
+  try {
+    const parsed: unknown = JSON.parse(row.cells);
+    if (Array.isArray(parsed) && parsed.length === CELL_COUNT) {
+      cells = parsed.map((c) => (typeof c === 'string' ? c : null));
+    }
+  } catch {
+    cells = null;
+  }
+}
+const marks = row?.marks && row.marks.length === CELL_COUNT ? unpackMarks(row.marks) : Array(CELL_COUNT).fill(0);
 
 const longDate = new Intl.DateTimeFormat('es-ES', {
   day: 'numeric',
@@ -142,6 +158,42 @@ const titles = {
 
       <Fragment slot="footer">Verificación sin validez legal, técnica ni emocional</Fragment>
     </CardFrame>
+
+    {
+      verdict === 'verified' && cells && (
+        <CardFrame class="mt-4 w-full">
+          <p slot="header-left" class="font-mono text-[0.625rem] tracking-wider uppercase sm:text-xs">
+            Cartón nº <span class="font-bold">{id}</span>
+          </p>
+          <p slot="header-right" class="shrink-0 text-[0.625rem] font-bold uppercase tracking-[0.2em] text-paper-50 sm:text-xs">
+            Completado
+          </p>
+          <div
+            class="grid grid-flow-col grid-cols-3 grid-rows-4 gap-px bg-ink-900 landscape:grid-flow-row landscape:grid-cols-4 landscape:grid-rows-3"
+          >
+            {
+              cells.map((situationId, index) =>
+                situationId === null ? (
+                  <div class="cell cell-blank" aria-hidden="true" />
+                ) : (
+                  <div
+                    class="cell"
+                    aria-pressed={marks[index] ? 'true' : 'false'}
+                    data-kind={String(marks[index] ?? 0)}
+                    style={`--dab-rot: ${((index * 53) % 19) - 9}deg`}
+                  >
+                    <span class="cell-text">{getSituation(situationId)?.text ?? '—'}</span>
+                    <span class="dab" aria-hidden="true" />
+                  </div>
+                )
+              )
+            }
+          </div>
+          <span slot="footer">Cada casilla marcada, una desgracia vivida</span>
+          <span slot="footer" class="shrink-0">Bingo cantado</span>
+        </CardFrame>
+      )
+    }
 
     <a
       href="/"
