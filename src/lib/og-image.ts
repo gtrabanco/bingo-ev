@@ -108,7 +108,7 @@ export function diplomaSvg(data: DiplomaSvgData): string {
   <line x1="200" y1="106" x2="${WIDTH - 200}" y2="106" stroke="${PALETTE.rule}" stroke-width="1"/>
 
   <!-- ¡BINGO! -->
-  <text x="${CX}" y="228" font-family="${SERIF}" font-size="124" font-weight="900" fill="${PALETTE.dauberRed}" text-anchor="middle">&#xA1;BINGO!</text>
+  <text x="${CX}" y="228" font-family="${SERIF}" font-size="124" font-weight="700" fill="${PALETTE.dauberRed}" text-anchor="middle">&#xA1;BINGO!</text>
 
   <!-- Certifying block -->
   <text x="${CX}" y="272" font-family="${SERIF}" font-size="21" font-style="italic" fill="${PALETTE.mutedDark}" text-anchor="middle">${COPY.certifying}</text>
@@ -202,7 +202,7 @@ export function diplomaStorySvg(data: DiplomaSvgData): string {
   <line x1="120" y1="136" x2="${STORY_WIDTH - 120}" y2="136" stroke="${PALETTE.rule}" stroke-width="1"/>
 
   <!-- ¡BINGO! -->
-  <text x="${STORY_CX}" y="430" font-family="${SERIF}" font-size="175" font-weight="900" fill="${PALETTE.dauberRed}" text-anchor="middle">&#xA1;BINGO!</text>
+  <text x="${STORY_CX}" y="430" font-family="${SERIF}" font-size="175" font-weight="700" fill="${PALETTE.dauberRed}" text-anchor="middle">&#xA1;BINGO!</text>
 
   <!-- Certifying block -->
   <text x="${STORY_CX}" y="520" font-family="${SERIF}" font-size="26" font-style="italic" fill="${PALETTE.mutedDark}" text-anchor="middle">${COPY.certifying}</text>
