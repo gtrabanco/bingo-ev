@@ -34,9 +34,27 @@ export const POST: APIRoute = async ({ request }) => {
     return Response.json({ error: 'handle_invalid' }, { status: 422 });
   }
 
-  const check = checkNick(handle);
-  if (check.blocked) {
-    return Response.json({ error: BLOCK_MESSAGES[check.reason] }, { status: 422 });
+  // Owner bypass: skip blocklist for the configured service owner account.
+  // Keyed to env vars so no hardcoded values ship. Only queries the DB when at
+  // least one owner var is set — zero overhead for deployments without them.
+  const ownerEmail = (env.OWNER_EMAIL as string | undefined) ?? '';
+  const ownerXId = (env.OWNER_X_USER_ID as string | undefined) ?? '';
+  let isOwner = false;
+  if (ownerEmail || ownerXId) {
+    const acct = await env.DB
+      .prepare('SELECT email, provider, provider_user_id FROM accounts WHERE id = ?')
+      .bind(session.accountId)
+      .first<{ email: string | null; provider: string; provider_user_id: string }>();
+    isOwner =
+      (acct?.provider === 'google' && ownerEmail !== '' && acct?.email === ownerEmail) ||
+      (acct?.provider === 'x' && ownerXId !== '' && acct?.provider_user_id === ownerXId);
+  }
+
+  if (!isOwner) {
+    const check = checkNick(handle);
+    if (check.blocked) {
+      return Response.json({ error: BLOCK_MESSAGES[check.reason] }, { status: 422 });
+    }
   }
 
   try {
