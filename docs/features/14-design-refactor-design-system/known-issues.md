@@ -40,3 +40,12 @@ home so nothing is silently lost.
   verify on a throttled reload, not just locally where the font is cached.
 - **Two gallery surfaces** (`hall-of-fame` + `jugador`) must stay pixel-identical for
   diploma cards — they carry independent `HONORIFIC_COLORS` copies (S6).
+
+## Ignore (no action, rationale)
+
+- **Dead account-bar DOM on secondary pages.** `Layout.astro` mounts `<SiteNav>` with
+  all-false provider props, so `#account-loggedin`, `#device-code-btn`, `#profile-ctl`, etc.
+  render hidden (`display:none`, out of a11y tree) on every secondary page. No JS on secondary
+  pages wires these elements. Adding a SiteNav prop to skip that subtree would risk breaking the
+  DOM hooks that `index.astro`'s script relies on, for a `display:none` element that costs
+  ~2 KB HTML and zero user impact. Intentional.

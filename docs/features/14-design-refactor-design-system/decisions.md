@@ -132,3 +132,16 @@ If the owner later wants per-slice PRs, the path is: merge S1 to `main`, branch 
 `main`, repeat — but that trades the cohesive-redesign goal (D2) for more merge overhead.
 Revises the **delivery** half of D2; D2's **scope** decision (whole site in feature 14) is
 unchanged.
+
+## D12 — Diploma font preload: deferred, not an omission
+
+**Decided: do not `<link rel="preload">` Lora or Space Mono.** `loadDiplomaFonts()` fires at
+module-script init (`const fontsReady = loadDiplomaFonts()`), so fonts begin fetching as soon
+as the page script runs — well before any user can mark six cells. The only scenario where the
+modal-open blocks on a network fetch is a cold-cache first visit where the user wins instantly,
+which is unrealistic for a 6-cell game with a monthly expiry window.
+**Why:** adding preloads for Lora + Space Mono on `index.astro` requires a `<slot name="head">`
+in `Layout.astro` (they must not preload on secondary pages that never draw the diploma canvas).
+That structural change is disproportionate to the marginal latency gain on an edge case.
+**Trigger to revisit:** a web-perf audit flags diploma-modal open latency as a real regression on
+mobile (e.g. > 500 ms measured from button-click to canvas-painted on a throttled connection).
