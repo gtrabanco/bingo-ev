@@ -178,11 +178,12 @@ const titles = {
                 ) : (
                   <div
                     class="cell"
-                    aria-pressed={marks[index] ? 'true' : 'false'}
+                    role="img"
+                    aria-label={`${getSituation(situationId)?.text ?? '—'} — ${marks[index] === 2 ? 'causada' : marks[index] === 1 ? 'sufrida' : 'sin marcar'}`}
                     data-kind={String(marks[index] ?? 0)}
                     style={`--dab-rot: ${((index * 53) % 19) - 9}deg`}
                   >
-                    <span class="cell-text">{getSituation(situationId)?.text ?? '—'}</span>
+                    <span class="cell-text" aria-hidden="true">{getSituation(situationId)?.text ?? '—'}</span>
                     <span class="dab" aria-hidden="true" />
                   </div>
                 )

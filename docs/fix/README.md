@@ -13,6 +13,7 @@ history lives in git log + closed issues.
 
 | Folder | Topic | Status | Depends on | Issue |
 |--------|-------|--------|------------|-------|
+| `51-read-only-cell-a11y` | Read-only card cells: replace invalid aria-pressed with role+label | `in-review` | — | [#51](https://github.com/gtrabanco/bingo-ev/issues/51) |
 | `26-show-carton-on-diploma` | Show completed bingo card on diploma detail page `/v/{id}` | `in-review` | — | [#26](https://github.com/gtrabanco/bingo-ev/issues/26) |
 | `20-script-crash-conditional-elements` | Script crash on absent OAuth env vars — kills device-code button | `in-progress` | — | [#20](https://github.com/gtrabanco/bingo-ev/issues/20) |
 | `31-owner-handle-bypass` | Owner OAuth account should bypass handle blocklist | `in-review` | — | [#31](https://github.com/gtrabanco/bingo-ev/issues/31) |
