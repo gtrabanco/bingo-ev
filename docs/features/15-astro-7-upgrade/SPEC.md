@@ -20,11 +20,10 @@ strings that name the old versions.
 
 ## Size
 
-`S` — the config surface is tiny (`astro.config.mjs` is six lines, no experimental
-flags), the dependency graph is already compatible, and the only code that may
-change is HTML the new compiler rejects (build-gated) plus one `compressHTML`
-line. The bulk of the effort is **verification**, not artifacts, so this SPEC is
-the only planning artifact. No schema change, no new dependency.
+`M` — originally sized `S` (toolchain bump only, single-pass). Expanded after P1
+shipped to add **Phase 2: Astro 7 performance optimizations** (`routeRules` cache
+headers, `prefetch` config, lazy QR import). Full artifact set (`PLAN.md`,
+`TASKS.md`) generated at expansion time. No schema change, no new dependency.
 
 ## Dependencies
 
@@ -118,11 +117,20 @@ major.
 - **Adopting the new `compressHTML: 'jsx'` default** — deliberately deferred; pin
   `true` now (D1). Revisiting the JSX whitespace default is a separate follow-up,
   not this upgrade.
-- **Any game/behaviour/schema/copy change** — this is a toolchain bump only.
+- **Any game/behaviour/schema/copy change** — this is a toolchain bump + perf config only.
 - **Tailwind / uqr / newsletter version changes** — already latest; bumping them is
   not part of this work.
 - **New D1 migration** — none is introduced.
-- **Refactoring `astro.config.mjs`** beyond the one `compressHTML` line.
+- **KV application-level cache layer** — `routeRules` edge/browser caching at the
+  HTTP layer is sufficient; a KV-backed server cache is a separate architectural
+  addition.
+- **Cloudflare dashboard Cache Rules** — configuring edge-cache rules in the
+  dashboard is operational work, not code; the `routeRules` headers are correct
+  without it (browser cache + potential edge cache from Cloudflare's automatic
+  caching policy for `Cache-Control: public` responses).
+- **Prefetching `/` (home)** — the home page has per-user card state loaded from
+  `localStorage`; caching or prefetching it would serve stale/wrong content to
+  returning users.
 
 ## Architecture impact
 
@@ -182,24 +190,50 @@ to chase. Re-evaluating the JSX default is explicitly deferred (see non-goals).
 - **D3 — single PR (DECIDED: yes).** Code + doc-string updates ship as one PR
   against `main`; the upgrade is independently mergeable and gate-verified. Not
   issue-born → no `Closes #N`.
+- **D4 — `routeRules` scope (DECIDED: gallery pages + OG diploma images).** Cache
+  `/hall-of-fame` and `/og/diploma/**` only. `/galeria` is already a 301 redirect
+  (pure function, no body to cache). Dynamic game pages (`/c/[id]`, `/v/[id]`,
+  `/g/[id]`) serve live D1 data and must remain uncached. The main `/` page serves
+  per-user state — never cache. `Cache-Control: public, max-age=60,
+  stale-while-revalidate=300` on the gallery (stale is acceptable; new diplomas
+  appear within 60–360 s). `Cache-Control: public, max-age=86400, immutable` on
+  OG images (diplomas are immutable once created — the card data never changes).
+- **D5 — `prefetch` strategy (DECIDED: `hover`, not `prefetchAll`).** `prefetchAll`
+  would prefetch every internal `<a>` on page load, wasting bandwidth for users who
+  navigate to only one page. `hover` (200 ms delay) targets likely navigation with
+  zero wasted prefetch for users who don't hover. Configured globally in
+  `astro.config.ts`; no per-link annotation needed.
+- **D6 — QR lazy import (DECIDED: dynamic import at call site).** `renderQrInto`
+  has a single call site (`index.astro:1938`, inside `showDeviceCode()`). The
+  `qr.js` module (10 KB) is split by Vite but loaded eagerly by the module graph.
+  Convert to `const { renderQrInto } = await import('../lib/qr')` inside
+  `showDeviceCode()` to defer the download until the device-transfer button is
+  clicked. No other call sites exist.
 
 ## Acceptance criteria
 
+**P1 (done):**
 - `package.json` pins `astro@7.0.0`, `@astrojs/cloudflare@14.0.0`,
-  `wrangler@4.103.0`; `package-lock.json` resolves `astro@7.x` and Vite `8.x` with
-  no peer-dependency warnings on `npm install`.
+  `wrangler@4.103.0`; lockfile resolves Vite `8.x` with no peer-dep warnings.
 - `npm run build` exits 0 and emits `dist/server/wrangler.json`.
-- `astro.config.mjs` contains `compressHTML: true`.
-- `npm run dev` serves the game at `http://localhost:4321`; the home cartón, a
-  card page (`/c/[id]`), a verification page (`/v/[id]`), the gallery
-  (`/hall-of-fame`), a group page, and `/privacidad` all render without console
-  errors.
-- A card can be created, marked, completed, and its diploma + QR + OG image render
-  (the `cloudflare:workers` `env` import and `prerender = false` routes still work).
-- No DOM/script hook id changed; no game logic changed; only HTML-validity fixes (if
-  any) and the version/`compressHTML` edits are in the diff.
-- `docs/infrastructure/README.md` and `CLAUDE.md` no longer state "Astro 6" /
-  "adapter v13" as the current runtime.
+- `astro.config.ts` contains `compressHTML: true`.
+- Home, hall-of-fame, and privacidad render in dev without console errors.
+- `docs/infrastructure/README.md` and `CLAUDE.md` updated to v7/v14.
+
+**P2 (new):**
+- `astro.config.ts` contains `routeRules` with entries for `/hall-of-fame` and
+  `/og/diploma/**` using the Cache-Control values from D4.
+- `astro.config.ts` contains `prefetch: { prefetchAll: false, defaultStrategy: 'hover' }`.
+- `GET /hall-of-fame` response carries `Cache-Control: public, max-age=60,
+  stale-while-revalidate=300` in dev (verify via Network panel).
+- `GET /og/diploma/[id].png` response carries `Cache-Control: public,
+  max-age=86400, immutable` in dev.
+- `qr.js` does NOT appear in the Chromium Network waterfall on home page load
+  (before the device-transfer button is clicked).
+- After clicking the device-transfer button, the device-code QR still renders
+  correctly (lazy import resolves and `renderQrInto` executes).
+- `npm run build` remains green after P2 changes.
+- No game logic changed; no DOM/script hook ids changed.
 
 ## Testing requirements
 
@@ -229,17 +263,22 @@ prove the *existing* ones still work post-bump.
 | `runtime:prerender-false` | dynamic routes still SSR | server-rendered card/verification pages return live data, not a prerender error |
 | `render:diploma` | canvas fonts + `uqr` QR + OG image | complete a card, open the diploma and its OG image |
 | `whitespace:inline` | `compressHTML: true` preserves inter-element spaces | inspect copy with adjacent inline elements — spacing matches pre-upgrade |
+| `cache:gallery` | Cache-Control header on hall-of-fame HTML response | Network panel in dev: response header present on `/hall-of-fame` |
+| `cache:og-diploma` | Cache-Control header on OG diploma PNG | Network panel in dev: response header present on `/og/diploma/[any-id].png` |
+| `prefetch:hover` | qr.js absent from initial load, present after button click | Network panel: qr.js absent at DOMContentLoaded; appears after device-transfer button click |
 
 ## Phases
 
-Single-pass (Size S) — `execute-phase 15`:
+Size `M` — `execute-phase 15 P2` (P1 done):
 
-- **P0 (planning):** this SPEC (done) + roadmap registration.
-- **P1 (upgrade + verify + docs):** bump versions, `npm install`, set
-  `compressHTML: true`, regenerate types, build, fix any Rust-compiler HTML errors,
-  run the manual verification pass, update the doc strings — one gate-green commit
-  (docs may be a second commit on the same branch).
-- **P2 (PR):** open the PR against `main`, no `Closes #N`.
+- **P0 (done):** planning artifacts + roadmap registration (committed on branch).
+- **P1 (done):** toolchain bump, `compressHTML`, regenerate types, verify, doc
+  strings — committed on branch, PR #58 open.
+- **P2 (implement optimizations):** add `routeRules` + `prefetch` to
+  `astro.config.ts`; convert QR top-level import to dynamic import at its call site
+  in `index.astro`; build gate; browser verification (cache headers + QR lazy load);
+  update PR #58 description to reflect expanded scope. See `TASKS.md`.
+- **P3 (PR):** PR #58 already open — update title/description if needed; no new PR.
 
 ## Deploy & rollback
 
@@ -267,17 +306,28 @@ Single-pass (Size S) — `execute-phase 15`:
   regenerate with `npm run generate-types` and commit only if it changed.
 - RESOLVED — Node engine: no bump needed (project already `>=22.12.0`).
 - RESOLVED — Tailwind/uqr/newsletter: already latest, out of scope.
-- DEFERRED — adopting `compressHTML: 'jsx'`: tracked as a possible follow-up, not
-  this feature (D1).
+- DEFERRED — adopting `compressHTML: 'jsx'`: tracked in issue #59, not this feature (D1).
+- NOTE — Cloudflare dashboard Cache Rules: `routeRules` sets `Cache-Control` headers
+  on Worker responses. Browser caching is guaranteed. Cloudflare edge caching of
+  Worker-generated HTML depends on the plan's automatic caching policy; enabling it
+  via dashboard Cache Rules is operational work outside this feature's code scope.
+  OG images (`/og/diploma/**`) benefit most from caching even at browser level alone.
 
 ## Deliverables
 
+**P1 (delivered):**
 - `package.json` + `package-lock.json` with the three bumped versions.
-- `astro.config.mjs` with `compressHTML: true`.
-- Any behaviour-preserving HTML-validity fixes in `.astro` files (expected: few/none).
-- Regenerated `worker-configuration.d.ts` if changed.
+- `astro.config.ts` with `compressHTML: true`.
 - Updated version strings in `docs/infrastructure/README.md` and `CLAUDE.md`.
-- One PR against `main` (no `Closes #N`).
+
+**P2 (pending):**
+- `astro.config.ts` with `routeRules` (gallery + OG diploma cache headers) and
+  `prefetch: { prefetchAll: false, defaultStrategy: 'hover' }`.
+- `src/pages/index.astro`: top-level `import { renderQrInto }` removed; dynamic
+  `import('../lib/qr')` at call site.
+- Updated PR #58 description reflecting the full scope.
+
+**PR:** #58 (already open, against `main`, no `Closes #N`).
 
 ## Post-merge next feature
 
