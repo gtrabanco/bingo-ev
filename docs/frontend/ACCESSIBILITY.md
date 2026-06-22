@@ -9,8 +9,11 @@ issues rather than assumed handled.
 
 ## Checklist (every user-facing change)
 
-- **Semantics**: real elements — cells are `<button>`s with `aria-pressed` reflecting the
-  mark state; blanks are `aria-hidden`. Status lines use `aria-live="polite"`. Keep this.
+- **Semantics**: real elements — interactive cells (game) are `<button>`s with
+  `aria-pressed` reflecting the mark state; read-only cells (`/c/{id}`, `/v/{id}`) use
+  `role="img"` with `aria-label="{situation} — sufrida / causada / sin marcar"` (no
+  `aria-pressed` on non-buttons). Blanks are `aria-hidden` in all views.
+  Status lines use `aria-live="polite"`. Keep this distinction.
 - **Keyboard**: every interactive control reachable and operable by keyboard; the cartón
   buttons, mark-mode toggle, dialogs, group actions included. The certificate is a native
   `<dialog>` (focus trap + Esc for free) — prefer it over ad-hoc modals.
