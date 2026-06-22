@@ -156,7 +156,7 @@ if (codeParam) {
 <script>
   import { loadCurrentCard, loadAlias } from '../lib/storage';
   import { createReceiveSlot, depositToReceiveSlot, pollReceiveSlot } from '../lib/api';
-  import { encode as encodeQr } from 'uqr';
+  import { renderQrInto } from '../lib/qr';
 
   const params = new URLSearchParams(location.search);
   const recvCode = params.get('recv');
@@ -220,19 +220,7 @@ if (codeParam) {
       const qrEl = document.getElementById('receive-qr');
       if (!qrEl) return;
       const url = `${location.origin}/activar?recv=${encodeURIComponent(code)}`;
-      const qr = encodeQr(url, { ecc: 'M', border: 2 });
-      const scale = 5;
-      const size = qr.size * scale;
-      let cells = '';
-      for (let row = 0; row < qr.size; row++) {
-        for (let col = 0; col < qr.size; col++) {
-          if (qr.data[row]![col]) {
-            cells += `<rect x="${col * scale}" y="${row * scale}" width="${scale}" height="${scale}" fill="currentColor"/>`;
-          }
-        }
-      }
-      qrEl.innerHTML =
-        `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" class="text-paper-50" xmlns="http://www.w3.org/2000/svg">${cells}</svg>`;
+      renderQrInto(qrEl as HTMLElement, url);
     }
 
     let pollId: ReturnType<typeof setInterval> | null = null;
