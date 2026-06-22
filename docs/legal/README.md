@@ -13,17 +13,21 @@
 - **Personal data collected**: email (only with the user's action), tied to a card for
   recovery and, if explicitly opted in, the newsletter. `nick`/`alias` are user-chosen
   display labels, not verified identity.
-- **Lawful basis**: consent. The newsletter checkbox is **explicit and unticked**;
-  `consented_at` records the timestamp. No confirmation email is sent — the form is the
-  confirmation.
+- **Lawful basis**: consent. The newsletter checkbox is **explicit and unticked**.
+  The `cards` table stores a `newsletter` boolean (records opt-in preference at
+  registration time). A double opt-in confirmation email is sent automatically by
+  the gtrabanco.com newsletter service (`@gtrabanco/newsletter`) — the subscription
+  is not active until the user clicks the link in that email.
 - **No analytics or advertising cookies.** Game state is `localStorage` only (strictly
   necessary) → no cookie banner required.
 - **Retention**: the registry is kept deliberately tiny — regenerated/expired
   never-completed cards are deleted; completed cards persist until the account
   owner invokes the "Borrar todo" erasure path, which deletes diplomas too (see
   `DELETE /api/account` — feature 13).
-- **Rights**: users can request deletion (contact above). The newsletter list lives in
-  the project's own D1 (`newsletter` table), not a third party.
+- **Rights**: users can request deletion (contact above). Newsletter subscriber data
+  is managed externally by the gtrabanco.com newsletter service (the D1 `newsletter`
+  table was dropped in migration `0015_drop_newsletter_table.sql`); deletion requests
+  for newsletter data must be forwarded to that service.
 
 ## Implementation touchpoints
 
