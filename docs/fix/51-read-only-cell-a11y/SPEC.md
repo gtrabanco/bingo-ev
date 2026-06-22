@@ -34,6 +34,10 @@ non-interactive read-only context.
   on it for dab color) and `aria-hidden="true"` on `.dab`.
 - **`docs/frontend/ACCESSIBILITY.md`**: update the semantics note to document
   the read-only cell pattern alongside the interactive pattern.
+- **`src/styles/global.css`**: add `.cell[data-kind='1']/.cell[data-kind='2'] .dab`
+  visibility rule so dabs render on read-only views after `aria-pressed` removal
+  (the original `aria-pressed` selector was the sole show-rule; `data-kind` is the
+  correct data signal for read-only cells). Harmless for interactive game cells.
 
 ### Out of scope
 
@@ -44,7 +48,7 @@ non-interactive read-only context.
 ## Impact
 
 - Files touched: `src/pages/c/[id].astro`, `src/pages/v/[id].astro`,
-  `docs/frontend/ACCESSIBILITY.md`.
+  `docs/frontend/ACCESSIBILITY.md`, `src/styles/global.css`.
 - Blast radius: read-only view only. No write path, no server logic.
 - Detection: visible in accessibility-tree audit (no automated CI gate).
 
