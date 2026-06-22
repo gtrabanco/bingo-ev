@@ -13,6 +13,7 @@ history lives in git log + closed issues.
 
 | Folder | Topic | Status | Depends on | Issue |
 |--------|-------|--------|------------|-------|
+| `28-extract-qr-render-helper` | Extract duplicated SVG QR render logic into src/lib/qr.ts | `in-review` | — | [#28](https://github.com/gtrabanco/bingo-ev/issues/28) |
 | `54-legal-readme-newsletter-stale` | Correct stale newsletter/D1 claims in docs/legal/README.md | `in-review` | fix/46 ✓, fix/48 ✓ | [#54](https://github.com/gtrabanco/bingo-ev/issues/54) |
 | `48-newsletter-processor` | Name gtrabanco.com newsletter service as processor in privacidad | `in-review` | fix/46 ✓ | [#48](https://github.com/gtrabanco/bingo-ev/issues/48) |
 | `51-read-only-cell-a11y` | Read-only card cells: replace invalid aria-pressed with role+label | `in-review` | — | [#51](https://github.com/gtrabanco/bingo-ev/issues/51) |
