@@ -9,6 +9,7 @@ import { type Honorific, VEHICLE_TYPES, type VehicleType } from '../../lib/card'
 import { HONORIFICS, HONORIFIC_COLORS, FALLBACK_NICK } from '../../lib/certificate-design';
 import { rowToEntry, HONORIFIC_KEYS, type GalleryRow, type GalleryEntry } from '../../lib/gallery';
 import { checkNick } from '../../lib/blocklist';
+import { VEHICLE_LABELS, formatDate } from '../../lib/display';
 
 const HANDLE_RE = /^[a-z0-9-]{3,24}$/;
 
@@ -67,33 +68,6 @@ const honorificCounts: Record<Honorific, number> = {
 };
 for (const entry of items) {
   honorificCounts[entry.honorific]++;
-}
-
-const VEHICLE_LABELS: Record<string, string> = {
-  bev_tesla: 'Tesla',
-  bev_renault: 'Renault',
-  bev_vw: 'Volkswagen',
-  bev_hyundai: 'Hyundai',
-  bev_kia: 'Kia',
-  bev_byd: 'BYD',
-  bev_cupra: 'SEAT / Cupra',
-  bev_peugeot: 'Peugeot / Citroën / Opel',
-  bev_nissan: 'Nissan',
-  bev_bmw: 'BMW / MINI',
-  bev_audi: 'Audi',
-  bev_mercedes: 'Mercedes',
-  bev_volvo: 'Volvo',
-  bev_other: 'Otra eléctrica',
-  phev: 'Híbrido enchufable',
-  ice: 'Combustión',
-};
-
-function formatDate(iso: string): string {
-  return new Intl.DateTimeFormat('es-ES', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(iso));
 }
 
 const pageTitle = Astro.response.status === 404
