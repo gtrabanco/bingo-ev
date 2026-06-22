@@ -2,7 +2,7 @@
 
 ## Runtime & deployment
 
-- **Astro 6 + `@astrojs/cloudflare` v13** on **Cloudflare Workers**. Static homepage +
+- **Astro 7 + `@astrojs/cloudflare` v14** on **Cloudflare Workers**. Static homepage +
   a small server side (API routes, server-rendered pages). Tailwind 4 via the Vite
   plugin. Site origin: `https://bingo.gruxon.com`.
 - **Worker config** in `wrangler.jsonc` (name `bingo-ev`, D1 binding `DB`, assets binding
@@ -13,7 +13,7 @@
   `npm run deploy` → `wrangler d1 migrations apply ev-bingo --remote` (idempotent) then
   `wrangler deploy`. Schema ships with every push.
 - **Server env access**: `import { env } from 'cloudflare:workers'` only. `locals.runtime.env`
-  is removed in adapter v13 and throws. Never add a manual `src/env.d.ts`.
+  was removed in adapter v13 and still throws in v14+. Never add a manual `src/env.d.ts`.
 - **Every dynamic route** must `export const prerender = false;`.
 
 ## Storage & data
