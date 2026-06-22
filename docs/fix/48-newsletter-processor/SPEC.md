@@ -66,8 +66,9 @@ page was not updated.
 
 - [ ] `/privacidad` names `gtrabanco.com` as the processor for newsletter
   opt-in data in the "Cuánto tiempo y con quién" section.
-- [ ] Brevo mention is unchanged (still named as processor for
-  transactional email).
+- [ ] Brevo is still named as processor, scoped to the transactional
+  recovery email (sentence reworded to "correo de recuperación" and
+  "para ese fin" to disambiguate from the newsletter processor).
 - [ ] `npm run build` passes.
 
 ## Rollback
