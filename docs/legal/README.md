@@ -24,6 +24,12 @@
   never-completed cards are deleted; completed cards persist until the account
   owner invokes the "Borrar todo" erasure path, which deletes diplomas too (see
   `DELETE /api/account` — feature 13).
+- **OG image caching tradeoff**: diploma OG images (`/og/diploma/**`) are served
+  with `Cache-Control: public, max-age=86400, immutable`. After a "Borrar todo"
+  erasure the endpoint returns 404, but previously cached copies may survive up to
+  24 h in browser and CDN caches. Accepted tradeoff: OG images contain only
+  user-chosen nick and honorific (no email, no real identity); social scraper caches
+  are independent of the `Cache-Control` header regardless.
 - **Rights**: users can request deletion (contact above). Newsletter subscriber data
   is managed externally by the gtrabanco.com newsletter service (the D1 `newsletter`
   table was dropped in migration `0015_drop_newsletter_table.sql`); deletion requests
