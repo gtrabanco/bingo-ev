@@ -9,6 +9,8 @@ export default defineConfig({
   site: 'https://bingo.gruxon.com',
   compressHTML: true,
 
+  prefetch: { prefetchAll: false, defaultStrategy: 'hover' },
+
   vite: {
     plugins: [tailwindcss()]
   },

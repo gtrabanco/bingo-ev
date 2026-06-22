@@ -14,7 +14,7 @@ export const GET: APIRoute = async ({ params }) => {
   return new Response(diplomaStorySvg(data), {
     headers: {
       'content-type': 'image/svg+xml; charset=utf-8',
-      'cache-control': 'public, max-age=3600',
+      'cache-control': 'public, max-age=86400, immutable',
     },
   });
 };

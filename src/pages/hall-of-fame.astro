@@ -21,6 +21,8 @@ const validVehicle: VehicleType | null =
     ? (rawVehicle as VehicleType)
     : null;
 
+Astro.response.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+
 let items: GalleryEntry[] = [];
 let hasMore = false;
 

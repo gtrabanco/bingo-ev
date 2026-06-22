@@ -23,46 +23,38 @@
 - [x] Write `CHECKLIST.md`
 - [x] Flip roadmap to `done`; commit; push; open PR #58
 
-## Phase 2 — Astro 7 performance optimizations
+## Phase 2 — Astro 7 performance optimizations ✅ DONE
 
-### 2a · `routeRules` cache headers (`astro.config.ts`)
+### 2a · Cache headers (plan corrected — see PLAN.md)
 
-- [ ] Add top-level `routeRules` block with entries:
-  - `/hall-of-fame` → `Cache-Control: public, max-age=60, stale-while-revalidate=300`
-  - `/og/diploma/**` → `Cache-Control: public, max-age=86400, immutable`
-- [ ] Confirm no entry for `/`, `/c/[id]`, `/v/[id]`, `/g/[id]`, `/galeria`
-  (those must stay uncached)
+- [x] `routeRules.headers` found to be silently ignored by Astro 7 + CF adapter
+- [x] `hall-of-fame.astro`: `Astro.response.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')`
+- [x] All 4 OG diploma endpoints: `cache-control: 'public, max-age=86400, immutable'`
 
 ### 2b · `prefetch` config (`astro.config.ts`)
 
-- [ ] Add `prefetch: { prefetchAll: false, defaultStrategy: 'hover' }` to
-  `defineConfig`
+- [x] Added `prefetch: { prefetchAll: false, defaultStrategy: 'hover' }`
 
 ### 2c · Lazy QR import (`src/pages/index.astro`)
 
-- [ ] Locate line 583: `import { renderQrInto } from '../lib/qr';` — remove it
-- [ ] Locate `showDeviceCode()` (around line 1936); confirm it is `async`
-- [ ] Add `const { renderQrInto } = await import('../lib/qr');` immediately before
-  the `renderQrInto(deviceCodeQr, url)` call (line ~1938)
-- [ ] Confirm no other `renderQrInto` call sites exist
+- [x] Removed static `import { renderQrInto } from '../lib/qr'`
+- [x] `renderDeviceCodeQr` made `async`; `await import('../lib/qr')` inside
+- [x] No other `renderQrInto` call sites
 
 ### 2d · Gate + verification
 
-- [ ] `npm run build` — must remain green; `dist/server/wrangler.json` present
-- [ ] Dev server: open `/hall-of-fame` → Network panel → response headers include
-  `Cache-Control: public, max-age=60, stale-while-revalidate=300`
-- [ ] Dev server: open any `/og/diploma/[id].png` URL → response header includes
-  `Cache-Control: public, max-age=86400, immutable`
-- [ ] Dev server: home page initial load → `qr.*.js` absent from Network waterfall
-- [ ] Dev server: click device-transfer button → `qr.*.js` appears in Network; QR
-  renders in the device-code panel
-- [ ] No console errors introduced; game logic unchanged
+- [x] `npm run build` — green; `dist/server/wrangler.json` present
+- [x] `curl http://localhost:4321/hall-of-fame` → `cache-control: public, max-age=60, stale-while-revalidate=300`
+- [x] Worker bundle (`dist/server/chunks/`) contains `max-age=86400, immutable` strings
+- [x] Home page load: `qr.ts` absent from module waterfall (after P2 config applied)
+- [x] Prefetch module (`astro/dist/virtual-modules/prefetch.js`) loads on all pages
+- [x] No console errors
 
 ### 2e · Docs + PR
 
 - [ ] Update `CHECKLIST.md` with P2 entries
 - [ ] Update PR #58 description to reflect P2 scope
-- [ ] Commit P2 changes: `chore(perf): routeRules caching, prefetch, lazy QR import`
+- [ ] Commit P2 changes: `chore(perf): per-page cache headers, prefetch, lazy QR import`
 - [ ] Push to `feat/15-astro-7-upgrade`
 
 ## Phase 3 — Review + merge

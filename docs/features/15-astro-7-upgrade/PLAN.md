@@ -22,39 +22,29 @@ What was done:
 - Browser verification: home, hall-of-fame, privacidad all clean.
 - Doc strings updated: `docs/infrastructure/README.md`, `CLAUDE.md`.
 
-## Phase 2 — Astro 7 performance optimizations (PENDING)
+## Phase 2 — Astro 7 performance optimizations (DONE)
 
-Three independent changes, all in `astro.config.ts` + `index.astro`. One
-gate-verified commit.
+Three independent changes across `astro.config.ts`, `index.astro`, and SSR pages.
+One gate-verified commit.
 
-### 2a — `routeRules` cache headers
+### 2a — Cache headers (D4 — plan correction)
 
-Add top-level `routeRules` to `astro.config.ts` (stable in Astro 7, was
-`experimental.routeRules` in v6):
+**Original plan** used `routeRules.headers` in `astro.config.ts`. This was wrong:
+Astro 7's `RouteRulesSchema` only accepts `maxAge`/`swr`/`tags` (the new cache
+abstraction); the `headers` key is silently stripped. `@astrojs/cloudflare` v14
+does not process `routeRules` at all. Verified by inspecting adapter source.
 
-```ts
-routeRules: {
-  '/hall-of-fame': {
-    headers: { 'Cache-Control': 'public, max-age=60, stale-while-revalidate=300' },
-  },
-  '/og/diploma/**': {
-    headers: { 'Cache-Control': 'public, max-age=86400, immutable' },
-  },
-},
-```
+**Actual implementation** — per-page response headers:
+- `hall-of-fame.astro`: `Astro.response.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')`
+- `og/diploma/[id].{png,svg}.ts` + `[id]-story.{png,svg}.ts`: `'cache-control': 'public, max-age=86400, immutable'` in each `Response` headers object (all four endpoints already had `max-age=3600`; bumped to `86400, immutable` per D4).
 
 Rationale (D4):
-- `/hall-of-fame` shows public gallery data, no user-specific HTML. Short TTL
-  (60 s) + background revalidation (stale-while-revalidate=300 s) means Cloudflare
-  and browsers serve the cached page instantly while revalidating. New diplomas
-  appear within ≤360 s — acceptable.
+- `/hall-of-fame` shows public gallery data, no user-specific HTML. 60 s TTL +
+  stale-while-revalidate=300 s means Cloudflare and browsers serve cached pages
+  instantly while revalidating. New diplomas appear within ≤360 s — acceptable.
 - `/og/diploma/**` (PNG + story PNG + SVG variants): diplomas are immutable once
-  created. A 24-hour immutable cache means the image is generated once per ID and
-  then served from cache by browsers and any CDN in the chain (Twitter/Discord embed
-  scrapers, Cloudflare). The `**` glob covers all four variants
-  (`[id].png`, `[id]-story.png`, `[id].svg`, `[id]-story.svg`).
-- `/galeria` is already a 301 redirect to `/hall-of-fame` — no cache header needed
-  on the redirect itself.
+  created. 24 h immutable cache means the image is generated once per ID and then
+  served from cache by browsers and CDN (Twitter/Discord embed scrapers, Cloudflare).
 - `/`, `/c/[id]`, `/v/[id]`, `/g/[id]` serve per-user or live D1 data — never cache.
 
 ### 2b — `prefetch` config

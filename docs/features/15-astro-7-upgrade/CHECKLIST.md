@@ -48,6 +48,17 @@
 - [x] `docs/infrastructure/README.md`: "Astro 6 + `@astrojs/cloudflare` v13" → "Astro 7 + `@astrojs/cloudflare` v14"; adapter v13 server-env note updated to "v13...still throws in v14+"
 - [x] `CLAUDE.md`: adapter-v13 note updated to "v13...still throws in v14+"
 
+## P2 performance optimizations
+
+- [x] `prefetch: { prefetchAll: false, defaultStrategy: 'hover' }` in `astro.config.ts`
+- [x] `astro/dist/virtual-modules/prefetch.js` loads on pages in dev server (confirmed)
+- [x] Lazy QR import: static `import { renderQrInto } from '../lib/qr'` removed from `index.astro`; `renderDeviceCodeQr` is now `async`; `await import('../lib/qr')` inside the function
+- [x] `qr.ts` absent from home page initial module waterfall (after P2 config applied)
+- [x] `routeRules.headers` NOT used — Astro 7 `RouteRulesSchema` only accepts `maxAge`/`swr`/`tags`; headers key is silently stripped. Per-page response headers used instead.
+- [x] `hall-of-fame.astro`: `Astro.response.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')` — verified via `curl` on dev server
+- [x] All 4 OG diploma endpoints (`[id].{png,svg}.ts`, `[id]-story.{png,svg}.ts`): `cache-control: 'public, max-age=86400, immutable'` — confirmed in Worker bundle chunks
+- [x] `npm run build` green after P2 changes
+
 ## Audit notes
 
 - `npm audit` reports 6 vulnerabilities (1 low, 5 high) in `@cloudflare/vite-plugin` transitive deps (`miniflare`, `undici`, `ws`, `esbuild`). **All dev-tooling only** — none ship in the deployed Worker bundle. Not addressed here; tracked as a known limitation of Cloudflare's local dev stack.
