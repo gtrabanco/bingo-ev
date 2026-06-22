@@ -205,6 +205,12 @@
     transform: scale(1) rotate(var(--dab-rot, 0deg));
   }
 
+  /* Read-only views use data-kind instead of aria-pressed to drive dab visibility. */
+  .cell[data-kind='1'] .dab,
+  .cell[data-kind='2'] .dab {
+    transform: scale(1) rotate(var(--dab-rot, 0deg));
+  }
+
   /* Sinvergüenza mark (kind 2): same dauber, guilty orange ink. */
   .cell[data-kind='2'] .dab {
     background: radial-gradient(
