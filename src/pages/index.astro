@@ -1538,7 +1538,12 @@ const hasAnyProvider = hasGoogle || hasX;
       showProfileError('Ese nombre ya está cogido. Prueba con otro.');
     } else if (result.error === 'offline') {
       showProfileError('No se pudo guardar. Comprueba tu conexión.');
+    } else if (/^[a-z_]+$/.test(result.error)) {
+      // Unrecognised machine-code token: show generic fallback and log for debugging.
+      console.error('[saveProfile] unexpected error:', result.error);
+      showProfileError('Error inesperado. Inténtalo de nuevo.');
     } else {
+      // Pre-localised display string from the server (e.g. blocklist message).
       showProfileError(result.error);
     }
   }
