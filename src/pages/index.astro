@@ -1539,7 +1539,8 @@ const hasAnyProvider = hasGoogle || hasX;
     } else if (result.error === 'offline') {
       showProfileError('No se pudo guardar. Comprueba tu conexión.');
     } else {
-      showProfileError(result.error);
+      console.error('[saveProfile] unexpected error:', result.error);
+      showProfileError('Error inesperado. Inténtalo de nuevo.');
     }
   }
 
