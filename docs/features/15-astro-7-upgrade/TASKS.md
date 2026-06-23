@@ -61,7 +61,8 @@
 
 - [x] Hand off to `/review-change` (mandatory)
 - [x] Address any fix-now findings (prefetch no-op fix: `data-astro-prefetch` added to nav links)
-- [x] Fix CI blocker: add `.node-version` (Node 24.16.0) — Cloudflare Workers Builds runner fix
+- [x] Fix CI blocker (code): add `.node-version` (Node 24.16.0) to repo root
+- [ ] Fix CI blocker (dashboard): set `NODE_VERSION=24.16.0` in CF Workers Builds env vars — Workers Builds does not read `.node-version` (Pages-only); requires manual dashboard step
 - [x] Fix SPEC drift: update `SPEC.md` acceptance criteria + D5 + deliverables to per-page headers reality
 - [ ] `/audit-pr` re-run after blockers fixed
 - [ ] Human merges PR #58

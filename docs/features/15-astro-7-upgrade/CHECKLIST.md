@@ -59,6 +59,14 @@
 - [x] All 4 OG diploma endpoints (`[id].{png,svg}.ts`, `[id]-story.{png,svg}.ts`): `cache-control: 'public, max-age=86400, immutable'` — confirmed in Worker bundle chunks
 - [x] `npm run build` green after P2 changes
 
+## CI / Node version pin
+
+- [x] `.node-version` file committed to repo root (Node `24.16.0`)
+- [ ] `NODE_VERSION=24.16.0` set as environment variable in Cloudflare Workers Builds dashboard
+  (Workers Builds does not read `.node-version`/`.nvmrc` — that is a Cloudflare Pages feature;
+  Workers Builds requires an explicit `NODE_VERSION` env var in build settings)
+- [ ] CI (`Workers Builds: bingo-ev`) green on HEAD after the env var is set
+
 ## Audit notes
 
 - `npm audit` reports 6 vulnerabilities (1 low, 5 high) in `@cloudflare/vite-plugin` transitive deps (`miniflare`, `undici`, `ws`, `esbuild`). **All dev-tooling only** — none ship in the deployed Worker bundle. Not addressed here; tracked as a known limitation of Cloudflare's local dev stack.
