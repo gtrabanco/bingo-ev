@@ -202,7 +202,9 @@ to chase. Re-evaluating the JSX default is explicitly deferred (see non-goals).
   would prefetch every internal `<a>` on page load, wasting bandwidth for users who
   navigate to only one page. `hover` (200 ms delay) targets likely navigation with
   zero wasted prefetch for users who don't hover. Configured globally in
-  `astro.config.ts`; no per-link annotation needed.
+  `astro.config.ts`. When `prefetchAll: false`, Astro only prefetches links that
+  carry `data-astro-prefetch` — added to the `/` brand link and `/hall-of-fame` nav
+  link in `SiteNav.astro`.
 - **D6 — QR lazy import (DECIDED: dynamic import at call site).** `renderQrInto`
   has a single call site (`index.astro:1938`, inside `showDeviceCode()`). The
   `qr.js` module (10 KB) is split by Vite but loaded eagerly by the module graph.
@@ -220,10 +222,15 @@ to chase. Re-evaluating the JSX default is explicitly deferred (see non-goals).
 - Home, hall-of-fame, and privacidad render in dev without console errors.
 - `docs/infrastructure/README.md` and `CLAUDE.md` updated to v7/v14.
 
-**P2 (new):**
-- `astro.config.ts` contains `routeRules` with entries for `/hall-of-fame` and
-  `/og/diploma/**` using the Cache-Control values from D4.
+**P2 (done):**
+- `hall-of-fame.astro` frontmatter sets `Cache-Control: public, max-age=60,
+  stale-while-revalidate=300` via `Astro.response.headers.set()`. (Note: `routeRules.headers`
+  is silently stripped by Astro 7's `RouteRulesSchema` — per-page response headers are the
+  correct approach; see PLAN.md and CHECKLIST.md for the discovery and rationale.)
+- All four OG diploma endpoints (`[id].{png,svg}.ts`, `[id]-story.{png,svg}.ts`) return
+  `cache-control: public, max-age=86400, immutable` on both success and 404 branches.
 - `astro.config.ts` contains `prefetch: { prefetchAll: false, defaultStrategy: 'hover' }`.
+- `data-astro-prefetch` added to both nav links in `SiteNav.astro` (see D5).
 - `GET /hall-of-fame` response carries `Cache-Control: public, max-age=60,
   stale-while-revalidate=300` in dev (verify via Network panel).
 - `GET /og/diploma/[id].png` response carries `Cache-Control: public,
@@ -274,10 +281,11 @@ Size `M` — `execute-phase 15 P2` (P1 done):
 - **P0 (done):** planning artifacts + roadmap registration (committed on branch).
 - **P1 (done):** toolchain bump, `compressHTML`, regenerate types, verify, doc
   strings — committed on branch, PR #58 open.
-- **P2 (implement optimizations):** add `routeRules` + `prefetch` to
-  `astro.config.ts`; convert QR top-level import to dynamic import at its call site
-  in `index.astro`; build gate; browser verification (cache headers + QR lazy load);
-  update PR #58 description to reflect expanded scope. See `TASKS.md`.
+- **P2 (done):** per-page `Cache-Control` headers (hall-of-fame + OG diploma endpoints);
+  `prefetch` config in `astro.config.ts`; `data-astro-prefetch` on nav links; dynamic
+  QR import at call site; build gate; browser verification; updated PR #58 description.
+  See `TASKS.md` and `PLAN.md` (correction: `routeRules.headers` replaced by per-page
+  response headers after discovering Astro 7's `RouteRulesSchema` strips the `headers` key).
 - **P3 (PR):** PR #58 already open — update title/description if needed; no new PR.
 
 ## Deploy & rollback
@@ -299,9 +307,12 @@ Size `M` — `execute-phase 15 P2` (P1 done):
 - **R2 — Vite 8 breaks a Vite plugin.** Only `@tailwindcss/vite` is used and it
   already declares Vite-8 support; the Cloudflare Vite plugin ships with the v14
   adapter. Mitigation: the build gate surfaces any incompatibility immediately.
-- **R3 — Connected Cloudflare build differs from local.** Mitigation: verify
-  `dist/server/wrangler.json` is emitted locally before merge; the deploy command
-  is unchanged.
+- **R3 — Connected Cloudflare build differs from local.** Partially materialized: all
+  branch commits showed `Workers Builds: bingo-ev` failure; root cause was no Node
+  version pin — Cloudflare's runner defaulted to an older Node incompatible with
+  Astro 7's `>=22.12.0` requirement (`package.json` `engines` is not used by CF Workers
+  Builds for Node selection). **Fixed:** `.node-version` file added to repo root pinning
+  `24.16.0`. Local `npm run build` and `dist/server/wrangler.json` verified before merge.
 - **R4 — `worker-configuration.d.ts` drift from the wrangler bump.** Mitigation:
   regenerate with `npm run generate-types` and commit only if it changed.
 - RESOLVED — Node engine: no bump needed (project already `>=22.12.0`).
@@ -320,12 +331,19 @@ Size `M` — `execute-phase 15 P2` (P1 done):
 - `astro.config.ts` with `compressHTML: true`.
 - Updated version strings in `docs/infrastructure/README.md` and `CLAUDE.md`.
 
-**P2 (pending):**
-- `astro.config.ts` with `routeRules` (gallery + OG diploma cache headers) and
-  `prefetch: { prefetchAll: false, defaultStrategy: 'hover' }`.
+**P2 (delivered):**
+- `astro.config.ts` with `prefetch: { prefetchAll: false, defaultStrategy: 'hover' }`.
+- `src/pages/hall-of-fame.astro`: `Astro.response.headers.set('Cache-Control', ...)` in frontmatter.
+- All four OG diploma endpoints: `cache-control: public, max-age=86400, immutable`.
+- `SiteNav.astro`: `data-astro-prefetch` on `/` brand link and `/hall-of-fame` nav link.
 - `src/pages/index.astro`: top-level `import { renderQrInto }` removed; dynamic
   `import('../lib/qr')` at call site.
 - Updated PR #58 description reflecting the full scope.
+- `.node-version` pinning Node `24.16.0` for Cloudflare Workers Builds runner.
+
+**P3 (CI fix — Node pin):**
+- `.node-version` file added to repo root, pinning `24.16.0` (local Node version; satisfies
+  Astro 7's `>=22.12.0` engine requirement). Fixes Cloudflare Workers Builds CI failure.
 
 **PR:** #58 (already open, against `main`, no `Closes #N`).
 

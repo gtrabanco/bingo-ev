@@ -52,14 +52,16 @@
 
 ### 2e · Docs + PR
 
-- [ ] Update `CHECKLIST.md` with P2 entries
-- [ ] Update PR #58 description to reflect P2 scope
-- [ ] Commit P2 changes: `chore(perf): per-page cache headers, prefetch, lazy QR import`
-- [ ] Push to `feat/15-astro-7-upgrade`
+- [x] Update `CHECKLIST.md` with P2 entries
+- [x] Update PR #58 description to reflect P2 scope
+- [x] Commit P2 changes: `chore(perf): per-page cache headers, prefetch, lazy QR import`
+- [x] Push to `feat/15-astro-7-upgrade`
 
 ## Phase 3 — Review + merge
 
-- [ ] Hand off to `/review-change` (mandatory)
-- [ ] Address any fix-now findings
-- [ ] `/audit-pr` merge gate
+- [x] Hand off to `/review-change` (mandatory)
+- [x] Address any fix-now findings (prefetch no-op fix: `data-astro-prefetch` added to nav links)
+- [x] Fix CI blocker: add `.node-version` (Node 24.16.0) — Cloudflare Workers Builds runner fix
+- [x] Fix SPEC drift: update `SPEC.md` acceptance criteria + D5 + deliverables to per-page headers reality
+- [ ] `/audit-pr` re-run after blockers fixed
 - [ ] Human merges PR #58
