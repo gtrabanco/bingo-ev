@@ -307,12 +307,15 @@ Size `M` — `execute-phase 15 P2` (P1 done):
 - **R2 — Vite 8 breaks a Vite plugin.** Only `@tailwindcss/vite` is used and it
   already declares Vite-8 support; the Cloudflare Vite plugin ships with the v14
   adapter. Mitigation: the build gate surfaces any incompatibility immediately.
-- **R3 — Connected Cloudflare build differs from local.** Partially materialized: all
-  branch commits showed `Workers Builds: bingo-ev` failure; root cause was no Node
-  version pin — Cloudflare's runner defaulted to an older Node incompatible with
-  Astro 7's `>=22.12.0` requirement (`package.json` `engines` is not used by CF Workers
-  Builds for Node selection). **Fixed:** `.node-version` file added to repo root pinning
-  `24.16.0`. Local `npm run build` and `dist/server/wrangler.json` verified before merge.
+- **R3 — Connected Cloudflare build differs from local.** Materialized: all branch
+  commits failed until three fixes landed together: (1) `.node-version` (`24.16.0`) —
+  runner read it correctly, Node was fine; (2) `packageManager: npm@10.9.2` in
+  `package.json` — runner auto-selected bun over npm when both were available; (3)
+  regenerated `bun.lock` via `bun install --minimum-release-age=0` — runner runs
+  `bun install --frozen-lockfile`; the committed lockfile was stale after the
+  astro@7/cloudflare@14 dep bumps, producing a "lockfile had changes" failure.
+  **Resolved:** CI green on HEAD `6506db5`. Going forward: after any dep bump, regenerate
+  `bun.lock` alongside `package-lock.json`.
 - **R4 — `worker-configuration.d.ts` drift from the wrangler bump.** Mitigation:
   regenerate with `npm run generate-types` and commit only if it changed.
 - RESOLVED — Node engine: no bump needed (project already `>=22.12.0`).

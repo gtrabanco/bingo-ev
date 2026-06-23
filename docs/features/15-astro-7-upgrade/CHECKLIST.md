@@ -59,13 +59,12 @@
 - [x] All 4 OG diploma endpoints (`[id].{png,svg}.ts`, `[id]-story.{png,svg}.ts`): `cache-control: 'public, max-age=86400, immutable'` — confirmed in Worker bundle chunks
 - [x] `npm run build` green after P2 changes
 
-## CI / Node version pin
+## CI fixes
 
-- [x] `.node-version` file committed to repo root (Node `24.16.0`)
-- [ ] `NODE_VERSION=24.16.0` set as environment variable in Cloudflare Workers Builds dashboard
-  (Workers Builds does not read `.node-version`/`.nvmrc` — that is a Cloudflare Pages feature;
-  Workers Builds requires an explicit `NODE_VERSION` env var in build settings)
-- [ ] CI (`Workers Builds: bingo-ev`) green on HEAD after the env var is set
+- [x] `.node-version` (24.16.0) — runner correctly reads this; Node 24.16.0 confirmed in build log
+- [x] `packageManager: npm@10.9.2` in `package.json` — runner was auto-selecting bun when both npm and bun were available
+- [x] `bun.lock` regenerated via `bun install --minimum-release-age=0` — runner uses bun; lockfile was stale after astro@7/cloudflare@14 bump; `bun install --frozen-lockfile` failed with "lockfile had changes"
+- [x] CI (`Workers Builds: bingo-ev`) SUCCESS on HEAD `6506db5`
 
 ## Audit notes
 

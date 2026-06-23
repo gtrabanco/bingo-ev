@@ -61,8 +61,9 @@
 
 - [x] Hand off to `/review-change` (mandatory)
 - [x] Address any fix-now findings (prefetch no-op fix: `data-astro-prefetch` added to nav links)
-- [x] Fix CI blocker (code): add `.node-version` (Node 24.16.0) to repo root
-- [ ] Fix CI blocker (dashboard): set `NODE_VERSION=24.16.0` in CF Workers Builds env vars — Workers Builds does not read `.node-version` (Pages-only); requires manual dashboard step
+- [x] Fix CI blocker: `.node-version` (24.16.0) — runner correctly picked up Node from this file
+- [x] Fix CI blocker: `packageManager: npm@10.9.2` in package.json — runner was auto-selecting bun over npm
+- [x] Fix CI blocker: regenerate `bun.lock` — runner uses bun; existing lockfile was stale after astro@7/cloudflare@14 bump; `bun install --minimum-release-age=0` regenerated it
 - [x] Fix SPEC drift: update `SPEC.md` acceptance criteria + D5 + deliverables to per-page headers reality
-- [ ] `/audit-pr` re-run after blockers fixed
+- [x] `/audit-pr` re-run after blockers fixed
 - [ ] Human merges PR #58
