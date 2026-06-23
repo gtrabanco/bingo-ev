@@ -19,15 +19,30 @@ technical string to the user instead of a localised Spanish message.
 
 `saveProfile` maps three known error codes to Spanish copy, but the final `else`
 branch calls `showProfileError(result.error)` verbatim
-(`src/pages/index.astro:1542`). The value is whatever the server or network
-returned — untranslated, uncontrolled.
+(`src/pages/index.astro:1542`). The branch serves a dual purpose:
+
+1. **Intentional pass-through** — `src/pages/api/account/profile.ts:56` returns
+   `BLOCK_MESSAGES[check.reason]` as the error value (pre-localised Spanish strings
+   such as `"Nombre reservado"`). The client comment at line 1534 notes this
+   explicitly. The `else` was designed to surface these strings.
+2. **Unguarded catch-all** — any genuinely unexpected token (e.g. `"failed"`,
+   `"invalid_body"`) is also passed through verbatim instead of being replaced
+   with a generic Spanish fallback.
+
+Because `BLOCK_MESSAGES` is a server-side module and the `saveProfile` logic lives
+in a client `<script>` block, the fix cannot import and compare against that map.
+The two kinds of value are distinguished by shape: machine-code tokens are
+lowercase snake\_case (`/^[a-z_]+$/`); Spanish display strings contain uppercase
+letters and spaces.
 
 ## Scope
 
 ### In scope
 
-- Replace `showProfileError(result.error)` with a generic Spanish fallback string.
-- `console.error` the raw value so it remains debuggable.
+- Split the `else` into two branches distinguished by shape:
+  - machine-code token (`/^[a-z_]+$/`) → generic Spanish fallback + `console.error`.
+  - other (pre-localised display string, e.g. blocklist message) → pass through to `showProfileError`.
+- `console.error` the raw value for any unrecognised machine-code token.
 
 ### Out of scope
 
@@ -53,9 +68,11 @@ returned — untranslated, uncontrolled.
 
 ## Acceptance criteria
 
-- [ ] A simulated unexpected error code (e.g. `"internal_error"`) shows the Spanish
-      fallback in the UI, not the raw token.
-- [ ] The raw value is logged to `console.error`.
+- [ ] A simulated unexpected machine-code token (e.g. `"internal_error"`) shows the
+      Spanish fallback in the UI, not the raw token.
+- [ ] The raw machine-code token is logged to `console.error`.
+- [ ] A blocklist message (e.g. `"Nombre reservado"`) is shown verbatim — not replaced
+      by the generic fallback.
 - [ ] All three existing mapped codes (`handle_invalid`, `handle_taken`, `offline`) are
       unchanged.
 - [ ] `npm run build` passes.
