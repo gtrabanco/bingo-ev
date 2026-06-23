@@ -66,6 +66,10 @@
 - [x] `bun.lock` regenerated via `bun install --minimum-release-age=0` — runner uses bun; lockfile was stale after astro@7/cloudflare@14 bump; `bun install --frozen-lockfile` failed with "lockfile had changes"
 - [x] CI (`Workers Builds: bingo-ev`) SUCCESS on HEAD `6506db5`
 
+## Security hardening
+
+- [x] `src/layouts/Layout.astro:33`: generator meta (`<meta name="generator" content={Astro.generator}>`) gated on `import.meta.env.DEV` — absent from all production HTML, present in dev (required for Astro toolbar). Verified: `npm run build` output contains 0 matches for `name="generator"`; dev server returns `"Astro v7.0.0"`.
+
 ## Audit notes
 
 - `npm audit` reports 6 vulnerabilities (1 low, 5 high) in `@cloudflare/vite-plugin` transitive deps (`miniflare`, `undici`, `ws`, `esbuild`). **All dev-tooling only** — none ship in the deployed Worker bundle. Not addressed here; tracked as a known limitation of Cloudflare's local dev stack.
