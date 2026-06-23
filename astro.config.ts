@@ -12,7 +12,13 @@ export default defineConfig({
   prefetch: { prefetchAll: false, defaultStrategy: 'hover' },
 
   vite: {
-    plugins: [tailwindcss()]
+    plugins: [tailwindcss()],
+    define: {
+      // Astro's internal JSON logger uses process.stderr/stdout; workerd has no process.
+      // These stubs let the logger write via console so render errors surface properly.
+      'process.stderr': '({ write: function(s) { try { console.error(s); } catch(e) {} } })',
+      'process.stdout': '({ write: function(s) { try { console.log(s); } catch(e) {} } })',
+    },
   },
 
   adapter: cloudflare()
