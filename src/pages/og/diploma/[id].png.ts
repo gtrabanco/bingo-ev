@@ -40,7 +40,7 @@ export const GET: APIRoute = async ({ params, request }) => {
       return new Response(resp.body, {
         headers: {
           'content-type': 'image/png',
-          'cache-control': 'public, max-age=3600',
+          'cache-control': 'public, max-age=86400, immutable',
         },
       });
     }
@@ -51,7 +51,7 @@ export const GET: APIRoute = async ({ params, request }) => {
   return new Response(svg, {
     headers: {
       'content-type': 'image/svg+xml; charset=utf-8',
-      'cache-control': 'public, max-age=3600',
+      'cache-control': 'public, max-age=86400, immutable',
     },
   });
 };

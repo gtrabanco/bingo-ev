@@ -580,7 +580,6 @@ const hasAnyProvider = hasGoogle || hasX;
     syncMarks,
     verificationUrl,
   } from '../lib/api';
-  import { renderQrInto } from '../lib/qr';
   import { echarConfetti } from '../lib/confetti';
   import {
     isNewsletterSubscribed,
@@ -1932,9 +1931,10 @@ const hasAnyProvider = hasGoogle || hasX;
   // Device-code cross-device transfer (feature 05-accounts P7)
   // -------------------------------------------------------------------------
 
-  function renderDeviceCodeQr(code: string): void {
+  async function renderDeviceCodeQr(code: string): Promise<void> {
     if (!deviceCodeQr) return;
     const url = `${location.origin}/activar?code=${encodeURIComponent(code)}`;
+    const { renderQrInto } = await import('../lib/qr');
     renderQrInto(deviceCodeQr, url);
   }
 
@@ -1993,7 +1993,7 @@ const hasAnyProvider = hasGoogle || hasX;
     }
 
     if (deviceCodeValue) deviceCodeValue.textContent = result.code;
-    renderDeviceCodeQr(result.code);
+    await renderDeviceCodeQr(result.code);
     startExpiryCountdown(result.expiresIn);
   });
 </script>

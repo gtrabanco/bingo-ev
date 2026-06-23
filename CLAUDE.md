@@ -58,7 +58,7 @@ Single source of truth for what every agentic-workflow skill does first and alwa
 
 ## Hard conventions (these override defaults)
 
-- **Server env access**: always `import { env } from 'cloudflare:workers'`. `locals.runtime.env` was removed in `@astrojs/cloudflare` v13 and throws at runtime. Never create a manual `src/env.d.ts` with a `Runtime` alias — the adapter self-injects `App.Locals`, and a duplicate silently breaks `Locals` under `skipLibCheck`.
+- **Server env access**: always `import { env } from 'cloudflare:workers'`. `locals.runtime.env` was removed in `@astrojs/cloudflare` v13 and still throws in v14+. Never create a manual `src/env.d.ts` with a `Runtime` alias — the adapter self-injects `App.Locals`, and a duplicate silently breaks `Locals` under `skipLibCheck`.
 - **Every dynamic route** (API endpoint, server-rendered page) must `export const prerender = false;`. Without it Astro tries to prerender and the route breaks.
 - **Code comments in English, all UI strings in Spanish (es-ES)** with a dry-sarcastic tone ("humor seco") — never edgy. **No brand names anywhere** (no charger networks, no car makers) in situations or copy.
 - **Flat architecture**: only `src/{components,pages,lib,data,layouts,styles}`. No DDD/domain layers.
