@@ -36,6 +36,7 @@ const ogImageUrl = new URL(ogImage, 'https://bingo.gruxon.com').href;
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="El Bingo del Cargador" />
     <meta property="og:url" content={canonicalUrl} />
     <meta property="og:locale" content="es_ES" />
     <meta property="og:image" content={ogImageUrl} />
@@ -64,33 +65,43 @@ const ogImageUrl = new URL(ogImage, 'https://bingo.gruxon.com').href;
     )}
     <slot />
 
-    <script type="application/ld+json">
-    {{
+    <script type="application/ld+json" is:inline set:html={JSON.stringify({
       "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "El Bingo del Cargador",
-      "description": "Juego de bingo online sobre las desgracias típicas de cargar un coche eléctrico en España",
-      "url": "https://bingo.gruxon.com",
-      "applicationCategory": "Game",
-      "gamePlatform": "Web",
-      "operatingSystem": "Web",
-      "inLanguage": "es-ES",
-      "creator": {{
-        "@type": "Person",
-        "name": "Gabriel Trabanco",
-        "url": "https://gtrabanco.com"
-      }},
-      "offers": {{
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "EUR"
-      }},
-      "aggregateRating": {{
-        "@type": "AggregateRating",
-        "ratingValue": "4.5",
-        "ratingCount": "1"
-      }}
-    }}
-    </script>
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://bingo.gruxon.com/#org",
+          "name": "El Bingo del Cargador",
+          "url": "https://bingo.gruxon.com",
+          "logo": "https://bingo.gruxon.com/favicon.svg",
+        },
+        {
+          "@type": "WebApplication",
+          "name": "El Bingo del Cargador",
+          "description": "Juego de bingo online sobre las desgracias típicas de cargar un coche eléctrico en España",
+          "url": "https://bingo.gruxon.com",
+          "applicationCategory": "Game",
+          "gamePlatform": "Web",
+          "operatingSystem": "Web",
+          "inLanguage": "es-ES",
+          "publisher": { "@id": "https://bingo.gruxon.com/#org" },
+          "creator": {
+            "@type": "Person",
+            "name": "Gabriel Trabanco",
+            "url": "https://gtrabanco.com",
+          },
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "EUR",
+          },
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.5",
+            "ratingCount": "1",
+          },
+        },
+      ],
+    })} />
   </body>
 </html>
