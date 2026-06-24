@@ -21,7 +21,7 @@ breakdown. One gate-green commit per phase, single PR after P2.
 - [x] `docs/frontend/SEO.md` — update OG-images note (PNG now primary, SVG fallback,
       platform-coverage boundary).
 - [x] Gate: `npm run build` green.
-- [ ] Manual dev check: `/og/home.svg` renders the new grid; `/og/home.png` falls
+- [x] Manual dev check: `/og/home.svg` renders the new grid; `/og/home.png` falls
       back to SVG locally; homepage `og:image` points to `/og/home.png`.
 - [x] Commit: `feat(16-home-share-images): P1 — landscape OG png + card redesign`.
 
