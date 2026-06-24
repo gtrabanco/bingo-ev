@@ -297,10 +297,11 @@ function wrapCellText(text: string, maxChars = 24, maxLines = 3): string[] {
 }
 
 // Render one bingo card cell: paper background, optional dab, word-wrapped text.
+// dabRadius scales with cell height — pass a larger value for portrait cells.
 function renderCell(
   x: number, y: number, w: number, h: number,
   text: string, marked: boolean,
-  fontSize = 17, maxChars = 24, lineHeight = 20,
+  fontSize = 17, maxChars = 24, lineHeight = 20, dabRadius = 26,
 ): string {
   const cx = x + w / 2;
   const cy = y + h / 2;
@@ -309,7 +310,7 @@ function renderCell(
   const ty = cy - ((n - 1) * lineHeight) / 2;
 
   const dab = marked
-    ? `<circle cx="${cx}" cy="${cy}" r="26" fill="#b02e22" opacity="0.7"/>`
+    ? `<circle cx="${cx}" cy="${cy}" r="${dabRadius}" fill="#b02e22" opacity="0.7"/>`
     : '';
   const tspans = lines
     .map((ln, i) => `<tspan x="${cx}" dy="${i === 0 ? 0 : lineHeight}">${escapeXml(ln)}</tspan>`)
@@ -370,6 +371,68 @@ export function homeSvg(): string {
 
   <!-- Hook + CTA — centred so they survive a square centre-crop (safe zone) -->
   <text x="${CX}" y="587" font-family="${SANS}" font-size="22" fill="#c7d2e0" text-anchor="middle">¿Cuántas llevas tú?  •  bingo.gruxon.com</text>
+
+</svg>`;
+}
+
+// ---------------------------------------------------------------------------
+// Portrait 1080×1920 home share image (uploadable Story/Reel/TikTok asset)
+// ---------------------------------------------------------------------------
+
+export function homeStorySvg(): string {
+  // Grid: 3 columns × 4 rows (portrait transpose of the canonical landscape card).
+  // Spans x 60→1020 (960px → 320px/cell) × y 390→1598 (1208px → 302px/cell).
+  const gridX = 60;
+  const gridY = 390;
+  const cellW = 320;
+  const cellH = 302;
+  // Portrait mark positions (0-indexed, row-major, 3-col grid) — spread diagonally.
+  const storyMarked = new Set([1, 3, 7, 11]);
+
+  let cellsSvg = '';
+  for (let i = 0; i < 12; i++) {
+    const row = Math.floor(i / 3); // 3 columns in portrait
+    const col = i % 3;
+    cellsSvg += '\n  ' + renderCell(
+      gridX + col * cellW, gridY + row * cellH, cellW, cellH,
+      OG_SITUATIONS[i]!, storyMarked.has(i),
+      22, 20, 28, 40, // fontSize, maxChars, lineHeight, dabRadius
+    );
+  }
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${STORY_WIDTH} ${STORY_HEIGHT}">
+  <defs>
+    <style>
+      @font-face { font-family: 'Lora'; font-weight: 400 700; font-style: normal; src: url('${LORA_WOFF2}') format('woff2-variations'); }
+      @font-face { font-family: 'Lora'; font-weight: 400 700; font-style: italic; src: url('${LORA_ITALIC_WOFF2}') format('woff2-variations'); }
+    </style>
+    <radialGradient id="feltGradStory" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" style="stop-color:rgba(255,255,255,0.08);stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:rgba(0,0,0,0.25);stop-opacity:1"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background: felt green + vignette gradient -->
+  <rect width="${STORY_WIDTH}" height="${STORY_HEIGHT}" fill="#0b3d2e"/>
+  <rect width="${STORY_WIDTH}" height="${STORY_HEIGHT}" fill="url(#feltGradStory)"/>
+
+  <!-- Title: two lines, centred, amber Lora serif -->
+  <text x="${STORY_CX}" y="140" font-family="${SERIF}" font-size="90" font-weight="700" fill="#fbbf24" text-anchor="middle">El Bingo</text>
+  <text x="${STORY_CX}" y="244" font-family="${SERIF}" font-size="90" font-weight="700" fill="#fbbf24" text-anchor="middle">del Cargador</text>
+
+  <!-- Subtitle: two lines -->
+  <text x="${STORY_CX}" y="304" font-family="${SANS}" font-size="32" fill="#c7d2e0" text-anchor="middle">Desgracias de la carga</text>
+  <text x="${STORY_CX}" y="344" font-family="${SANS}" font-size="32" fill="#c7d2e0" text-anchor="middle">pública, verificables</text>
+
+  <!-- 3×4 bingo card (portrait transpose) with real situation text -->
+  ${cellsSvg}
+
+  <!-- Hook line -->
+  <text x="${STORY_CX}" y="1668" font-family="${SANS}" font-size="44" fill="#c7d2e0" text-anchor="middle">¿Cuántas llevas tú?</text>
+
+  <!-- CTA URL: large amber serif for maximum visibility -->
+  <text x="${STORY_CX}" y="1778" font-family="${SERIF}" font-size="60" font-weight="700" fill="#fbbf24" text-anchor="middle">bingo.gruxon.com</text>
 
 </svg>`;
 }

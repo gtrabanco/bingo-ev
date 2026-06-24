@@ -31,7 +31,29 @@
   can reuse it without duplication. Not in the SPEC but follows DRY and doesn't
   add scope — it's the same function called with different arguments.
 
-**Open items / left for P2:**
-- Manual dev check for `/og/home.svg` new design (can be done alongside P2 dev check).
-- `homeStorySvg()`, `home-story.svg.ts`, `home-story.png.ts`.
-- SEO.md portrait asset note finalised in P2 (stub already added).
+## P2 — portrait 1080×1920 story image (done, gate green)
+
+**What was done:**
+- Extended `renderCell` with an optional `dabRadius` parameter (default 26, portrait
+  uses 40 — proportionally correct for the ~302px tall portrait cells vs 117px
+  landscape cells).
+- Added `homeStorySvg()` to `og-image.ts`:
+  - Grid: 3 cols × 4 rows, gridX=60, cellW=320, gridY=390, cellH=302 (ends y=1598).
+  - Reuses `OG_SITUATIONS` (same 12 situations as landscape) and `renderCell`.
+  - Portrait marks at positions [1, 3, 7, 11] — diagonal spread, looks mid-game.
+  - Cell params: fontSize=22, maxChars=20, lineHeight=28, dabRadius=40.
+  - Title: two lines ("El Bingo" / "del Cargador") SERIF 90px amber.
+  - Hook "¿Cuántas llevas tú?" SANS 44px at y=1668; CTA "bingo.gruxon.com"
+    SERIF 60px bold amber at y=1778.
+  - No QR (unlike diploma story — home invite has nothing to verify).
+- Added `src/pages/og/home-story.svg.ts` (mirrors `home.svg.ts` — prerendered, no
+  `prerender=false` needed since deterministic).
+- Added `src/pages/og/home-story.png.ts` (mirrors `[id]-story.png.ts` —
+  `prerender=false`, CF Image Resizing self-fetch, SVG fallback).
+- SEO.md portrait note was fully in place from P1 stub — no further edit needed.
+
+**Decisions made during execution:**
+- `renderCell` extended with `dabRadius` param so portrait dabs (r=40) are
+  proportionally visible in the larger cells. Backward-compatible (default=26).
+
+**Next:** P3 — flip roadmap to `done`, push, open PR (after `/review-change`).

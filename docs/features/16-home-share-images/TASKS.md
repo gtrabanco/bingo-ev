@@ -27,19 +27,19 @@ breakdown. One gate-green commit per phase, single PR after P2.
 
 ## P2 — portrait 1080×1920 Story/Reel/TikTok image
 
-- [ ] Add `homeStorySvg()` to `src/lib/og-image.ts` (1080×1920) reusing
+- [x] Add `homeStorySvg()` to `src/lib/og-image.ts` (1080×1920) reusing
       `OG_SITUATIONS` + `wrapCellText`; portrait 3×4 transpose, big title/CTA, no QR
       (SPEC → `homeStorySvg()` layout). Tune `maxChars`/lines to the larger cells.
-- [ ] Add `src/pages/og/home-story.svg.ts` (serves `homeStorySvg()`).
-- [ ] Add `src/pages/og/home-story.png.ts` — CF Image Resizing self-fetch
+- [x] Add `src/pages/og/home-story.svg.ts` (serves `homeStorySvg()`).
+- [x] Add `src/pages/og/home-story.png.ts` — CF Image Resizing self-fetch
       (`width:1080, height:1920`), SVG fallback, `prerender = false`. Mirror
       `src/pages/og/diploma/[id]-story.png.ts`.
-- [ ] `docs/frontend/SEO.md` — note the portrait asset endpoint (uploadable, no meta
+- [x] `docs/frontend/SEO.md` — note the portrait asset endpoint (uploadable, no meta
       tag).
-- [ ] Gate: `npm run build` green.
-- [ ] Manual dev check: `/og/home-story.svg` renders the portrait; `/og/home-story.png`
+- [x] Gate: `npm run build` green.
+- [x] Manual dev check: `/og/home-story.svg` renders the portrait; `/og/home-story.png`
       falls back to SVG locally.
-- [ ] Commit: `feat(16-home-share-images): P2 — portrait story/reel image`.
+- [x] Commit: `feat(16-home-share-images): P2 — portrait story/reel image`.
 
 ## P3 — PR
 
