@@ -4,6 +4,7 @@ import { encode } from 'uqr';
 import type { Honorific } from './card';
 import { PALETTE, SERIF, SANS, MONO, HONORIFICS, COPY, VERIFY_BASE_URL } from './certificate-design';
 import { LORA_WOFF2, LORA_ITALIC_WOFF2 } from './og-fonts';
+import situations from '../data/situations.json';
 
 const WIDTH = 1200;
 const HEIGHT = 630;
@@ -240,51 +241,136 @@ export function diplomaStorySvg(data: DiplomaSvgData): string {
 </svg>`;
 }
 
+// ---------------------------------------------------------------------------
+// Home share card — shared constants and helpers (used by homeSvg + homeStorySvg)
+// ---------------------------------------------------------------------------
+
+// 12 situations curated for maximum punch and instant recognisability.
+// Selected by id so the card stays stable even if the gameplay pool is re-sorted.
+const OG_IDS = [
+  'app-disponible',
+  'nada-funciona',
+  'potencia-fantasma',
+  'plaza-ocupada',
+  'error-desconocido',
+  'corte-al-80',
+  'unico-rapido-roto',
+  'reinicia-el-coche',
+  'mantenimiento-eterno',
+  'precio-sorpresa',
+  'alta-con-fe',
+  'cable-corto',
+];
+const _ogById = new Map(situations.map(s => [s.id, s.text]));
+// Top-up guard: if a curated id is ever removed, fill from the pool head so the
+// card always has exactly 12 cells and never breaks.
+const OG_SITUATIONS = (() => {
+  const picked = OG_IDS.map(id => _ogById.get(id)).filter(Boolean) as string[];
+  for (const s of situations) {
+    if (picked.length >= 12) break;
+    if (!picked.includes(s.text)) picked.push(s.text);
+  }
+  return picked.slice(0, 12);
+})();
+
+// Grid positions (0-indexed, row-major) that show a dab mark on the home card.
+// Spread across rows/columns so the card looks mid-game at a glance.
+const OG_MARKED = new Set([1, 4, 7, 10]);
+
+// Greedy word-wrap: splits text into ≤ maxLines lines of ≤ maxChars characters each.
+// Overflow past maxLines is truncated with a trailing «…» on the last line.
+function wrapCellText(text: string, maxChars = 24, maxLines = 3): string[] {
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let cur = '';
+  for (const w of words) {
+    const next = cur ? `${cur} ${w}` : w;
+    if (next.length > maxChars && cur) { lines.push(cur); cur = w; }
+    else { cur = next; }
+  }
+  if (cur) lines.push(cur);
+  if (lines.length > maxLines) {
+    lines.length = maxLines;
+    lines[maxLines - 1] = lines[maxLines - 1]!.replace(/.{1}$/, '…');
+  }
+  return lines;
+}
+
+// Render one bingo card cell: paper background, optional dab, word-wrapped text.
+function renderCell(
+  x: number, y: number, w: number, h: number,
+  text: string, marked: boolean,
+  fontSize = 17, maxChars = 24, lineHeight = 20,
+): string {
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+  const lines = wrapCellText(text, maxChars, 3);
+  const n = lines.length;
+  const ty = cy - ((n - 1) * lineHeight) / 2;
+
+  const dab = marked
+    ? `<circle cx="${cx}" cy="${cy}" r="26" fill="#b02e22" opacity="0.7"/>`
+    : '';
+  const tspans = lines
+    .map((ln, i) => `<tspan x="${cx}" dy="${i === 0 ? 0 : lineHeight}">${escapeXml(ln)}</tspan>`)
+    .join('');
+
+  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#f6f0df" stroke="#221f1a" stroke-width="1.5" rx="3"/>
+  ${dab}
+  <text x="${cx}" y="${ty}" font-family="${SANS}" font-size="${fontSize}" fill="#221f1a" text-anchor="middle">${tspans}</text>`;
+}
+
+// ---------------------------------------------------------------------------
+// Landscape 1200×630 home share image (og:image for link previews)
+// ---------------------------------------------------------------------------
+
 export function homeSvg(): string {
+  // Grid: 4 columns × 3 rows, row-major.
+  // Spans x 80→1120 (1040px → 260px/cell) × y 190→541 (351px → 117px/cell).
+  const gridX = 80;
+  const gridY = 190;
+  const cellW = 260;
+  const cellH = 117;
+
+  let cellsSvg = '';
+  for (let i = 0; i < 12; i++) {
+    const row = Math.floor(i / 4);
+    const col = i % 4;
+    cellsSvg += '\n  ' + renderCell(
+      gridX + col * cellW, gridY + row * cellH, cellW, cellH,
+      OG_SITUATIONS[i]!, OG_MARKED.has(i),
+    );
+  }
+
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${WIDTH} ${HEIGHT}">
   <defs>
     <style>
-      .title { font-family: ${SERIF}; font-size: 100px; font-weight: 700; fill: #fbbf24; text-anchor: middle; }
-      .subtitle { font-family: ${SANS}; font-size: 36px; font-weight: 600; fill: #c7d2e0; text-anchor: middle; }
-      .grid-cell { fill: #f6f0df; stroke: #221f1a; stroke-width: 2; }
-      .grid-dab { fill: #b02e22; opacity: 0.7; }
+      @font-face { font-family: 'Lora'; font-weight: 400 700; font-style: normal; src: url('${LORA_WOFF2}') format('woff2-variations'); }
+      @font-face { font-family: 'Lora'; font-weight: 400 700; font-style: italic; src: url('${LORA_ITALIC_WOFF2}') format('woff2-variations'); }
     </style>
-  </defs>
-
-  <!-- Background: felt green -->
-  <rect width="${WIDTH}" height="${HEIGHT}" fill="#0b3d2e"/>
-
-  <!-- Felt texture gradient -->
-  <defs>
     <radialGradient id="feltGrad" cx="50%" cy="50%" r="60%">
-      <stop offset="0%" style="stop-color:rgba(255,255,255,0.1);stop-opacity:1" />
-      <stop offset="100%" style="stop-color:rgba(0,0,0,0.3);stop-opacity:1" />
+      <stop offset="0%" style="stop-color:rgba(255,255,255,0.08);stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:rgba(0,0,0,0.25);stop-opacity:1"/>
     </radialGradient>
   </defs>
+
+  <!-- Background: felt green + vignette gradient -->
+  <rect width="${WIDTH}" height="${HEIGHT}" fill="#0b3d2e"/>
   <rect width="${WIDTH}" height="${HEIGHT}" fill="url(#feltGrad)"/>
 
-  <!-- Title -->
-  <text x="${WIDTH / 2}" y="100" class="title">El Bingo del Cargador</text>
+  <!-- Title: centred, amber, Lora serif -->
+  <text x="${CX}" y="90" font-family="${SERIF}" font-size="66" font-weight="700" fill="#fbbf24" text-anchor="middle">El Bingo del Cargador</text>
 
   <!-- Subtitle -->
-  <text x="${WIDTH / 2}" y="160" class="subtitle">Desgracias de la carga pública, verificables</text>
+  <text x="${CX}" y="138" font-family="${SANS}" font-size="22" fill="#c7d2e0" text-anchor="middle">Desgracias de la carga pública, verificables</text>
 
-  <!-- Mini bingo grid (3x3) -->
-  <g transform="translate(${WIDTH / 2 - 120}, 220)">
-    ${Array.from({ length: 9 }, (_, i) => {
-      const row = Math.floor(i / 3);
-      const col = i % 3;
-      const x = col * 80;
-      const y = row * 80;
-      const marked = i % 3 === 1;
-      return `<rect x="${x}" y="${y}" width="70" height="70" class="grid-cell" rx="2"/>
-${marked ? `<circle cx="${x + 35}" cy="${y + 35}" r="20" class="grid-dab"/>` : ''}`;
-    }).join('\n')}
-  </g>
+  <!-- 4×3 bingo card with real situation text -->
+  ${cellsSvg}
 
-  <!-- CTA -->
-  <text x="${WIDTH / 2}" y="580" class="subtitle">Juega en bingo.gruxon.com</text>
+  <!-- Hook + CTA — centred so they survive a square centre-crop (safe zone) -->
+  <text x="${CX}" y="587" font-family="${SANS}" font-size="22" fill="#c7d2e0" text-anchor="middle">¿Cuántas llevas tú?  •  bingo.gruxon.com</text>
+
 </svg>`;
 }
 

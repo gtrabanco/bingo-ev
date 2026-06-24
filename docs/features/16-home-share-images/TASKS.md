@@ -5,25 +5,25 @@ breakdown. One gate-green commit per phase, single PR after P2.
 
 ## P1 — landscape 1200×630 OG image
 
-- [ ] In `src/lib/og-image.ts`, add module-scope shared helpers (used by both images):
-  - [ ] `OG_SITUATIONS` — curated 12 situations by id (top-up guard), per SPEC →
+- [x] In `src/lib/og-image.ts`, add module-scope shared helpers (used by both images):
+  - [x] `OG_SITUATIONS` — curated 12 situations by id (top-up guard), per SPEC →
         situation selection. Pick 12 short, instantly-relatable ids from
         `src/data/situations.json`.
-  - [ ] `wrapCellText(text, maxChars, maxLines)` greedy word-wrap helper (SPEC →
+  - [x] `wrapCellText(text, maxChars, maxLines)` greedy word-wrap helper (SPEC →
         text wrapping). Reused by both generators.
-- [ ] Redesign `homeSvg()` (1200×630): title + subtitle + 4×3 card with wrapped
+- [x] Redesign `homeSvg()` (1200×630): title + subtitle + 4×3 card with wrapped
       situation text + 4 dabs + hook/CTA line. Honour the two-tier safe zone.
-- [ ] Add `src/pages/og/home.png.ts` — CF Image Resizing self-fetch of `/og/home.svg`
+- [x] Add `src/pages/og/home.png.ts` — CF Image Resizing self-fetch of `/og/home.svg`
       (`width:1200, height:630`), SVG fallback, `prerender = false`. Mirror
       `src/pages/og/diploma/[id].png.ts`.
-- [ ] `src/layouts/Layout.astro` — default props `ogImage = '/og/home.png'`,
+- [x] `src/layouts/Layout.astro` — default props `ogImage = '/og/home.png'`,
       `ogImageType = 'image/png'`.
-- [ ] `docs/frontend/SEO.md` — update OG-images note (PNG now primary, SVG fallback,
+- [x] `docs/frontend/SEO.md` — update OG-images note (PNG now primary, SVG fallback,
       platform-coverage boundary).
-- [ ] Gate: `npm run build` green.
+- [x] Gate: `npm run build` green.
 - [ ] Manual dev check: `/og/home.svg` renders the new grid; `/og/home.png` falls
       back to SVG locally; homepage `og:image` points to `/og/home.png`.
-- [ ] Commit: `feat(16-home-share-images): P1 — landscape OG png + card redesign`.
+- [x] Commit: `feat(16-home-share-images): P1 — landscape OG png + card redesign`.
 
 ## P2 — portrait 1080×1920 Story/Reel/TikTok image
 
