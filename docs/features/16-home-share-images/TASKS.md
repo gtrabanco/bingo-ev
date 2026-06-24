@@ -43,9 +43,9 @@ breakdown. One gate-green commit per phase, single PR after P2.
 
 ## P3 — PR
 
-- [ ] Flip roadmap row 16 to `done`.
-- [ ] `git push`, open PR against `main` (single PR for P1+P2).
-- [ ] Hand off to `/review-change`.
+- [x] Flip roadmap row 16 to `done`.
+- [x] `git push`, open PR against `main` (single PR for P1+P2).
+- [x] Hand off to `/review-change`.
 
 ## Decision (settled — no action needed)
 
