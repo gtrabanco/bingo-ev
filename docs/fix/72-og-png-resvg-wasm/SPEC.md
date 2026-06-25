@@ -90,9 +90,11 @@ on X/WhatsApp. The explicit 500 is the correct failure mode.
   Risk: low (project is already on Workers Paid for D1 + rate limiting).
 - **WASM cold-start latency** — first request per isolate pays ~20–50 ms init.
   Risk: low (OG images are background fetches by crawlers, not user interactions).
-- **Font rendering** — `@resvg/resvg-wasm` uses only fonts embedded in the SVG.
-  The OG SVGs use only SVG text (no external font refs); fallback glyphs will render.
-  Risk: acceptable; the punchlines still display.
+- **Font rendering** — `@resvg/resvg-wasm` requires font buffers; Workers has no system
+  fonts. Resolved: Lora decoded from existing base64 subset in `og-fonts.ts`; Bricolage
+  Grotesque fetched from `${origin}/fonts/BricolageGrotesque-variable.woff2` on first
+  isolate request, cached in module scope. Both passed as `fontBuffers` to `Resvg`.
+  Risk: low (font asset must exist at `/fonts/` — it does, self-hosted in `public/fonts/`).
 
 ## Acceptance criteria
 
@@ -100,7 +102,7 @@ on X/WhatsApp. The explicit 500 is the correct failure mode.
 - [ ] `GET /og/home-story.png` → `content-type: image/png` in production. — manual/curl
 - [ ] `GET /og/diploma/{id}.png` → `content-type: image/png` for a real card. — manual
 - [ ] Link preview on X shows the OG image card with the bingo grid. — manual
-- [ ] `npm run build` green. — gate
+- [x] `npm run build` green. — gate
 
 ## Effort
 
