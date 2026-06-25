@@ -56,6 +56,27 @@ Affected files: `src/lib/svg-to-png.ts` (new), `src/pages/og/home.png.ts`,
 - WASM is lazy-initialized once per Worker instance (cold-start cost ~20–50 ms, then
   cached in the instance memory for the lifetime of the isolate).
 - SVG fallback is removed. PNG is always produced or the endpoint returns 500.
+- First request per Worker instance fetches BricolageGrotesque (~205 KB) from the
+  origin URL; the buffer is then cached in module scope for the isolate lifetime.
+  Lora is decoded from the existing base64 subset in `og-fonts.ts` (no fetch).
+
+## Decisions
+
+**D1 — Rejected-promise caching in `ensureReady`.**
+If `initWasm` or the font fetch throws, `ready` is set to the rejected promise and
+remains so for the lifetime of the isolate — all subsequent requests to any PNG
+endpoint immediately reject too. This is intentional: a failure at this level
+(WASM bundling broken, font asset missing) is deterministic, not transient. Retrying
+every request would just add latency to an unrecoverable state; the isolate will be
+recycled on the next deploy. See [#74](https://github.com/gtrabanco/bingo-ev/issues/74)
+for the version-pin follow-up.
+
+**D2 — No SVG fallback.**
+The old code fell back to SVG on CF Image Resizing failure. The new code removes that
+fallback: if `svgToPng` throws the endpoint returns 500. Social crawlers handle 500s
+gracefully (they omit the image; the link card still shows title/description).
+Returning SVG and pretending it is a PNG would be misleading and still not render
+on X/WhatsApp. The explicit 500 is the correct failure mode.
 
 ## Rules
 
