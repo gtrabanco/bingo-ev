@@ -13,6 +13,9 @@
 	"observability": {
 		"enabled": true
 	},
+	"vars": {
+		"PUBLIC_TURNSTILE_SITE_KEY": "0x4AAAAAADoon3Pwg3sbub6K"
+	},
 "d1_databases": [
 		{
 			"binding": "DB",
