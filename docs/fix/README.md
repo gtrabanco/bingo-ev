@@ -13,7 +13,7 @@ history lives in git log + closed issues.
 
 | Folder | Topic | Status | Depends on | Issue |
 |--------|-------|--------|------------|-------|
-| `72-og-png-resvg-wasm` | OG PNG endpoints serve SVG — replace CF Image Resizing with @resvg/resvg-wasm | `in-progress` | — | [#72](https://github.com/gtrabanco/bingo-ev/issues/72) |
+| `72-og-png-resvg-wasm` | OG PNG endpoints serve SVG — replace CF Image Resizing with @resvg/resvg-wasm | `in-review` | — | [#72](https://github.com/gtrabanco/bingo-ev/issues/72) |
 | `67-og-title-length` | Homepage og:title 88 chars — truncated at ~60 in previews & SERPs | `in-review` | — | [#67](https://github.com/gtrabanco/bingo-ev/issues/67) |
 | `69-og-brand-meta` | Add og:site_name + Organization logo (JSON-LD) for brand in previews & search | `in-review` | — | [#69](https://github.com/gtrabanco/bingo-ev/issues/69) |
 | `17-extract-display-helpers` | Extract VEHICLE_LABELS + formatDate into src/lib/display.ts | `in-review` | — | [#17](https://github.com/gtrabanco/bingo-ev/issues/17) |
