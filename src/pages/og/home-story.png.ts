@@ -4,8 +4,8 @@ import type { APIRoute } from 'astro';
 import { homeStorySvg } from '../../lib/og-image';
 import { svgToPng } from '../../lib/svg-to-png';
 
-export const GET: APIRoute = async () => {
-  const png = await svgToPng(homeStorySvg(), 1080, 1920);
+export const GET: APIRoute = async ({ request }) => {
+  const png = await svgToPng(homeStorySvg(), 1080, new URL(request.url).origin);
   return new Response(png, {
     headers: {
       'content-type': 'image/png',

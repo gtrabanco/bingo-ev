@@ -5,14 +5,14 @@ import { loadDiplomaData, ID_PATTERN } from '../../../lib/og-diploma';
 import { diplomaStorySvg } from '../../../lib/og-image';
 import { svgToPng } from '../../../lib/svg-to-png';
 
-export const GET: APIRoute = async ({ params }) => {
+export const GET: APIRoute = async ({ params, request }) => {
   const id = params.id ?? '';
   if (!ID_PATTERN.test(id)) return new Response(null, { status: 400 });
 
   const data = await loadDiplomaData(id);
   if (!data) return new Response(null, { status: 404 });
 
-  const png = await svgToPng(diplomaStorySvg(data), 1080, 1920);
+  const png = await svgToPng(diplomaStorySvg(data), 1080, new URL(request.url).origin);
   return new Response(png, {
     headers: {
       'content-type': 'image/png',
