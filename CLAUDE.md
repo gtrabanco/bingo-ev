@@ -14,7 +14,10 @@ The most important table: it tells an agent *which doc owns what*, so it reads t
 |---|---|
 | Any code change | `docs/architecture/ARCHITECTURE.md` |
 | New feature / planning / sequencing | `docs/features/ROADMAP.md`, `docs/features/_TEMPLATE/SPEC.md` |
+| Feature design — capability & integration closure | `docs/CAPABILITIES.md` *(the capability inventory: roles + cross-cutting subsystems; extended whenever a feature introduces one)* |
 | A fix | `docs/fix/_TEMPLATE/SPEC.md`, `docs/fix/README.md` |
+| Frozen repository knowledge | `docs/workflow/REPOSITORY_STATE.md` *(written by discovery/resolution; consumed by workflow roles)* |
+| Architectural constraints | `docs/architecture/ARCHITECTURAL_INVARIANTS.md` *(optional; explicit rules that architectural changes must preserve)* |
 | Game rules (cartón, líneas, marks, groups, expiry) | `docs/domain/README.md` |
 | Runtime / deploy / D1 / Brevo / Cloudflare | `docs/infrastructure/README.md` |
 | UI visual system / palette / card geometry | `docs/frontend/DESIGN.md` |
@@ -37,13 +40,21 @@ npx wrangler d1 migrations apply ev-bingo --local
 
 **Verification gate:** there is **no test suite and no linter**. `npm run build` (`astro build`) type-checks `.astro` files under `astro/tsconfigs/strict` and is the closest thing to CI — it must pass before every commit. Beyond that, verification is manual: run `npm run dev` and exercise the flow in a browser. After adding a migration, run the `--local` apply above before testing, or the new columns won't exist in dev.
 
+**Performance commands:** `none` — the project has no bench, profile, or complexity-lint tooling; `review-perf` will find no numbers to cite here.
+
 ## Workflow conventions (the skills read this)
 
 Single source of truth for what every agentic-workflow skill does first and always honors.
 
 **Discovery (always first).** Before acting, read: this guide + the documentation map above, the roadmap (`docs/features/ROADMAP.md`), and the template(s) or recent artifacts for the task at hand. If a doc is missing, say so and fall back to these conventions rather than guessing.
 
+**Normalized Repository State.** When `docs/workflow/REPOSITORY_STATE.md` exists, consume its frozen, evidence-backed facts and accepted decisions before rediscovering them. Keep facts, planned work, documentation, and inference separate. A missing fact may be inspected directly; conflicting evidence becomes a contradiction for `/resolve-repository-state`, never a silent overwrite.
+
+**Architectural invariants.** When the documentation map declares `docs/architecture/ARCHITECTURAL_INVARIANTS.md` (or an equivalent path), classify each applicable rule as preserved, violated, introduced, or changed before designing, planning, implementing, reviewing, or auditing a change. A violation or new/changed rule requires an explicit architectural decision; a feature SPEC, implementation, or passing test cannot silently authorize it. If no invariant document exists, record that no project invariants are declared and continue.
+
 **Forge (issue/PR tracker):** **GitHub (`gh`)** — remote `github.com:gtrabanco/bingo-ev`. The auto-close convention (`Closes #N` in the PR body) must hold.
+
+**Forge bodies are Markdown, not shell — never hand-escape them.** An issue, PR, or comment body renders as Markdown: backticks, `*`, `_`, `#`, `|` are formatting, **not** shell syntax, so **never put a `\` before them**. A stray `\` renders literally (`` `code` `` instead of `` `code` ``) — the most common forge-formatting bug. Always **write the body to a file** (plain Markdown, real backticks, zero backslashes) and pass **`--body-file <path>`** (`gh issue create --body-file`, `gh pr create --body-file`, `gh issue comment --body-file`, or the forge's equivalent) — **never** an inline `--body "…"` or a quoted `<<'EOF'` heredoc, both of which mangle backticks or preserve the stray `\`. A bare non-Markdown one-liner (e.g. `Closes #12`) may stay inline. Verify after: `gh issue view <n> --json body` shows backticks rendering, no literal `` ` ``.
 
 **Docs language:** every committed artifact (docs, SPECs, PR bodies, commit messages) in **English**, whatever language the work was requested in. (UI strings remain Spanish — see below.)
 
@@ -100,7 +111,9 @@ Plan before coding: `SPEC.md` → `PLAN.md` → `TASKS.md` → phased execution 
 
 ## Fix workflow
 
-Lighter than a feature: only a `SPEC.md` (from `docs/fix/_TEMPLATE/SPEC.md`), registered in `docs/fix/README.md`, no planning artifacts. Every fix has a tracked issue; its PR closes it.
+A fix is lighter than a feature: only a `SPEC.md` (from `docs/fix/_TEMPLATE/SPEC.md`), registered in `docs/fix/README.md`, no planning artifacts. Every fix has a tracked issue; its PR closes it.
+
+**Fix-now fold ledger.** Step 6 (verification & review) writes fix-now findings from `review-change`/`audit-pr` to `docs/features/<NN>-<slug>/review-findings.md` (fixed schema `| id | file:line | axis | severity | class | route | folded |`, `folded` starting `no`) — the same ledger for both, deduped by `file:line`+axis; `execute-phase`'s fold cycle ticks each folded row `folded: yes`. Fixes use the same convention at `docs/fix/<n>-<topic>/review-findings.md`.
 
 ## PR & branch workflow
 
@@ -123,6 +136,15 @@ chore(<area>): <summary>
 - **Always:** `code-review`, `security-review`, `verify`, `tech-debt`.
 - **UI:** `design-review`, `accessibility-review`, `brand-review` (tone + no-brand-names check).
 - **Web:** `web-perf` and an SEO skill.
+
+## Session log
+
+`docs/LOGS.md` is an append-only journal of working sessions — the *why* and the *what-next* that git history doesn't record. Two ways it's written, both optional:
+
+- **`/log-session`** (manual, rich) — summary, decisions, next step. Run it before `/clear` or before closing for the day.
+- **`.claude/` hooks** (automatic, free) — append a mechanical entry on `/clear` and exit; an opt-in hook re-injects the last entry to resume context. Copy `.claude/settings.json.example` to enable; see `.claude/README.md`.
+
+**Context hygiene rule:** end of a unit or phase → `/log-session` then a NEW conversation, never compact — compaction re-reads the whole transcript with the current session model, right when the context is most expensive to re-read; a fresh conversation is ~free because this SPEC/TASKS/progress + the session log already are the persistent memory. Compact only mid-phase, for unpersisted state you can't afford to lose, and prefer committing WIP + a `progress.md` note instead.
 
 ## Skills
 
