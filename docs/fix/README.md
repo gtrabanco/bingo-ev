@@ -13,6 +13,7 @@ history lives in git log + closed issues.
 
 | Folder | Topic | Status | Depends on | Issue |
 |--------|-------|--------|------------|-------|
+| `78-dependency-upgrade` | Upgrade dependencies to latest patch versions | `pending` | — | [#78](https://github.com/gtrabanco/bingo-ev/issues/78) |
 | `72-og-png-resvg-wasm` | OG PNG endpoints serve SVG — replace CF Image Resizing with @resvg/resvg-wasm | `done` | — | [#72](https://github.com/gtrabanco/bingo-ev/issues/72) |
 | `71-org-logo-png` | Swap Organization.logo from SVG to PNG for reliable Google Rich Results acceptance | `done` | fix/72 ✓ | [#71](https://github.com/gtrabanco/bingo-ev/issues/71) |
 | `67-og-title-length` | Homepage og:title 88 chars — truncated at ~60 in previews & SERPs | `in-review` | — | [#67](https://github.com/gtrabanco/bingo-ev/issues/67) |
