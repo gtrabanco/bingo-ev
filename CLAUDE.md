@@ -17,6 +17,7 @@ The most important table: it tells an agent *which doc owns what*, so it reads t
 | Feature design — capability & integration closure | `docs/CAPABILITIES.md` *(the capability inventory: roles + cross-cutting subsystems; extended whenever a feature introduces one)* |
 | A fix | `docs/fix/_TEMPLATE/SPEC.md`, `docs/fix/README.md` |
 | Frozen repository knowledge | `docs/workflow/REPOSITORY_STATE.md` *(written by discovery/resolution; consumed by workflow roles)* |
+| Template migration history | `docs/workflow/MIGRATION.md` *(why upgraded blocks exist and what they migrate)* |
 | Architectural constraints | `docs/architecture/ARCHITECTURAL_INVARIANTS.md` *(optional; explicit rules that architectural changes must preserve)* |
 | Game rules (cartón, líneas, marks, groups, expiry) | `docs/domain/README.md` |
 | Runtime / deploy / D1 / Brevo / Cloudflare | `docs/infrastructure/README.md` |
@@ -56,6 +57,10 @@ Single source of truth for what every agentic-workflow skill does first and alwa
 
 **Forge bodies are Markdown, not shell — never hand-escape them.** An issue, PR, or comment body renders as Markdown: backticks, `*`, `_`, `#`, `|` are formatting, **not** shell syntax, so **never put a `\` before them**. A stray `\` renders literally (`` `code` `` instead of `` `code` ``) — the most common forge-formatting bug. Always **write the body to a file** (plain Markdown, real backticks, zero backslashes) and pass **`--body-file <path>`** (`gh issue create --body-file`, `gh pr create --body-file`, `gh issue comment --body-file`, or the forge's equivalent) — **never** an inline `--body "…"` or a quoted `<<'EOF'` heredoc, both of which mangle backticks or preserve the stray `\`. A bare non-Markdown one-liner (e.g. `Closes #12`) may stay inline. Verify after: `gh issue view <n> --json body` shows backticks rendering, no literal `` ` ``.
 
+**Git workflow: `branches`** — one active unit at a time, plain `git switch -c` feature/fix branches against `main`, sequential (no worktrees; every skill that creates a branch honors this line).
+
+**Agent safety hooks: Claude Code (active)** — the repository adapter calls `.agentic-workflow/hooks/adapters/pre-tool-guard.sh`, which normalizes the payload and runs `guard-command.sh` before shell/read tools. Direct environment dumps, `.env` reads, and direct merge commands exit non-zero (blocked). Automated merge runs only inside an active `ship-roadmap --fullauto` attempt through the transient wrapper. Cursor / Copilot / OpenCode adapters ship as non-activated examples (`.cursor/hooks.json.example`, `.github/hooks/agentic-workflow.json.example`, `.opencode/plugins/agentic-workflow-guard.ts.example`). Hooks are defense-in-depth — forge branch protection/rulesets remain required.
+
 **Docs language:** every committed artifact (docs, SPECs, PR bodies, commit messages) in **English**, whatever language the work was requested in. (UI strings remain Spanish — see below.)
 
 **Hard rules (always honored).**
@@ -63,7 +68,8 @@ Single source of truth for what every agentic-workflow skill does first and alwa
 - **Gate before commit:** `npm run build` is green.
 - **Evidence over reflex:** verify claims against the code (counts, repro, thresholds) and cite paths; don't assert from assumption.
 - **Track, don't inline:** deferred work becomes a tracked issue / known-issue, never silently implemented.
-- Plus this project's [Hard conventions](#hard-conventions) and the invariants in `docs/architecture/ARCHITECTURE.md`.
+- **Honesty to the user:** never hide real limitations of the product (limits, reductions, restrictions) — disclose them in the UI/output.
+- Plus this project's [Hard conventions](#hard-conventions) and the invariants in `docs/architecture/ARCHITECTURE.md` + `ARCHITECTURAL_INVARIANTS.md`.
 
 **Question protocol.** Only ask the user to decide when the answer materially changes the artifact; make routine choices silently and record them. State what is being decided, its scope, criticality, and each option's pros/cons with a recommendation.
 
@@ -76,6 +82,27 @@ Single source of truth for what every agentic-workflow skill does first and alwa
 - **No new runtime dependencies** beyond Astro + Tailwind + `uqr` + `@gtrabanco/newsletter` + `@resvg/resvg-wasm`. Self-hosted **static** fonts in `public/fonts/` (woff2, converted offline) are explicitly permitted — they add no npm/build-time dep and make no third-party requests. Google Fonts / a font npm package / a build-time subsetter-as-runtime-dep are still banned. `uqr` is the approved exception for the diploma QR; `@gtrabanco/newsletter` is the approved exception for newsletter opt-ins (Workers-safe, zero dependencies, pin exact version); `@resvg/resvg-wasm` is the approved exception for SVG→PNG conversion in OG image endpoints (WASM-based, Workers-safe, no transitive runtime deps).
 - **Secrets**: `BREVO_API_KEY` via `npx wrangler secret put` only; never in `wrangler.jsonc`. `.dev.vars` holds local secrets and is gitignored — never commit it.
 - **Input sanitization on server**: user-supplied strings (alias, group name, nick) are stripped of control chars (`/[ -]/g`), trimmed, and length-capped before any DB write. Match this pattern on new endpoints.
+
+## Testing philosophy
+
+There is **no automated test suite by design**: the verification gate is `npm run
+build` (Astro's type-check under `astro/tsconfigs/strict`) plus manual browser
+exercise via `npm run dev` (Claude Preview MCP). *Behavior* is verified by running
+the app, *not* by mocks or snapshots. A change that genuinely needs a test layer
+must introduce it explicitly in its SPEC (a new test harness counts as a new
+dependency decision) — never as a silent side effect of a feature commit.
+
+## Naming conventions
+
+| Type | Convention | Example |
+|---|---|---|
+| Source files / dirs | kebab-case | `src/lib/card.ts`, `src/components/` |
+| Components | PascalCase | `BingoCard.astro`, `Layout.astro` |
+| Feature folders | `<NN>-<kebab-slug>` | `docs/features/05-accounts/` |
+| Branches | `feat/<NN>-<slug>` / `fix/<n>-<topic>` | `feat/05-accounts` |
+| DB migrations | zero-padded additive `NNNN` | `migrations/0001_*.sql` |
+| API routes | kebab, `export const prerender = false` | `src/pages/api/cards.ts` |
+| Commit subjects | `feat|fix|chore(<area>): <summary>` | `feat(accounts): add social login` |
 
 ## Architecture
 

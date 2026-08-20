@@ -66,6 +66,9 @@ if printf '%s\n' "$command_text" | grep -Eqi '(^|[;&|()[:space:]])([^;&|()[:spac
   || printf '%s\n' "$command_text" | grep -Eqi '(^|[;&|()[:space:]])([^;&|()[:space:]]*/)?(declare|typeset)[[:space:]]+-x([[:space:]]|$)'; then
   deny "environment-variable disclosure"
 fi
+if printf '%s\n' "$command_text" | grep -Eqi '(^|[;&|()[:space:]])export([[:space:]]+-p)?[[:space:]]*($|[;&|)])'; then
+  deny "environment export listing"
+fi
 if printf '%s\n' "$command_text" | grep -Eqi '(^|[;&|()[:space:]])([^;&|()[:space:]]*/)?env([[:space:]]+(-0|--null))?[[:space:]]*($|[;&|)])' \
   || printf '%s\n' "$command_text" | grep -Eqi '(^|[;&|()[:space:]])([^;&|()[:space:]]*/)?env([[:space:]]+[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]+)+[[:space:]]*($|[;&|)])' \
   || printf '%s\n' "$command_text" | grep -Eqi '(^|[;&|()[:space:]])([^;&|()[:space:]]*/)?set[[:space:]]*($|[;&|)])'; then
