@@ -5,37 +5,37 @@
       "source": "gtrabanco/agentic-workflow",
       "sourceType": "github",
       "skillPath": "skills/audit-docs/SKILL.md",
-      "computedHash": "46ac6da3b97859f0d4ba9c35bbbd3172f2dc91b42224c07cc5aeb8c4008bd0d7"
+      "computedHash": "9b2dfbe993e876fb0a25ab7b13d5ef7d530bc56323e2fa60b4a695a268e74a14"
     },
     "audit-pr": {
       "source": "gtrabanco/agentic-workflow",
       "sourceType": "github",
       "skillPath": "skills/audit-pr/SKILL.md",
-      "computedHash": "a1e56924268840204894e694917aaa78ac5884fb195720d913cbe878841da59a"
+      "computedHash": "33e5adabc8c1d91c528e16370be7d4b57f2828f5c65e6b6d8e8095de2460af4b"
     },
     "execute-phase": {
       "source": "gtrabanco/agentic-workflow",
       "sourceType": "github",
       "skillPath": "skills/execute-phase/SKILL.md",
-      "computedHash": "f09710912784ac111b0917357ef5f790e4db6aae10a64a61f73035e28e53bdac"
+      "computedHash": "a5c05d44788c3747011ed7e314ab5c6ab7e3d9db73c9d76f22e7bbab6a8ef9be"
     },
     "init-workspace": {
       "source": "gtrabanco/agentic-workflow",
       "sourceType": "github",
       "skillPath": "skills/init-workspace/SKILL.md",
-      "computedHash": "a96ddbf26934a0ab9608a3dc92f8c233ccd8da8c86b7693ea97e532ea92d65a5"
+      "computedHash": "65d00473fdeed5a755506ed9786b8f8cec7ecd166355f12c69d145271421bc8d"
     },
     "plan-feature": {
       "source": "gtrabanco/agentic-workflow",
       "sourceType": "github",
       "skillPath": "skills/plan-feature/SKILL.md",
-      "computedHash": "eeaed2b6812cc00f2dd22aa0a35eaeb8b6a1dda27cc1756894f0af627dfcd5ba"
+      "computedHash": "5e154f9ed5b4670b33f3392d19580d14b94c2be0d450c4ed97f0aed9a20bb252"
     },
     "plan-feature-from-issue": {
       "source": "gtrabanco/agentic-workflow",
       "sourceType": "github",
       "skillPath": "skills/plan-feature-from-issue/SKILL.md",
-      "computedHash": "8837bf9283b63afc94df3063cfa693ab961c0411a49e035f83488b725ecf5c2d"
+      "computedHash": "732eacbb6d871492372bab17ce0542ea15fb2d508e90c732ac725bda7c86ea24"
     },
     "plan-feature-interview": {
       "source": "gtrabanco/agentic-workflow",
@@ -47,43 +47,43 @@
       "source": "gtrabanco/agentic-workflow",
       "sourceType": "github",
       "skillPath": "skills/plan-feature-scaffold/SKILL.md",
-      "computedHash": "c2fbb6f65b4d74068552db50319c87072d24ffaf8d399d8872dee79a8f8859ce"
+      "computedHash": "3ef2f27e1319db7d23e64d35adc76f0fb9d3ae4a8891261a88da76be33e3c71c"
     },
     "plan-fix": {
       "source": "gtrabanco/agentic-workflow",
       "sourceType": "github",
       "skillPath": "skills/plan-fix/SKILL.md",
-      "computedHash": "13c9f1b80fd42b3c29cc1810b2a86b01d7ebb120f288b4b8e30bfe65e767dbf2"
+      "computedHash": "a65f28151104f9e1a8405542247f17d43cea1dc6277585afc4dd43dc22fffce4"
     },
     "product-audit": {
       "source": "gtrabanco/agentic-workflow",
       "sourceType": "github",
       "skillPath": "skills/product-audit/SKILL.md",
-      "computedHash": "110cd10c5737d5fd4be233a734e519db37f7d2268851622ce097e87f4f29f108"
+      "computedHash": "3dc889857bba083a03d865696ab9633e43fcc2757bfdfb8e2135a281fb5502de"
     },
     "review-change": {
       "source": "gtrabanco/agentic-workflow",
       "sourceType": "github",
       "skillPath": "skills/review-change/SKILL.md",
-      "computedHash": "871c7337ad2e11b9199a89bbc575152f731e0a5426446a01617aaf515e9c5db0"
+      "computedHash": "85ae05ba8690e13d332d026ce8eca659c45f7bb8666601c31abe6004c3d2f0c5"
     },
     "review-implementation": {
       "source": "gtrabanco/agentic-workflow",
       "sourceType": "github",
       "skillPath": "skills/review-implementation/SKILL.md",
-      "computedHash": "d0fb5396939a48d8c4b543979d6ee0acaf7e1cbba93409c1fff700e8f1794f55"
+      "computedHash": "435f2235fa27f246439a47d390c4e3b32ecfca508627b1e49a70d9b67e4cb24a"
     },
     "ship-roadmap": {
       "source": "gtrabanco/agentic-workflow",
       "sourceType": "github",
       "skillPath": "skills/ship-roadmap/SKILL.md",
-      "computedHash": "519d8d8f9a334f4f88a1ddd47bc5d3f2b616c2d5541b40a936b45954cef2257d"
+      "computedHash": "f3970115c6652f8edb78bbd5938a9fe6f58ac062f485b0c0d8efc37d96397c63"
     },
     "triage-issue": {
       "source": "gtrabanco/agentic-workflow",
       "sourceType": "github",
       "skillPath": "skills/triage-issue/SKILL.md",
-      "computedHash": "6f9e109f955368355981e5e191e5d07dacbc885a7a840964daef41c2f6a6114c"
+      "computedHash": "d63f0d02216947ffc391350785bb48ec7843a18ccd5cc078489fe7fbd74e4566"
     }
   }
 }
