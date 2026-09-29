@@ -9,11 +9,6 @@
       ],
       "exposure": "direct"
     },
-    "Astro docs": {
-      "type": "http",
-      "url": "https://mcp.docs.astro.build/mcp",
-      "exposure": "direct"
-    },
     "serena": {
       "command": "uvx",
       "args": [
@@ -23,6 +18,11 @@
         "start-mcp-server",
         "--project-from-cwd"
       ],
+      "exposure": "direct"
+    },
+    "astro-docs": {
+      "type": "http",
+      "url": "https://mcp.docs.astro.build/mcp",
       "exposure": "direct"
     }
   }
