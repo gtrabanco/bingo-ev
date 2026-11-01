@@ -25,7 +25,7 @@ are declared; workflow skills must remain compatible with that state.
 
 ## Invariants
 
-Each rule below is **declared by the project** (CLAUDE.md names it as an
+Each rule below is **declared by the project** (AGENTS.md names it as an
 invariant, canonical rule, or hard convention). They are not inferred from
 implementation; a change that violates one requires an explicit architectural
 decision through the authority named per rule.
@@ -50,7 +50,7 @@ silently authorize a violation.
   in both orientations.
 - Applies to: `src/lib/card.ts`, `src/lib/wins.ts`, `BingoCard.astro`,
   `src/pages/c/[id].astro`, and any future card renderer.
-- Evidence: CLAUDE.md "Card geometry" section; `ROWS`/`COLS` constants; the
+- Evidence: AGENTS.md "Card geometry" section; `ROWS`/`COLS` constants; the
   shared transpose classes in both card renderers.
 - Change authority: owner decision (project-wide authority above).
 
@@ -66,7 +66,7 @@ silently authorize a violation.
   departure rule; ad-hoc removal paths silently desynchronize the group.
 - Applies to: card-deletion endpoints (`DELETE ... RETURNING group_id`),
   `leave`/`kick`, GC `orphanedOwnerRepair`, account erasure.
-- Evidence: CLAUDE.md "Group lifecycle invariant — `settleDeparture`";
+- Evidence: AGENTS.md "Group lifecycle invariant — `settleDeparture`";
   `src/lib/groups.ts`; `src/lib/api.ts`.
 - Change authority: owner decision (project-wide authority above).
 
@@ -79,7 +79,7 @@ silently authorize a violation.
   invariants; a login wall would break the core game.
 - Applies to: `cards`/`groups` identity columns, auth endpoints, any
   account-gated surface.
-- Evidence: CLAUDE.md "Identity model"; REPOSITORY_STATE AD-004;
+- Evidence: AGENTS.md "Identity model"; REPOSITORY_STATE AD-004;
   `docs/features/05-accounts/SPEC.md` (additive substrate, never required).
 - Change authority: owner + product decision (project-wide authority above).
 
@@ -93,7 +93,7 @@ silently authorize a violation.
   behavior depend on a small, pinned, self-hosted runtime surface.
 - Applies to: `package.json` runtime dependencies, `public/fonts/`, new
   integrations (analytics, OAuth SDKs, monetization).
-- Evidence: CLAUDE.md "No new runtime dependencies" hard convention;
+- Evidence: AGENTS.md "No new runtime dependencies" hard convention;
   REPOSITORY_STATE RF-010 + AD-002; `package.json` dependencies.
 - Change authority: owner decision, recorded before the dependency lands.
 
@@ -106,7 +106,7 @@ silently authorize a violation.
 - Rationale: the adapter contract changed upstream; the two forbidden patterns
   throw at runtime or silently break `Locals` typing.
 - Applies to: every Worker-side handler reading env (secrets, D1, Brevo).
-- Evidence: CLAUDE.md "Server env access" hard convention;
+- Evidence: AGENTS.md "Server env access" hard convention;
   `src/lib/` and API endpoints using `import { env }`.
 - Change authority: project owner + toolchain-upgrade decision (e.g. the
   `compressHTML` decision record in `15-astro-7-upgrade`).
@@ -118,7 +118,7 @@ silently authorize a violation.
 - Rationale: small-team maintainability and the game's single-page core;
   a domain split adds ceremony without current benefit.
 - Applies to: `src/`, future source trees.
-- Evidence: CLAUDE.md "Flat architecture" hard convention; `src/` layout;
+- Evidence: AGENTS.md "Flat architecture" hard convention; `src/` layout;
   REPOSITORY_STATE RF-006.
 - Change authority: owner decision (project-wide authority above).
 
@@ -127,5 +127,5 @@ silently authorize a violation.
 - Rule: every API/server-rendered page exports `export const prerender = false;`
   — without it Astro tries to prerender the route and it breaks.
 - Applies to: `src/pages/api/*`, any server-rendered route.
-- Evidence: CLAUDE.md "Every dynamic route" hard convention.
+- Evidence: AGENTS.md "Every dynamic route" hard convention.
 - Change authority: owner decision (project-wide authority above).

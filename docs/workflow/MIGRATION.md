@@ -32,3 +32,17 @@ template tree, so they are not project-runnable by design; the project suite is
 `docs/workflow/REPOSITORY_STATE.md` DOC-010 cites the invariants doc as "empty
 template" — refresh it with `discover-repository-state` next, since only the
 resolver rewrites frozen facts.
+## 2026-11-01 — guide consolidation, adaptive lane, template parity
+
+Upgrade run (`init-workspace`, upgrade mode) against the current template. Additive; the 2026-08-20 tailored hook files (`guard-command.sh`, `fullauto-merge.sh`, `hooks/README.md`) were left untouched (residual drift vs template).
+
+| Block | What changed | Why it exists | Status |
+|---|---|---|---|
+| `AGENTS.md` | Became the single agent guide: full CLAUDE.md content folded in (owner-accepted) + template blocks added (Notation forge-vs-workflow numbers, Open-question ledger, Adaptive lane feature 61, one-step-one-session, P1/P2 phase labels, doc-map rows for providers/brand/business/i18n/Engram) | One guide, one name; the retired SPEC→PLAN→TASKS pipeline line replaced by the lane flow | migrated |
+| `CLAUDE.md` | Removed (owner-accepted) after reconciliation; live references in `ARCHITECTURAL_INVARIANTS.md` + `docs/fix/_TEMPLATE/SPEC.md` repointed to `AGENTS.md` (historical artifacts keep their original references) | Legacy guide retired; two-name drift eliminated | migrated |
+| `docs/brand/BRAND.md`, `docs/business/README.md`, `docs/frontend/I18N.md`, `docs/providers/_TEMPLATE.md` | Added, filled with the project's own rules (owner-accepted, all four) | Template parity; doc-map rows added | migrated |
+| `docs/features/_TEMPLATE/SPEC.md` | Synced to the current feature-61 template; `_TEMPLATE/ACCEPTANCE.md` removed | Old template referenced retired PLAN.md/TASKS.md/ACCEPTANCE.md; existing unit SPECs were never rewritten | migrated |
+| `.agentic-workflow/hooks/turn-contract.sh` + `tests/test-turn-contract.sh`, `test-index-consent.sh`, `test-index-sync.sh` | Added (owner-accepted); all tests pass (31 turn-contract cases) | Hook pack parity | migrated |
+| Retrieval index fast path | `index-sync.sh` installed as `.git/hooks/{post-merge,post-checkout,post-rewrite}` (owner-accepted, AC22) | Freshness fast path; best-effort, always exit 0. **Residual:** the `agentic-workflow` entry point is not on PATH, so the hooks are silent no-ops until it is installed (the grep fallback holds) | migrated |
+| `.serena/{project.yml,.gitignore}` | Committed (owner-accepted); MCP registration + project.yml pre-existed | Serena config travels with the repo; cache/project.local.yml stay local | migrated |
+| `.agentic-workflow/path-policy.json` + `path-protection.md` | **Skipped** (owner declined) | Residual: no path-protection seed installed | residual |
