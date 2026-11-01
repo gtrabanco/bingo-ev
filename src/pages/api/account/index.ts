@@ -9,6 +9,7 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { getSession } from '../../../lib/auth';
 import { settleDeparture, orphanedOwnerRepair } from '../../../lib/groups';
+import { checkRateLimit } from '../../../lib/rate-limit';
 
 export const GET: APIRoute = async ({ request }) => {
   const session = await getSession(request, env.DB);
@@ -45,6 +46,14 @@ export const GET: APIRoute = async ({ request }) => {
 export const DELETE: APIRoute = async ({ request }) => {
   const session = await getSession(request, env.DB);
   if (!session) return new Response(null, { status: 401 });
+
+  // Total erasure is the most destructive route in the API: throttle it so a
+  // compromised session cannot loop it. Runs after the session check so an
+  // unauthenticated caller still gets its cheap 401.
+  const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
+  if (!(await checkRateLimit('RATE_LIMITER_WRITE', ip))) {
+    return Response.json({ error: 'ratelimited' }, { status: 429 });
+  }
 
   const { accountId } = session;
 

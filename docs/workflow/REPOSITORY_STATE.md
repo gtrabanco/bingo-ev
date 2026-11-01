@@ -21,8 +21,8 @@ run is **uncommitted** — modified: `CLAUDE.md`,
 untracked: `docs/workflow/MIGRATION.md`,
 `.agentic-workflow/hooks/adapters/copilot-guard.sh`, `.cursor/`,
 `.github/hooks/`, `.opencode/`; plus `package.json` + `bun.lock` (add
-`pi-subagents`, see OQ-001). Facts citing those files record working-tree state
-and are marked *(wt)*.
+`pi-subagents`, see OQ-001 — **since removed**, OQ-001 answered 2026-11-01).
+Facts citing those files record working-tree state and are marked *(wt)*.
 
 ## Repository Facts
 
@@ -37,7 +37,7 @@ and are marked *(wt)*.
 | RF-007 | No accounts/auth dependency for play — card id + owner secret is identity | CLAUDE.md architecture; `src/lib/auth.ts` exists for optional accounts | 2026-08-14 | active |
 | RF-008 | Two core D1 tables: `cards` and `groups` (migrations 0001–0008); later additive tables (accounts, sessions, oauth_state, device_codes, profiles, receive_slots) | CLAUDE.md expiry section; `migrations/` listing | 2026-08-14 | active |
 | RF-009 | Card geometry: canonical landscape `ROWS=3, COLS=4` (`src/lib/card.ts:41-42`), row-major, 2 situations + 2 blanks per row; win detection uses only those constants (`src/lib/wins.ts`) | `src/lib/card.ts`; `src/lib/wins.ts` imports ROWS/COLS | 2026-08-20 | active |
-| RF-010 | Runtime-dependency convention: closed catalog = Astro + Tailwind + `uqr` + `@gtrabanco/newsletter` + `@resvg/resvg-wasm` (CLAUDE.md hard convention); committed `package.json` also lists tooling/pi deps — see OQ-001 | CLAUDE.md hard conventions; `git show HEAD:package.json` | 2026-08-20 | active |
+| RF-010 | Runtime-dependency convention: closed catalog = Astro + Tailwind + `uqr` + `@gtrabanco/newsletter` + `@resvg/resvg-wasm` (CLAUDE.md hard convention); `package.json` lists only that catalog plus build/deploy tooling since fix `audit-2-batch` — see OQ-001 (answered) | CLAUDE.md hard conventions; `package.json`; `git show HEAD:package.json` | 2026-11-01 | active |
 | RF-011 | Secrets: `BREVO_API_KEY` via `npx wrangler secret put`; `.dev.vars` gitignored | CLAUDE.md secrets; `.gitignore` | 2026-08-14 | active |
 | RF-012 | UI strings Spanish (es-ES), code comments English, no brand names | CLAUDE.md hard conventions | 2026-08-14 | active |
 | RF-013 | Deploy: Cloudflare Workers Builds via `npm run deploy` (db:migrate + wrangler deploy); D1 binding `ev-bingo` | CLAUDE.md deploy; `wrangler.jsonc` d1_databases | 2026-08-20 | active |
@@ -104,7 +104,7 @@ and are marked *(wt)*.
 
 | ID | Question | Evidence | Owner |
 |---|---|---|---|
-| OQ-001 | Is `pi-subagents` (working-tree `package.json` `dependencies`) a runtime dep or dev/tooling? Is `pi-mcp-adapter` (extraneous at `node_modules`, not declared) relevant? Committed `package.json` only pins Astro/Tailwind/uqr/newsletter/resvg — plus `@joemccann/pi-pdf`, `version`, `view` which nothing in `src/` imports | `git show HEAD:package.json`; `git diff package.json`; `npm ls pi-mcp-adapter` = extraneous; `rg` in `src/` = no matches | TBD |
+| OQ-001 | Is `pi-subagents` (working-tree `package.json` `dependencies`) a runtime dep or dev/tooling? Is `pi-mcp-adapter` (extraneous at `node_modules`, not declared) relevant? Committed `package.json` only pins Astro/Tailwind/uqr/newsletter/resvg — plus `@joemccann/pi-pdf`, `version`, `view` which nothing in `src/` imports | Resolved: none of the four was a runtime dep — all four were agent/typo installs, imported nowhere in `src/`. Removed by fix unit `audit-2-batch` (issue #84); `npm ls --depth=0` now lists only the closed catalog + tooling | answered 2026-11-01 |
 | OQ-002 | How many distinct «desgracias» exist? Feature 07 / ROADMAP claim 43 | `jq 'length' src/data/situations.json` → **43** (array) | answered 2026-08-20 |
 | OQ-003 | Feature 06 (achievements-badges) references memory `achievements-badges-idea` — still the current scope? | ROADMAP row 06 | TBD |
 

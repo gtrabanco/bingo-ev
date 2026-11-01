@@ -5,6 +5,7 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { getSession } from '../../../lib/auth';
 import { checkNick, BLOCK_MESSAGES } from '../../../lib/blocklist';
+import { checkRateLimit } from '../../../lib/rate-limit';
 
 const HANDLE_RE = /^[a-z0-9-]{3,24}$/;
 
@@ -19,6 +20,11 @@ function normalizeHandle(raw: string): string {
 export const POST: APIRoute = async ({ request }) => {
   const session = await getSession(request, env.DB);
   if (!session) return new Response(null, { status: 401 });
+
+  const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
+  if (!(await checkRateLimit('RATE_LIMITER_WRITE', ip))) {
+    return Response.json({ error: 'ratelimited' }, { status: 429 });
+  }
 
   let body: { handle?: unknown; public?: unknown };
   try {

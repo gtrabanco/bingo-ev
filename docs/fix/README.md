@@ -13,23 +13,7 @@ history lives in git log + closed issues.
 
 | Folder | Topic | Status | Depends on | Issue |
 |--------|-------|--------|------------|-------|
-| `78-dependency-upgrade` | Upgrade dependencies to latest patch versions | `pending` | — | [#78](https://github.com/gtrabanco/bingo-ev/issues/78) |
-| `72-og-png-resvg-wasm` | OG PNG endpoints serve SVG — replace CF Image Resizing with @resvg/resvg-wasm | `done` | — | [#72](https://github.com/gtrabanco/bingo-ev/issues/72) |
-| `71-org-logo-png` | Swap Organization.logo from SVG to PNG for reliable Google Rich Results acceptance | `done` | fix/72 ✓ | [#71](https://github.com/gtrabanco/bingo-ev/issues/71) |
-| `67-og-title-length` | Homepage og:title 88 chars — truncated at ~60 in previews & SERPs | `in-review` | — | [#67](https://github.com/gtrabanco/bingo-ev/issues/67) |
-| `69-og-brand-meta` | Add og:site_name + Organization logo (JSON-LD) for brand in previews & search | `in-review` | — | [#69](https://github.com/gtrabanco/bingo-ev/issues/69) |
-| `17-extract-display-helpers` | Extract VEHICLE_LABELS + formatDate into src/lib/display.ts | `in-review` | — | [#17](https://github.com/gtrabanco/bingo-ev/issues/17) |
-| `54-legal-readme-newsletter-stale` | Correct stale newsletter/D1 claims in docs/legal/README.md | `in-review` | fix/46 ✓, fix/48 ✓ | [#54](https://github.com/gtrabanco/bingo-ev/issues/54) |
-| `48-newsletter-processor` | Name gtrabanco.com newsletter service as processor in privacidad | `in-review` | fix/46 ✓ | [#48](https://github.com/gtrabanco/bingo-ev/issues/48) |
-| `26-show-carton-on-diploma` | Show completed bingo card on diploma detail page `/v/{id}` | `in-review` | — | [#26](https://github.com/gtrabanco/bingo-ev/issues/26) |
-| `20-script-crash-conditional-elements` | Script crash on absent OAuth env vars — kills device-code button | `in-progress` | — | [#20](https://github.com/gtrabanco/bingo-ev/issues/20) |
-| `31-owner-handle-bypass` | Owner OAuth account should bypass handle blocklist | `in-review` | — | [#31](https://github.com/gtrabanco/bingo-ev/issues/31) |
-| `33-remove-integration-package` | Remove integration/ reference package after feature 14 merge | `in-review` | — | [#33](https://github.com/gtrabanco/bingo-ev/issues/33) |
-| `39-blocklist-reserved-handles` | Expand reserved blocklist — owner variants, site terms, EV brands | `in-review` | — | [#39](https://github.com/gtrabanco/bingo-ev/issues/39) |
-| `41-vincular-bidirectional` | Vincular always visible — bidirectional device transfer | `in-review` | — | [#41](https://github.com/gtrabanco/bingo-ev/issues/41) |
-| `46-newsletter-api-integration` | Replace D1 newsletter table with @gtrabanco/newsletter double opt-in | `in-review` | — | [#46](https://github.com/gtrabanco/bingo-ev/issues/46) |
-| `43-sitenav-login-alignment` | Login buttons misaligned — nav-box vs nav-action mismatch | `in-review` | — | [#43](https://github.com/gtrabanco/bingo-ev/issues/43) |
-| `15-profile-error-fallback` | Profile control else-branch renders raw English error token | `in-review` | — | [#15](https://github.com/gtrabanco/bingo-ev/issues/15) |
+| `audit-2-batch` | Restore lying process artifacts (fix index, capabilities, roadmap) + drop 4 stray deps + rate-limit the account routes | `in-review` | — | [#81](https://github.com/gtrabanco/bingo-ev/issues/81), [#82](https://github.com/gtrabanco/bingo-ev/issues/82), [#84](https://github.com/gtrabanco/bingo-ev/issues/84), [#85](https://github.com/gtrabanco/bingo-ev/issues/85), [#90](https://github.com/gtrabanco/bingo-ev/issues/90) |
 
 ## Conventions
 
