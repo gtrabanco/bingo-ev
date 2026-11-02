@@ -40,3 +40,16 @@ Append-only. Newest at the bottom. Format: `## <ISO timestamp> — <branch> — 
   · accepted capability → /unit-lane --from-issue <n>
   · nothing to act on → move on
 - **Status:** all PRs merged, tree clean, no uncommitted changes.
+
+---
+
+## 2026-11-01T23:09Z — chore/scaffold-upgrade — manual
+
+- **Commits:** 1 (`9359a4f` → merged as PR #93 `1892e3b` on main)
+- **Files:** `AGENTS.md` (rewritten, now the single agent guide), `CLAUDE.md` (deleted), `docs/architecture/ARCHITECTURAL_INVARIANTS.md` (reponted CLAUDE.md references), `docs/brand/BRAND.md`, `docs/business/README.md`, `docs/frontend/I18N.md`, `docs/providers/_TEMPLATE.md`, `docs/features/_TEMPLATE/SPEC.md` (synced to feature-61 shape, ACCEPTANCE.md removed), `docs/fix/_TEMPLATE/SPEC.md` (reponted references), `docs/workflow/MIGRATION.md` (dated upgrade entry), `.agentic-workflow/hooks/{turn-contract.sh,index-sync.sh}` + 3 tests, `.git/hooks/{post-merge,post-checkout,post-rewrite}` (index-sync.sh), `.serena/{project.yml,.gitignore}` (committed), `docs/features/_TEMPLATE/ACCEPTANCE.md` (removed from template)
+- **Summary:** init-workspace upgrade run: consolidated the agent guide by folding all CLAUDE.md content into a new AGENTS.md as the single agent guide, deleted CLAUDE.md, added all missing template blocks (Notation forge-vs-workflow numbers, Open-question ledger, Adaptive lane feature 61, one-step-one-session, P1/P2 phase labels, doc-map rows for providers/brand/business/i18n/Engram), synced the feature-61 SPEC template, added and filled 4 optional docs (brand, business, i18n, providers), added hook pack files (turn-contract.sh + 3 tests), installed index-sync.sh as git hooks, committed Serena config. Fixed a mistake where .serena/project.local.yml was committed instead of project.yml during a branch switch (git rm project.local.yml, added project.yml + .gitignore, amended the commit). All hook tests pass (31 turn-contract cases), gate `npm run build` green. PR #93 merged.
+- **Decisions:** Folded CLAUDE.md into AGENTS.md and deleted CLAUDE.md (one guide, one name — owner accepted); Added all missing convention blocks (owner accepted, all); Synced _TEMPLATE/SPEC.md to feature-61 shape (owner accepted); Declined path-policy seed installation (owner declined); Installed index-sync.sh as git hooks (owner accepted, AC22) — residual: `agentic-workflow` entry point not on PATH so hooks are silent no-ops; Committed .serena/project.yml (owner accepted); Tailored hook files (guard-command.sh, fullauto-merge.sh, hooks/README.md) left untouched per never-clobber rule (residual drift). Opened PR #93 `chore/scaffold-upgrade` → merged.
+- **Next:** /audit-docs to confirm the scaffold is coherent. Then: /discover-repository-state or /workflow-status to resume with a fresh unit.
+
+---
+
