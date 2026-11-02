@@ -40,7 +40,7 @@ it should be filed instead.
 
 ## Rules that must never be violated
 
-Project invariants the fix must preserve (from `CLAUDE.md` hard rules and the
+Project invariants the fix must preserve (from `AGENTS.md` hard rules and the
 architecture doc).
 
 ## Risks
